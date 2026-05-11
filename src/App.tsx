@@ -36,7 +36,6 @@ import {
   Zap,
   X
 } from "lucide-react";
-import { currentStudent } from "./data/seed";
 import {
   daysUntil,
   formatDeadline,
@@ -44,7 +43,6 @@ import {
   formatTimeCommitment,
   labelize
 } from "./lib/format";
-import { scoreQuestForStudent } from "./lib/matching";
 import { interestTags } from "./types";
 import type {
   AzureConnectionHealth,
@@ -67,14 +65,8 @@ type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file";
 
 interface SignupProfile {
   name: string;
-  role: string;
-  workExperience: string;
   education: string;
   courseOrJobTitle: string;
-  careerInterest: string;
-  skills: string;
-  goals: string;
-  hobbies: string;
 }
 
 interface UserState {
@@ -100,26 +92,9 @@ interface ExtractMetaWithSource extends ExtractQuestMeta {
 
 const signupInitialProfile: SignupProfile = {
   name: "",
-  role: "Student",
-  workExperience: "",
   education: "",
-  courseOrJobTitle: "",
-  careerInterest: "",
-  skills: "",
-  goals: "",
-  hobbies: ""
+  courseOrJobTitle: ""
 };
-
-const authProfileStorageKey = "questboard.signupProfile";
-
-const roleOptions = ["Student", "Graduate", "Career switcher", "Founder", "Job seeker", "Researcher"];
-const workExperienceOptions = [
-  "No formal experience yet",
-  "0-1 years",
-  "1-3 years",
-  "3-5 years",
-  "5+ years"
-];
 
 const educationOptions = [
   "High school",
@@ -133,14 +108,8 @@ const educationOptions = [
 
 const requiredSignupFields: { key: keyof SignupProfile; label: string }[] = [
   { key: "name", label: "Name" },
-  { key: "role", label: "Role" },
-  { key: "workExperience", label: "Work experience" },
   { key: "education", label: "Highest level of education" },
-  { key: "courseOrJobTitle", label: "Course or job title" },
-  { key: "careerInterest", label: "Career interest" },
-  { key: "skills", label: "Skills" },
-  { key: "goals", label: "Goals" },
-  { key: "hobbies", label: "Hobbies" }
+  { key: "courseOrJobTitle", label: "Course or job title" }
 ];
 
 const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
@@ -210,27 +179,9 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-function saveAuthProfile(profile: SignupProfile) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(authProfileStorageKey, JSON.stringify(profile));
-}
-
-function readAuthProfile() {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(authProfileStorageKey);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as SignupProfile;
-  } catch {
-    window.localStorage.removeItem(authProfileStorageKey);
-    return null;
-  }
-}
-
 function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [authUser, setAuthUser] = useState<StudentProfile | null>(null);
-  const [signupProfile, setSignupProfile] = useState<SignupProfile | null>(() => readAuthProfile());
   const [quests, setQuests] = useState<QuestCard[]>([]);
   const [users, setUsers] = useState<StudentProfile[]>([]);
   const [currentUserId, setCurrentUserId] = useState("");
@@ -377,9 +328,8 @@ function App() {
     };
   }, [currentUserId, quests]);
 
-  function handleAuth(user: StudentProfile, profile: SignupProfile | null = null) {
+  function handleAuth(user: StudentProfile) {
     setAuthUser(user);
-    setSignupProfile(profile);
     setCurrentUserId(user.id);
     setUsers((current) => [user, ...current.filter((student) => student.id !== user.id)]);
     setActivePage("home");
@@ -394,7 +344,6 @@ function App() {
     setQuests([]);
     setRemoteMatches({});
     setMatchMeta(null);
-    setSignupProfile(null);
     setSavedQuestIds(new Set());
     setJoinedQuestIds(new Set());
     setParties([]);
@@ -606,7 +555,6 @@ function App() {
         <ProfilePage
           quests={quests}
           student={activeStudent}
-          signupProfile={signupProfile}
           savedCount={savedQuestIds.size}
           partyCount={parties.length}
           onSelectQuest={setSelectedQuest}
@@ -653,10 +601,10 @@ function AppBanner({ message }: { message: string }) {
 function AuthPage({
   onAuthenticated
 }: {
-  onAuthenticated: (user: StudentProfile, profile?: SignupProfile | null) => void;
+  onAuthenticated: (user: StudentProfile) => void;
 }) {
   const [mode, setMode] = useState<AuthMode>("signup");
-  const [profile, setProfile] = useState<SignupProfile>(() => readAuthProfile() ?? signupInitialProfile);
+  const [profile, setProfile] = useState<SignupProfile>(signupInitialProfile);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -739,7 +687,7 @@ function AuthPage({
         <div className="auth-visual-copy">
           <span>Database account</span>
           <h1>Your verified quest board starts here.</h1>
-          <p>Sign in to load your saved quests, parties, and Azure-powered recommendations from the live database.</p>
+          <p>Sign in to load saved quests, parties, and Azure-powered recommendations from the local database.</p>
         </div>
         <div className="auth-profile-preview">
           <div>
@@ -1056,7 +1004,13 @@ function HomePage({
       ) : null}
 
       <div className="stat-grid">
-        <StatCard icon={Sparkles} tone="violet" label={matchReady ? "Azure Match" : "Local Match"} value={recommendedCount} detail="personalized quests" />
+        <StatCard
+          icon={Sparkles}
+          tone="violet"
+          label={matchReady ? "Azure Match" : "AI Match"}
+          value={recommendedCount}
+          detail="personalized quests"
+        />
         <StatCard
           icon={Flame}
           tone="coral"
@@ -1212,7 +1166,7 @@ function SubmitQuestPage({
   onPublish
 }: {
   azureHealth: AzureConnectionHealth | null;
-  onPublish: (quest: QuestCard) => void;
+  onPublish: (quest: QuestCard) => void | Promise<void>;
 }) {
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState<SubmitMethodId | null>(null);
@@ -1250,7 +1204,9 @@ function SubmitQuestPage({
       setPublishedCards(data.cards);
       setExtracted(data.cards[0]);
       setExtractionMeta(data.meta);
-      data.cards.forEach(onPublish);
+      for (const card of data.cards) {
+        await onPublish(card);
+      }
       setStep(3);
     } catch (extractError) {
       setError(extractError instanceof Error ? extractError.message : "Extraction failed");
@@ -1422,7 +1378,7 @@ function SubmitQuestPage({
 function ExtractionDiagnostics({ meta }: { meta: ExtractMetaWithSource }) {
   return (
     <section className="diagnostics-grid">
-      <InfoField label="Provider" value={meta.provider === "azure" ? "Azure AI" : "Local fallback"} />
+      <InfoField label="Provider" value={meta.provider === "azure" ? "Azure AI" : "Azure required"} />
       <InfoField label="Confidence" value={`${Math.round(meta.confidence * 100)}%`} />
       <InfoField label="Source" value={labelize(meta.sourceType)} />
       <InfoField label="Missing" value={meta.missingFields.length ? meta.missingFields.map(labelize).join(", ") : "None"} />
@@ -1634,14 +1590,12 @@ function PartiesPage({
 function ProfilePage({
   quests,
   student,
-  signupProfile,
   savedCount,
   partyCount,
   onSelectQuest
 }: {
   quests: QuestCard[];
   student: StudentProfile;
-  signupProfile: SignupProfile | null;
   savedCount: number;
   partyCount: number;
   onSelectQuest: (quest: QuestCard) => void;
@@ -1695,21 +1649,6 @@ function ProfilePage({
           </div>
         </div>
       </section>
-
-      {signupProfile ? (
-        <ProfileSection title="Profile Details">
-          <div className="profile-detail-grid">
-            <ProfileDetail label="Role" value={signupProfile.role} />
-            <ProfileDetail label="Work experience" value={signupProfile.workExperience} />
-            <ProfileDetail label="Education" value={signupProfile.education} />
-            <ProfileDetail label="Course or job title" value={signupProfile.courseOrJobTitle} />
-            <ProfileDetail label="Career interest" value={signupProfile.careerInterest} wide />
-            <ProfileDetail label="Skills" value={signupProfile.skills} wide />
-            <ProfileDetail label="Goals" value={signupProfile.goals} wide />
-            <ProfileDetail label="Hobbies" value={signupProfile.hobbies} wide />
-          </div>
-        </ProfileSection>
-      ) : null}
 
       <ProfileSection title="Interests">
         <div className="chip-row">
@@ -1815,8 +1754,8 @@ function QuestDetailPage({
   const [draft, setDraft] = useState(quest);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const matchScore = match?.total ?? scoreQuestForStudent(quest, student).total;
-  const providerLabel = matchMeta?.provider === "azure" ? "Azure AI" : "Local";
+  const matchScore = match?.total ?? 0;
+  const providerLabel = matchMeta?.provider === "azure" ? "Azure AI" : "Azure pending";
 
   async function saveEdit() {
     setSaving(true);
@@ -2287,15 +2226,6 @@ function ProfileSection({ title, aside, children }: { title: string; aside?: str
   );
 }
 
-function ProfileDetail({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
-  return (
-    <div className={wide ? "profile-detail wide" : "profile-detail"}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
 function trimSignupProfile(profile: SignupProfile): SignupProfile {
   return {
     name: profile.name.trim(),
@@ -2310,27 +2240,6 @@ function trimSignupProfile(profile: SignupProfile): SignupProfile {
   };
 }
 
-function createStudentFromSignup(profile: SignupProfile, fallback: StudentProfile): StudentProfile {
-  const cleanProfile = trimSignupProfile(profile);
-  const interests = deriveInterestTags(cleanProfile, fallback.interests);
-  const skills = deriveSkillTags(cleanProfile.skills, fallback.skills);
-  const wantsToBuildSkills = deriveSkillTags(
-    `${cleanProfile.goals} ${cleanProfile.careerInterest}`,
-    fallback.wantsToBuildSkills
-  );
-
-  return {
-    ...fallback,
-    id: fallback.id,
-    name: cleanProfile.name || fallback.name,
-    year: deriveYearFromEducation(cleanProfile.education),
-    major: cleanProfile.courseOrJobTitle || cleanProfile.careerInterest || fallback.major,
-    interests,
-    skills,
-    wantsToBuildSkills
-  };
-}
-
 function deriveYearFromEducation(education: string): StudentProfile["year"] {
   const value = education.toLowerCase();
   if (value.includes("phd")) return "phd";
@@ -2338,69 +2247,6 @@ function deriveYearFromEducation(education: string): StudentProfile["year"] {
   if (value.includes("bachelor")) return "senior";
   if (value.includes("undergraduate")) return "sophomore";
   return "freshman";
-}
-
-function deriveInterestTags(
-  profile: SignupProfile,
-  fallback: StudentProfile["interests"]
-): StudentProfile["interests"] {
-  const text = `${profile.courseOrJobTitle} ${profile.careerInterest} ${profile.goals} ${profile.hobbies}`.toLowerCase();
-  const rules: { tag: StudentProfile["interests"][number]; terms: string[] }[] = [
-    { tag: "ai", terms: ["ai", "artificial", "machine learning", "ml"] },
-    { tag: "career", terms: ["career", "intern", "job", "placement", "graduate"] },
-    { tag: "climate", terms: ["climate", "sustainability", "environment"] },
-    { tag: "clubs", terms: ["club", "society", "community"] },
-    { tag: "competitions", terms: ["competition", "hackathon", "challenge", "case"] },
-    { tag: "design", terms: ["design", "ux", "ui", "product"] },
-    { tag: "education", terms: ["education", "teaching", "tutor", "learning"] },
-    { tag: "events", terms: ["event", "meetup", "conference"] },
-    { tag: "finance", terms: ["finance", "investment", "banking", "accounting"] },
-    { tag: "gaming", terms: ["game", "gaming", "esports"] },
-    { tag: "health", terms: ["health", "medical", "medicine", "wellbeing"] },
-    { tag: "research", terms: ["research", "lab", "academic"] },
-    { tag: "robotics", terms: ["robot", "robotics", "hardware"] },
-    { tag: "social-impact", terms: ["impact", "charity", "nonprofit", "volunteer"] },
-    { tag: "startups", terms: ["startup", "founder", "entrepreneur", "venture"] },
-    { tag: "volunteering", terms: ["volunteer", "service", "charity"] },
-    { tag: "writing", terms: ["writing", "journalism", "blog", "copy"] }
-  ];
-  const matches = rules
-    .filter((rule) => rule.terms.some((term) => text.includes(term)))
-    .map((rule) => rule.tag);
-  const uniqueMatches = uniqueTags(matches).slice(0, 5);
-  return uniqueMatches.length ? uniqueMatches : fallback;
-}
-
-function deriveSkillTags(
-  textValue: string,
-  fallback: StudentProfile["skills"]
-): StudentProfile["skills"] {
-  const text = textValue.toLowerCase();
-  const rules: { tag: StudentProfile["skills"][number]; terms: string[] }[] = [
-    { tag: "backend", terms: ["backend", "api", "server", "database", "node"] },
-    { tag: "community", terms: ["community", "organising", "organizing", "volunteer"] },
-    { tag: "coding", terms: ["coding", "code", "python", "java", "javascript", "typescript", "software"] },
-    { tag: "data", terms: ["data", "sql", "analytics", "excel", "statistics"] },
-    { tag: "design", terms: ["design", "figma", "ux", "ui", "visual"] },
-    { tag: "frontend", terms: ["frontend", "react", "html", "css", "web"] },
-    { tag: "hardware", terms: ["hardware", "robot", "electronics", "arduino"] },
-    { tag: "marketing", terms: ["marketing", "growth", "social media", "brand"] },
-    { tag: "ml", terms: ["ml", "machine learning", "ai", "model"] },
-    { tag: "photography", terms: ["photo", "photography", "camera"] },
-    { tag: "pitching", terms: ["pitch", "pitching", "sales", "present"] },
-    { tag: "public-speaking", terms: ["public speaking", "presentation", "debate"] },
-    { tag: "video", terms: ["video", "editing", "film"] },
-    { tag: "writing", terms: ["writing", "copy", "essay", "blog"] }
-  ];
-  const matches = rules
-    .filter((rule) => rule.terms.some((term) => text.includes(term)))
-    .map((rule) => rule.tag);
-  const uniqueMatches = uniqueTags(matches).slice(0, 5);
-  return uniqueMatches.length ? uniqueMatches : fallback;
-}
-
-function uniqueTags<T extends string>(tags: T[]): T[] {
-  return [...new Set(tags)];
 }
 
 function filterAndSortQuests(

@@ -9,8 +9,8 @@
     "build": "tsc -b && vite build",
     "preview": "cross-env NODE_ENV=production tsx server/index.ts",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
+    "db:migrate": "prisma db push",
+    "db:deploy": "prisma db push",
     "db:seed": "prisma db seed",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

@@ -1,0 +1,2703 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "dataset_name": "questboard_uk_seed_opportunities_may_2026",
+    "generated_at": "2026-05-11T12:00:00+01:00",
+    "focus_region": "United Kingdom",
+    "created_for": "QuestBoard seed import",
+    "description": "UK-focused real opportunities/events formatted as Quest Cards for a campus discovery app. Includes hackathons, networking events, insight programmes, internships, careers events, and deadline trackers.",
+    "record_count": 38,
+    "status_legend": {
+      "open": "Source appeared to be accepting registrations/applications or listing tickets at verification time.",
+      "watchlist": "Useful tracker or opportunity family; exact next dates/deadlines should be monitored.",
+      "registration_closed_watchlist": "Closed/past item retained only as a recurring/event-pattern signal for future QuestBoard recommendations."
+    },
+    "difficulty_scale": {
+      "easy": "Low barrier: networking, webinar, careers fair, or light application.",
+      "medium": "Requires application, technical/product preparation, or larger time commitment.",
+      "hard": "Selective, technically demanding, or requires advanced academic background."
+    },
+    "import_notes": [
+      "Dates/times are stored in ISO 8601 using Europe/London offsets where available.",
+      "Null deadline_datetime means no firm deadline was found from the source at verification time.",
+      "Quest Party plans are generated recommendations, not official organiser instructions.",
+      "Some Eventbrite-derived items are marked medium confidence because full page access may be rate-limited; source URLs are included for user confirmation.",
+      "Closed/watchlist entries can power alerts for future recurring campus-event cycles and should not be shown as currently joinable unless your app supports watchlist states."
+    ]
+  },
+  "quests": [
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-luma-encode-vibe-coding-hackathon-2026",
+      "title": "Encode Vibe Coding Hackathon",
+      "category": "hackathon",
+      "source_platform": "Luma",
+      "source_url": "https://luma.com/4f1qbg8g",
+      "status": "open",
+      "lifecycle_stage": "registration_open",
+      "start_datetime": "2026-06-19T16:00:00+01:00",
+      "end_datetime": "2026-06-21T16:30:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Tickets/ballot available on source page; no separate application deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Encode Hub",
+        "address": "41 Pitfield St, London N1 6DA, UK"
+      },
+      "summary": "A three-day London hackathon where participants build using AI, with workshops, mentorship, catering, and weekend project time.",
+      "interest_tags": [
+        "AI",
+        "hackathon",
+        "vibe coding",
+        "software development",
+        "startups",
+        "product building"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "full weekend",
+        "estimated_hours": 52.5
+      },
+      "reward": [
+        "portfolio project",
+        "mentorship",
+        "networking",
+        "possible prizes or bounties"
+      ],
+      "best_for": [
+        "student builders",
+        "AI-curious developers",
+        "designers who want to prototype fast",
+        "founder-minded students"
+      ],
+      "eligibility_notes": "Open ticketing/ballot listed; check source for any student-ballot rules.",
+      "cost": {
+        "amount": 36,
+        "currency": "GBP",
+        "label": "listed ticket price from secondary event listing"
+      },
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "AI/product interest",
+          "weekend availability",
+          "complementary frontend, backend, design, and pitching skills"
+        ],
+        "prep_plan": [
+          "Choose a problem area and gather 2-3 possible AI product ideas.",
+          "Decide who owns frontend, backend/AI, design, and final pitch.",
+          "Prepare accounts/API keys and laptops before arrival.",
+          "Schedule a 30-minute demo rehearsal before submission."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-luma-encode-london-hackathon-conference-2026",
+      "title": "Encode London Hackathon and Conference",
+      "category": "hackathon_conference",
+      "source_platform": "Luma",
+      "source_url": "https://luma.com/encode-london-2026",
+      "status": "open",
+      "lifecycle_stage": "tickets_available",
+      "start_datetime": "2026-10-23T10:00:00+01:00",
+      "end_datetime": "2026-10-25T16:30:00+00:00",
+      "deadline_datetime": null,
+      "deadline_text": "Tickets listed on source page; no separate application deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Encode Hub",
+        "address": "41 Pitfield St, London N1 6DA, UK"
+      },
+      "summary": "A London AI/Web3 weekend combining a hackathon with conference-style talks, bounties, mentorship, and workshops.",
+      "interest_tags": [
+        "AI",
+        "Web3",
+        "crypto",
+        "hackathon",
+        "conference",
+        "developer tools"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "full weekend",
+        "estimated_hours": 54
+      },
+      "reward": [
+        "portfolio project",
+        "AI/Web3 network",
+        "mentorship",
+        "possible bounties"
+      ],
+      "best_for": [
+        "students interested in AI and crypto",
+        "hackathon teams",
+        "students looking for technical mentors"
+      ],
+      "cost": {
+        "amount": 36,
+        "currency": "GBP",
+        "label": "listed ticket price from secondary event listing"
+      },
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "AI/Web3 interests",
+          "weekend availability",
+          "mix of engineering, design, product, and pitch skills"
+        ],
+        "prep_plan": [
+          "Agree whether the team will build AI-first, Web3-first, or hybrid.",
+          "Review the hackathon themes/bounties when released.",
+          "Bring a short team intro and GitHub/project links.",
+          "Block time on Sunday for demo polish and judging prep."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-london-tech-week-hackathon-2026",
+      "title": "London Tech Week Hackathon",
+      "category": "hackathon",
+      "source_platform": "London Tech Week",
+      "source_url": "https://londontechweek.com/london-tech-week-hackathon",
+      "status": "open",
+      "lifecycle_stage": "event_announced",
+      "start_datetime": "2026-06-10T08:00:00+01:00",
+      "end_datetime": "2026-06-10T18:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Application/registration details are on the London Tech Week page.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Olympia London ICC",
+        "address": null
+      },
+      "summary": "A one-day London Tech Week hackathon bringing senior students, developers, researchers, and founders together to build around a challenge brief.",
+      "interest_tags": [
+        "hackathon",
+        "London Tech Week",
+        "AI",
+        "innovation",
+        "startups",
+        "research"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "one full day",
+        "estimated_hours": 10
+      },
+      "reward": [
+        "high-signal networking",
+        "project sprint",
+        "mentor exposure",
+        "London Tech Week visibility"
+      ],
+      "best_for": [
+        "senior students",
+        "student developers",
+        "research-oriented builders",
+        "startup-minded students"
+      ],
+      "eligibility_notes": "Source describes a hackathon for senior students from UK universities plus developers, researchers, and founders.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "availability on 10 June",
+          "interest in fast technical sprints",
+          "team mix across coding, research, UX, and pitching"
+        ],
+        "prep_plan": [
+          "Read the challenge brief once available.",
+          "Prepare a one-page team skills snapshot.",
+          "Practice a 90-second pitch template.",
+          "Agree on a realistic MVP scope for a one-day build."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Eventbrite page was indexed with date/location; full page access may require checking Eventbrite directly."
+      },
+      "id": "uk-eventbrite-rix-hackathon26-2026",
+      "title": "RIX Hackathon26",
+      "category": "hackathon",
+      "source_platform": "Eventbrite",
+      "source_url": "https://www.eventbrite.co.uk/e/rix-hackathon26-tickets-1984609951790",
+      "status": "open",
+      "lifecycle_stage": "tickets_listed",
+      "start_datetime": "2026-06-19T10:00:00+01:00",
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "Ticket page lists the event; no separate application deadline found in indexed snippet.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "University of East London Docklands Campus / Rix Inclusive Research Institute",
+        "address": "North Woolwich, London, UK"
+      },
+      "summary": "A London hackathon associated with the Rix Inclusive Research Institute at University of East London Docklands Campus.",
+      "interest_tags": [
+        "hackathon",
+        "inclusive design",
+        "research",
+        "assistive technology",
+        "social impact"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "event day",
+        "estimated_hours": 8
+      },
+      "reward": [
+        "social-impact project",
+        "research exposure",
+        "team collaboration"
+      ],
+      "best_for": [
+        "students interested in inclusive design",
+        "research-minded builders",
+        "accessibility-focused designers and developers"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "interest in inclusion/accessibility",
+          "design + research + prototyping mix",
+          "availability on 19 June"
+        ],
+        "prep_plan": [
+          "Read about inclusive design and accessibility basics.",
+          "Bring one accessibility problem you have observed on campus or online.",
+          "Assign someone to document user assumptions and ethical risks.",
+          "Prepare a simple prototype or storyboard for judging."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Eventbrite indexed snippet confirmed title/date/time; check source for venue and ticket availability."
+      },
+      "id": "uk-eventbrite-london-tech-meetup-genai-solution-2026",
+      "title": "London Tech Meetup: Building Your First GenAI Solution",
+      "category": "workshop_networking",
+      "source_platform": "Eventbrite",
+      "source_url": "https://www.eventbrite.co.uk/e/london-tech-meetup-building-your-first-genai-solution-tickets-1986221304389",
+      "status": "open",
+      "lifecycle_stage": "tickets_listed",
+      "start_datetime": "2026-05-29T18:30:00+01:00",
+      "end_datetime": "2026-05-29T20:30:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Ticket page lists the event; no separate application deadline found in indexed snippet.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": null,
+        "address": null
+      },
+      "summary": "An evening London tech meetup focused on building a first generative-AI solution.",
+      "interest_tags": [
+        "AI",
+        "GenAI",
+        "meetup",
+        "workshop",
+        "networking",
+        "beginner-friendly"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "evening",
+        "estimated_hours": 2
+      },
+      "reward": [
+        "AI learning",
+        "networking",
+        "project ideas"
+      ],
+      "best_for": [
+        "beginners in AI",
+        "students wanting a practical GenAI entry point",
+        "students seeking London tech contacts"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "beginner AI interest",
+          "Friday evening availability",
+          "students who want to learn by building"
+        ],
+        "prep_plan": [
+          "Bring a laptop and one use case you want to automate.",
+          "Install any required tools listed by the organiser.",
+          "Prepare one question about AI product safety or deployment.",
+          "After the meetup, turn the idea into a mini QuestBoard project card."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Indexed Eventbrite snippet confirmed title/date/location; exact time should be checked on source."
+      },
+      "id": "uk-eventbrite-london-startup-network-gherkin-june-2026",
+      "title": "London Startup Network June 2026 Networking @ The Gherkin",
+      "category": "networking",
+      "source_platform": "Eventbrite",
+      "source_url": "https://www.eventbrite.co.uk/e/london-startup-network-june-2026-networking-make-connections-the-gherkin-tickets-1979583645974",
+      "status": "open",
+      "lifecycle_stage": "tickets_listed",
+      "start_datetime": "2026-06-09T00:00:00+01:00",
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "Ticket page lists the event; no separate application deadline found in indexed snippet.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "The Gherkin",
+        "address": "30 St Mary Axe, London, UK"
+      },
+      "summary": "A London Startup Network event for making startup and founder connections at The Gherkin.",
+      "interest_tags": [
+        "startups",
+        "networking",
+        "founders",
+        "London",
+        "entrepreneurship"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "networking session",
+        "estimated_hours": 2.5
+      },
+      "reward": [
+        "founder contacts",
+        "startup ecosystem exposure",
+        "conversation practice"
+      ],
+      "best_for": [
+        "student founders",
+        "students exploring startups",
+        "builders looking for co-founders"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "startup interest",
+          "comfortable networking or willing to practise",
+          "mix of builders and business students"
+        ],
+        "prep_plan": [
+          "Prepare a 20-second intro and one ask.",
+          "List three people or company types you want to meet.",
+          "Agree a signal for rescuing each other from awkward conversations.",
+          "Send follow-up messages within 24 hours."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Indexed Eventbrite snippet confirmed title/date/location; exact time should be checked on source."
+      },
+      "id": "uk-eventbrite-london-startup-network-mayfair-breakfast-june-2026",
+      "title": "London Startup Network June 2026 Mayfair Networking Breakfast",
+      "category": "networking",
+      "source_platform": "Eventbrite",
+      "source_url": "https://www.eventbrite.co.uk/e/london-startup-network-june-2026-mayfair-networking-breakfast-tickets-1979583675061",
+      "status": "open",
+      "lifecycle_stage": "tickets_listed",
+      "start_datetime": "2026-06-25T00:00:00+01:00",
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "Ticket page lists the event; no separate application deadline found in indexed snippet.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Bonds Mayfair",
+        "address": "London, UK"
+      },
+      "summary": "A Mayfair breakfast networking event for the London startup community.",
+      "interest_tags": [
+        "startups",
+        "networking",
+        "founders",
+        "entrepreneurship",
+        "career discovery"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "breakfast",
+        "estimated_hours": 2
+      },
+      "reward": [
+        "startup contacts",
+        "career conversations",
+        "founder introductions"
+      ],
+      "best_for": [
+        "student founders",
+        "students looking for startup internships",
+        "students practising professional networking"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "startup interest",
+          "morning availability",
+          "students willing to practise introductions"
+        ],
+        "prep_plan": [
+          "Prepare a concise founder/student intro.",
+          "Bring questions about hiring, product-market fit, and early customers.",
+          "Divide the room so party members meet different people.",
+          "Share warm intros after the event."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-luma-london-startup-meetup-2026",
+      "title": "London Startup Meetup 2026",
+      "category": "networking",
+      "source_platform": "Luma",
+      "source_url": "https://luma.com/LondonStartup",
+      "status": "open",
+      "lifecycle_stage": "tickets_available",
+      "start_datetime": "2026-07-03T18:00:00+01:00",
+      "end_datetime": "2026-07-03T22:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Tickets listed on source page; no separate application deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Pub in London",
+        "address": null
+      },
+      "summary": "An annual evening meetup for UK startup founders, investors, and enthusiasts, with informal networking and a networking app.",
+      "interest_tags": [
+        "startups",
+        "founders",
+        "investors",
+        "networking",
+        "entrepreneurship"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "evening",
+        "estimated_hours": 4
+      },
+      "reward": [
+        "startup network",
+        "investor/founder exposure",
+        "co-founder discovery"
+      ],
+      "best_for": [
+        "student founders",
+        "students exploring venture or startups",
+        "builders seeking collaborators"
+      ],
+      "cost": {
+        "amount": 12,
+        "currency": "GBP",
+        "label": "listed ticket price"
+      },
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "startup interest",
+          "Friday evening availability",
+          "shared willingness to network"
+        ],
+        "prep_plan": [
+          "Create a short profile in the networking app if available.",
+          "Prepare a 20-second intro and a clear ask.",
+          "Pick one industry each party member will focus on.",
+          "Debrief afterwards and add promising contacts to a shared list."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-luma-oxford-frontier-ai-forum-2026",
+      "title": "Oxford Frontier AI Forum",
+      "category": "conference",
+      "source_platform": "Luma",
+      "source_url": "https://luma.com/aiforum",
+      "status": "open",
+      "lifecycle_stage": "tickets_available",
+      "start_datetime": "2026-05-30T09:00:00+01:00",
+      "end_datetime": "2026-05-30T19:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Student ticket listed; no separate application deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "Oxford",
+        "region": "England",
+        "country": "UK",
+        "venue": "Mathematical Institute, University of Oxford",
+        "address": "Oxford, UK"
+      },
+      "summary": "A one-day frontier AI forum hosted with Oxford AI Society and Saïd Business School, aimed at AI discussion, learning, and networking.",
+      "interest_tags": [
+        "AI",
+        "frontier AI",
+        "policy",
+        "research",
+        "Oxford",
+        "conference"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "one full day",
+        "estimated_hours": 10
+      },
+      "reward": [
+        "AI knowledge",
+        "academic and industry networking",
+        "research/career direction"
+      ],
+      "best_for": [
+        "AI-interested students",
+        "students considering AI research",
+        "students interested in AI policy or startups"
+      ],
+      "cost": {
+        "amount": 15,
+        "currency": "GBP",
+        "label": "student ticket listed"
+      },
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "AI interest",
+          "Saturday availability",
+          "mix of technical, policy, and entrepreneurship curiosity"
+        ],
+        "prep_plan": [
+          "Each person chooses one speaker/session to research beforehand.",
+          "Prepare two questions about frontier AI risk, capabilities, or careers.",
+          "Plan a lunch/coffee debrief to compare notes.",
+          "Turn the best insight into a QuestBoard post for your campus."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-luma-oxford-space-networking-drinks-2026",
+      "title": "Oxford Space Networking Drinks",
+      "category": "networking",
+      "source_platform": "Luma",
+      "source_url": "https://luma.com/eda5t0gy",
+      "status": "open",
+      "lifecycle_stage": "event_announced",
+      "start_datetime": "2026-05-14T19:30:00+01:00",
+      "end_datetime": "2026-05-14T21:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "No separate deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "Oxford",
+        "region": "England",
+        "country": "UK",
+        "venue": "St Edmund Hall",
+        "address": "Oxford, UK"
+      },
+      "summary": "An Oxford space-sector networking drinks event connected with an OUSAS lecture and university space community.",
+      "interest_tags": [
+        "space",
+        "aerospace",
+        "networking",
+        "Oxford",
+        "engineering",
+        "science"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "evening",
+        "estimated_hours": 1.5
+      },
+      "reward": [
+        "space-sector contacts",
+        "career discovery",
+        "lecture follow-up conversations"
+      ],
+      "best_for": [
+        "students interested in aerospace",
+        "physics and engineering students",
+        "space society members"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "space/aerospace interest",
+          "Oxford availability",
+          "students who want to meet society members or industry contacts"
+        ],
+        "prep_plan": [
+          "Read the linked lecture topic if available.",
+          "Prepare one question about careers in space.",
+          "Agree who will approach society organisers and who will approach guests.",
+          "Share notes on follow-up societies, internships, or mailing lists."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-luma-lif-global-tech-innovation-ecosystem-2026",
+      "title": "LIF Global 2026: London Technology and Innovation Ecosystem",
+      "category": "networking_showcase",
+      "source_platform": "Luma",
+      "source_url": "https://luma.com/bkydaw2g",
+      "status": "open",
+      "lifecycle_stage": "event_announced",
+      "start_datetime": "2026-06-30T16:30:00+01:00",
+      "end_datetime": "2026-06-30T19:30:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "No separate deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Scale Space, Imperial College London",
+        "address": "London, UK"
+      },
+      "summary": "A networking and innovation event at Imperial College London's Scale Space, connected with LIF Global founders and the UK innovation ecosystem.",
+      "interest_tags": [
+        "innovation",
+        "startups",
+        "Imperial",
+        "founders",
+        "technology",
+        "networking"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "evening",
+        "estimated_hours": 3
+      },
+      "reward": [
+        "founder network",
+        "innovation ecosystem exposure",
+        "Imperial/Scale Space connections"
+      ],
+      "best_for": [
+        "student founders",
+        "students exploring entrepreneurship",
+        "students interested in commercialising research"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "interest in tech innovation",
+          "startup or research-commercialisation curiosity",
+          "London evening availability"
+        ],
+        "prep_plan": [
+          "Prepare a short intro focused on what you are building or researching.",
+          "Read about LIF Global and Scale Space beforehand.",
+          "Split networking targets across founders, investors, and ecosystem partners.",
+          "Capture one actionable idea for a campus venture or project."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-ai-summit-london-2026",
+      "title": "The AI Summit London 2026",
+      "category": "conference_expo",
+      "source_platform": "The AI Summit / London Tech Week",
+      "source_url": "https://london.theaisummit.com/",
+      "status": "open",
+      "lifecycle_stage": "registration_open",
+      "start_datetime": "2026-06-10T09:00:00+01:00",
+      "end_datetime": "2026-06-11T17:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Registration details are on the source page.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Tobacco Dock",
+        "address": "London, UK"
+      },
+      "summary": "A major London Tech Week AI event with stages, speakers, exhibitors, sponsors, and curated networking around applied AI.",
+      "interest_tags": [
+        "AI",
+        "conference",
+        "enterprise AI",
+        "networking",
+        "London Tech Week",
+        "careers"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "two days",
+        "estimated_hours": 16
+      },
+      "reward": [
+        "AI industry exposure",
+        "networking",
+        "career leads",
+        "speaker sessions"
+      ],
+      "best_for": [
+        "AI-focused students",
+        "students looking for industry contacts",
+        "student founders building AI products"
+      ],
+      "eligibility_notes": "Check ticket type, cost, and student accessibility on the source page.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "AI interest",
+          "availability during London Tech Week",
+          "different session interests to cover more ground"
+        ],
+        "prep_plan": [
+          "Pick must-attend sessions and exhibitors before arriving.",
+          "Prepare two AI-career or product questions.",
+          "Divide the agenda so each party member covers different stages.",
+          "Share notes and decide which contacts to follow up with."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-stem-women-london-graduate-careers-event-june-2026",
+      "title": "London STEM Women Graduate Careers Event",
+      "category": "careers_fair",
+      "source_platform": "STEM Women",
+      "source_url": "https://www.stemwomen.com/event/london-stem-women-graduate-careers-event-june-2026",
+      "status": "open",
+      "lifecycle_stage": "registration_open",
+      "start_datetime": "2026-06-12T13:00:00+01:00",
+      "end_datetime": "2026-06-12T16:30:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Registration details are on the source page.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "QEII Centre",
+        "address": "London, UK"
+      },
+      "summary": "A London graduate careers event for women studying STEM, connecting students with employers offering graduate roles, internships, and placements.",
+      "interest_tags": [
+        "STEM",
+        "careers fair",
+        "women in STEM",
+        "internships",
+        "graduate roles",
+        "placements"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "afternoon",
+        "estimated_hours": 3.5
+      },
+      "reward": [
+        "employer contacts",
+        "internship leads",
+        "placement leads",
+        "graduate role insight"
+      ],
+      "best_for": [
+        "women studying STEM",
+        "London university students",
+        "students seeking internships or graduate roles"
+      ],
+      "eligibility_notes": "Source describes the event for women studying a STEM subject at a university in London.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "STEM background",
+          "career-search goals",
+          "shared employer interests"
+        ],
+        "prep_plan": [
+          "Update CV and LinkedIn before attending.",
+          "Choose five target employers and prepare one question for each.",
+          "Practise a 30-second intro together.",
+          "After the event, assign follow-ups and application deadlines."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-ai-summer-beach-party-london-2026",
+      "title": "AI Summer Beach Party London",
+      "category": "networking_workshop",
+      "source_platform": "AI Beach Party",
+      "source_url": "https://aibeachparty.co.uk/",
+      "status": "open",
+      "lifecycle_stage": "tickets_available",
+      "start_datetime": "2026-06-29T10:00:00+01:00",
+      "end_datetime": "2026-06-29T18:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Early-bird ticketing listed; no separate application deadline found.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "London City Beach near Waterloo",
+        "address": "London, UK"
+      },
+      "summary": "A London AI networking and learning day with speakers, workshops, an expo, and practical sessions such as prompt techniques and custom GPT building.",
+      "interest_tags": [
+        "AI",
+        "networking",
+        "workshops",
+        "prompt engineering",
+        "custom GPTs",
+        "expo"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "one day",
+        "estimated_hours": 8
+      },
+      "reward": [
+        "AI learning",
+        "networking",
+        "workshop experience",
+        "practical prompts/GPT ideas"
+      ],
+      "best_for": [
+        "AI-curious students",
+        "students building AI tools",
+        "non-technical students wanting practical AI exposure"
+      ],
+      "cost": {
+        "amount": 90,
+        "currency": "GBP",
+        "label": "early-bird ticket listed"
+      },
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "AI interest",
+          "willingness to attend paid event",
+          "mix of technical and non-technical perspectives"
+        ],
+        "prep_plan": [
+          "Agree which workshops/sessions each person will attend.",
+          "Bring one workflow you want to automate with AI.",
+          "Prepare questions about AI adoption and responsible use.",
+          "Turn workshop learnings into one campus-ready AI mini-project."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-deutsche-bank-women-tdi-insight-2026",
+      "title": "Deutsche Bank Women in Technology, Data & Innovation Insight Event",
+      "category": "insight_event",
+      "source_platform": "Bright Network",
+      "source_url": "https://www.brightnetwork.co.uk/graduate-events/deutsche-bank/women-in-technology-data-innovation-insight",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-10T16:00:00+01:00",
+      "end_datetime": "2026-06-10T18:00:00+01:00",
+      "deadline_datetime": "2026-06-05T17:00:00+01:00",
+      "deadline_text": "Registration deadline: 5 June 2026, 5:00 PM UK time.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "TBC",
+        "address": "London, UK"
+      },
+      "summary": "An insight event for women interested in technology, data, and innovation at Deutsche Bank, with networking and information on 2027 opportunities.",
+      "interest_tags": [
+        "technology",
+        "data",
+        "banking",
+        "women in tech",
+        "insight event",
+        "2027 opportunities"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "evening",
+        "estimated_hours": 2
+      },
+      "reward": [
+        "banking-tech insight",
+        "networking with TDI representatives",
+        "application preparation for 2027 roles"
+      ],
+      "best_for": [
+        "women students graduating 2026-2029",
+        "students interested in banking technology",
+        "students preparing for 2027 internships"
+      ],
+      "eligibility_notes": "Source lists students graduating between 2026 and 2029.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "interest in finance technology",
+          "women/underrepresented tech community focus",
+          "graduation years aligned to source eligibility"
+        ],
+        "prep_plan": [
+          "Research Deutsche Bank TDI and common early-careers roles.",
+          "Prepare one technical and one culture question.",
+          "Bring a polished CV or LinkedIn profile.",
+          "Afterwards, map 2027 application deadlines and referral/contact follow-ups."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-ieuk-technology-engineering-2026",
+      "title": "Internship Experience UK 2026: Technology & Engineering",
+      "category": "virtual_insight_programme",
+      "source_platform": "Bright Network",
+      "source_url": "https://www.brightnetwork.co.uk/bright-network-events/ieuk-2026-technology-engineering",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-15T09:30:00+01:00",
+      "end_datetime": "2026-06-18T17:00:00+01:00",
+      "deadline_datetime": "2026-06-09T23:59:00+01:00",
+      "deadline_text": "Application deadline: 9 June 2026, 23:59.",
+      "location": {
+        "mode": "virtual",
+        "city": null,
+        "region": null,
+        "country": "UK-friendly",
+        "venue": "Online",
+        "address": null
+      },
+      "summary": "A virtual technology and engineering internship-experience programme with employer-led sessions, skills content, and project-style learning.",
+      "interest_tags": [
+        "technology",
+        "engineering",
+        "virtual",
+        "internship experience",
+        "career skills",
+        "Google",
+        "Lloyds"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "multi-day virtual",
+        "estimated_hours": 16
+      },
+      "reward": [
+        "certificate/experience",
+        "employer insights",
+        "project-style task",
+        "application preparation"
+      ],
+      "best_for": [
+        "UK students exploring tech careers",
+        "students seeking summer career structure",
+        "students unable to attend London events"
+      ],
+      "eligibility_notes": "Source describes IEUK as open to students and recent graduates, with schedule and eligibility details on the page.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "technology/engineering interest",
+          "online availability 15-18 June",
+          "different target employers to compare notes"
+        ],
+        "prep_plan": [
+          "Register before the 9 June deadline.",
+          "Block the live session times in calendars.",
+          "Prepare a CV and one target role per person.",
+          "Complete the project/task together but submit individual work where required."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-ieuk-finance-professional-services-consulting-2026",
+      "title": "Internship Experience UK 2026: Finance, Professional Services & Consulting",
+      "category": "virtual_insight_programme",
+      "source_platform": "Bright Network",
+      "source_url": "https://www.brightnetwork.co.uk/bright-network-events/ieuk-2026-finance-professional-services-consulting",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-15T09:30:00+01:00",
+      "end_datetime": "2026-06-18T17:00:00+01:00",
+      "deadline_datetime": "2026-06-09T23:59:00+01:00",
+      "deadline_text": "Application deadline: 9 June 2026, 23:59.",
+      "location": {
+        "mode": "virtual",
+        "city": null,
+        "region": null,
+        "country": "UK-friendly",
+        "venue": "Online",
+        "address": null
+      },
+      "summary": "A virtual internship-experience programme for finance, professional services, and consulting, with employer-led sessions and practical career preparation.",
+      "interest_tags": [
+        "finance",
+        "consulting",
+        "professional services",
+        "virtual",
+        "internship experience",
+        "career skills"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "multi-day virtual",
+        "estimated_hours": 16
+      },
+      "reward": [
+        "sector insight",
+        "application preparation",
+        "employer exposure",
+        "certificate/experience"
+      ],
+      "best_for": [
+        "students exploring finance or consulting",
+        "first-year students preparing for spring weeks",
+        "students building commercial awareness"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "finance/consulting interest",
+          "availability 15-18 June",
+          "complementary sector interests such as audit, markets, consulting"
+        ],
+        "prep_plan": [
+          "Register before 9 June.",
+          "Each person researches one participating employer.",
+          "Prepare two commercial-awareness discussion points.",
+          "Run a mock application debrief after the programme."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-ieuk-commercial-law-2026",
+      "title": "Internship Experience UK 2026: Commercial Law",
+      "category": "virtual_insight_programme",
+      "source_platform": "Bright Network",
+      "source_url": "https://www.brightnetwork.co.uk/bright-network-events/ieuk-2026-commercial-law",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-15T09:30:00+01:00",
+      "end_datetime": "2026-06-18T17:00:00+01:00",
+      "deadline_datetime": "2026-06-09T23:59:00+01:00",
+      "deadline_text": "Application deadline: 9 June 2026, 23:59.",
+      "location": {
+        "mode": "virtual",
+        "city": null,
+        "region": null,
+        "country": "UK-friendly",
+        "venue": "Online",
+        "address": null
+      },
+      "summary": "A virtual commercial law internship-experience programme with law firm sessions and practical career preparation.",
+      "interest_tags": [
+        "commercial law",
+        "virtual",
+        "internship experience",
+        "legal careers",
+        "vacation schemes"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "multi-day virtual",
+        "estimated_hours": 16
+      },
+      "reward": [
+        "law career insight",
+        "application preparation",
+        "employer exposure",
+        "certificate/experience"
+      ],
+      "best_for": [
+        "students exploring commercial law",
+        "future vacation-scheme applicants",
+        "non-law students considering law conversion"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "commercial law interest",
+          "availability 15-18 June",
+          "mix of law and non-law students"
+        ],
+        "prep_plan": [
+          "Register before 9 June.",
+          "Research one participating law firm per person.",
+          "Prepare one commercial-awareness example.",
+          "After the programme, update application tracker for vacation schemes."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-inside-ieuk-2026-prep-session",
+      "title": "Inside IEUK 2026: Preparation Session",
+      "category": "career_prep",
+      "source_platform": "Bright Network",
+      "source_url": "https://www.brightnetwork.co.uk/bright-network-events/inside-ieuk-2026",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-05-28T12:00:00+01:00",
+      "end_datetime": "2026-05-28T13:00:00+01:00",
+      "deadline_datetime": "2026-05-26T23:59:00+01:00",
+      "deadline_text": "Application deadline: 26 May 2026.",
+      "location": {
+        "mode": "virtual",
+        "city": null,
+        "region": null,
+        "country": "UK-friendly",
+        "venue": "Online",
+        "address": null
+      },
+      "summary": "A virtual preparation session for students already registered for Internship Experience UK 2026, covering how to get the most from the programme.",
+      "interest_tags": [
+        "career prep",
+        "IEUK",
+        "virtual",
+        "internship preparation",
+        "applications"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "lunchtime session",
+        "estimated_hours": 1
+      },
+      "reward": [
+        "prep checklist",
+        "application tips",
+        "programme readiness"
+      ],
+      "best_for": [
+        "students already signed up for IEUK 2026",
+        "students who want structure before a virtual internship programme"
+      ],
+      "eligibility_notes": "Source says the event is for anyone who has secured a place at IEUK 2026.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "all party members registered for IEUK",
+          "same sector stream or complementary streams",
+          "lunchtime availability"
+        ],
+        "prep_plan": [
+          "Confirm each member has an IEUK place.",
+          "List personal goals before the session.",
+          "Share takeaways in a group checklist.",
+          "Block the main IEUK schedule immediately after the session."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-university-of-law-convert-to-computing-2026",
+      "title": "Convert to Computing",
+      "category": "webinar",
+      "source_platform": "Bright Network / University of Law",
+      "source_url": "https://www.brightnetwork.co.uk/graduate-events/university-of-law/convert-to-computing",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-18T17:30:00+01:00",
+      "end_datetime": "2026-06-18T18:30:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Apply/register on source page; no deadline found.",
+      "location": {
+        "mode": "virtual",
+        "city": null,
+        "region": null,
+        "country": "UK-friendly",
+        "venue": "Online",
+        "address": null
+      },
+      "summary": "A virtual tutorial-style event about converting into computing and IT careers.",
+      "interest_tags": [
+        "computing",
+        "IT careers",
+        "career change",
+        "virtual",
+        "technology"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "evening webinar",
+        "estimated_hours": 1
+      },
+      "reward": [
+        "career pathway insight",
+        "computing transition advice",
+        "course/career direction"
+      ],
+      "best_for": [
+        "non-CS students considering tech",
+        "students thinking about computing conversion routes",
+        "career changers"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "interest in tech without necessarily having a CS background",
+          "evening availability",
+          "students comparing conversion options"
+        ],
+        "prep_plan": [
+          "Write down current degree/skills and target tech roles.",
+          "Prepare questions about prerequisites and employability.",
+          "Compare conversion routes after the session.",
+          "Create a 30-day learning plan together."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-marshall-wace-women-quant-investing-insight-day-2026",
+      "title": "Women in Quant Investing Insight Day",
+      "category": "insight_day",
+      "source_platform": "Bright Network / Marshall Wace",
+      "source_url": "https://www.brightnetwork.co.uk/graduate-events/marshall-wace/women-in-quant-investing-insight-day-1",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-17T09:00:00+01:00",
+      "end_datetime": "2026-06-17T17:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Apply on source page; no deadline found in extracted listing.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Marshall Wace",
+        "address": "London SW1X 9AT, UK"
+      },
+      "summary": "A one-day insight event for women interested in quant investing, with talks, workshops, panel content, and networking.",
+      "interest_tags": [
+        "quant",
+        "investing",
+        "finance",
+        "women in finance",
+        "maths",
+        "data science"
+      ],
+      "difficulty": "hard",
+      "time_commitment": {
+        "label": "one full day",
+        "estimated_hours": 8
+      },
+      "reward": [
+        "quant finance insight",
+        "networking",
+        "technical career exposure",
+        "workshop experience"
+      ],
+      "best_for": [
+        "women studying Masters or PhD programmes",
+        "maths/statistics/CS students",
+        "students interested in quant investing"
+      ],
+      "eligibility_notes": "Source describes the day for women PhD/Masters students.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "quant/finance interest",
+          "advanced maths or data background",
+          "in-person London availability"
+        ],
+        "prep_plan": [
+          "Review basics of quant investing and hedge funds.",
+          "Prepare one technical question and one career-path question.",
+          "Update CV with research and coding skills.",
+          "After the day, map relevant quant internships or graduate roles."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-brightnetwork-mi5-mi6-gchq-careers-intelligence-2026",
+      "title": "Careers in Intelligence with MI5, MI6 & GCHQ",
+      "category": "insight_event",
+      "source_platform": "Bright Network / UK Intelligence Agencies",
+      "source_url": "https://www.brightnetwork.co.uk/graduate-events/mi5-mi6-gchq/careers-in-intelligence-with-mi5-mi6-gchq",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-07-09T11:00:00+01:00",
+      "end_datetime": "2026-07-09T16:00:00+01:00",
+      "deadline_datetime": "2026-05-20T23:59:00+01:00",
+      "deadline_text": "Application deadline: 20 May 2026, 23:59.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Central London",
+        "address": "London, UK"
+      },
+      "summary": "An intelligence-careers insight event with MI5, MI6 and GCHQ representatives, including panel/Q&A, networking, and team challenges.",
+      "interest_tags": [
+        "intelligence",
+        "cybersecurity",
+        "public sector",
+        "national security",
+        "careers",
+        "team challenge"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "half day",
+        "estimated_hours": 5
+      },
+      "reward": [
+        "career insight",
+        "agency networking",
+        "team challenge experience",
+        "application awareness"
+      ],
+      "best_for": [
+        "penultimate-year UK university students",
+        "British citizens",
+        "students interested in intelligence/cyber/public service"
+      ],
+      "eligibility_notes": "Source lists eligibility as penultimate-year UK university students with British citizenship.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "eligible British citizens",
+          "interest in intelligence/public service",
+          "security-aware and punctual students"
+        ],
+        "prep_plan": [
+          "Check eligibility carefully before applying.",
+          "Prepare questions about roles, clearance, and values.",
+          "Research MI5, MI6, and GCHQ differences.",
+          "Practise team problem-solving for the challenge element."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-gradcracker-strategic-command-data-engineer-internship-2026",
+      "title": "Strategic Command Data Engineer Internship",
+      "category": "internship",
+      "source_platform": "Gradcracker",
+      "source_url": "https://www.gradcracker.com/search/computing-technology/software-systems-work-placements-internships-in-london-and-south-east-with-strategic-command",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-07-01T09:00:00+01:00",
+      "end_datetime": "2027-06-30T17:00:00+01:00",
+      "deadline_datetime": "2026-05-31T23:59:00+01:00",
+      "deadline_text": "Application deadline: 31 May 2026.",
+      "location": {
+        "mode": "in_person",
+        "city": "Uxbridge / West London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Strategic Command",
+        "address": "Uxbridge, West London, UK"
+      },
+      "summary": "A 12-month data engineering internship/placement in West London, listed for computing, software/systems, hardware, cyber, and IT students.",
+      "interest_tags": [
+        "data engineering",
+        "software",
+        "cyber",
+        "IT",
+        "public sector",
+        "placement year"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "12-month placement",
+        "estimated_hours": 1800
+      },
+      "reward": [
+        "paid placement",
+        "data engineering experience",
+        "public-sector technology exposure"
+      ],
+      "best_for": [
+        "undergraduates seeking a placement year",
+        "CS/software/cyber students",
+        "students interested in defence/public-sector technology"
+      ],
+      "compensation": {
+        "amount": 22000,
+        "currency": "GBP",
+        "label": "salary listed, plus location allowance"
+      },
+      "eligibility_notes": "Source lists Bachelor’s degree level and July 2026 start.",
+      "quest_party": {
+        "recommended_party_size": "2-3",
+        "matching_criteria": [
+          "students applying to data/cyber placements",
+          "similar application deadline",
+          "ability to peer-review CVs"
+        ],
+        "prep_plan": [
+          "Create a CV section focused on data pipelines, Python/SQL, and teamwork.",
+          "Draft answers for motivation and public-sector technology interest.",
+          "Peer-review applications before 31 May.",
+          "Practise a short technical project explanation."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-gradcracker-natwest-women-commercial-banking-insight-2026",
+      "title": "NatWest Insight Experience for Women: Commercial Banking - Relationship Management",
+      "category": "insight_experience",
+      "source_platform": "Gradcracker / NatWest",
+      "source_url": "https://www.gradcracker.com/search/maths-business/fintech-finance-work-placements-internships-in-london-and-south-east?duration=Insight+Events&order=deadline",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-07-02T09:00:00+01:00",
+      "end_datetime": "2026-07-02T17:00:00+01:00",
+      "deadline_datetime": "2026-05-31T23:59:00+01:00",
+      "deadline_text": "Application deadline: 31 May 2026.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "NatWest / London office",
+        "address": "London, UK"
+      },
+      "summary": "A one-day London insight experience for women interested in NatWest commercial banking and relationship management.",
+      "interest_tags": [
+        "banking",
+        "commercial banking",
+        "women in finance",
+        "relationship management",
+        "insight day"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "one day",
+        "estimated_hours": 8
+      },
+      "reward": [
+        "finance career insight",
+        "banking network",
+        "application preparation"
+      ],
+      "best_for": [
+        "women interested in banking",
+        "students exploring client-facing finance roles",
+        "students preparing for internships"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "interest in banking",
+          "women-focused finance opportunity",
+          "application deadline by 31 May"
+        ],
+        "prep_plan": [
+          "Research relationship management in commercial banking.",
+          "Prepare a 30-second motivation answer.",
+          "Draft questions on client work and career progression.",
+          "Review applications together before the deadline."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-gradcracker-natwest-women-markets-quantitative-insight-2026",
+      "title": "NatWest Insight Experience for Women: NatWest Markets - Quantitative",
+      "category": "insight_experience",
+      "source_platform": "Gradcracker / NatWest",
+      "source_url": "https://www.gradcracker.com/search/maths-business/fintech-finance-work-placements-internships-in-london-and-south-east?duration=Insight+Events&order=deadline",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-07-02T09:00:00+01:00",
+      "end_datetime": "2026-07-02T17:00:00+01:00",
+      "deadline_datetime": "2026-05-31T23:59:00+01:00",
+      "deadline_text": "Application deadline: 31 May 2026.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "NatWest / London office",
+        "address": "London, UK"
+      },
+      "summary": "A one-day London insight experience for women interested in quantitative work within NatWest Markets.",
+      "interest_tags": [
+        "quant",
+        "markets",
+        "banking",
+        "women in finance",
+        "maths",
+        "data"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "one day",
+        "estimated_hours": 8
+      },
+      "reward": [
+        "quant markets insight",
+        "banking network",
+        "career clarity"
+      ],
+      "best_for": [
+        "women interested in quantitative finance",
+        "maths/physics/CS students",
+        "students exploring markets roles"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "quant/markets interest",
+          "strong maths/data curiosity",
+          "women-focused opportunity"
+        ],
+        "prep_plan": [
+          "Review basics of markets and quantitative roles.",
+          "Prepare one question about modelling, risk, or trading support.",
+          "Update CV with technical coursework/projects.",
+          "Peer-review applications before 31 May."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-gradcracker-black-heritage-insight-programme-finance-2026",
+      "title": "Black Heritage Insight Programme: Finance & Banking",
+      "category": "insight_programme",
+      "source_platform": "Gradcracker",
+      "source_url": "https://www.gradcracker.com/search/maths-business/fintech-finance-work-placements-internships-in-london-and-south-east?duration=Insight+Events&order=deadline",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-08-11T09:00:00+01:00",
+      "end_datetime": "2026-08-26T17:00:00+01:00",
+      "deadline_datetime": "2026-05-29T23:59:00+01:00",
+      "deadline_text": "Application deadline: 29 May 2026. Programme dates listed as 11-12, 18-19, or 25-26 August 2026.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": null,
+        "address": "London, UK"
+      },
+      "summary": "A two-day London insight programme for Black Heritage talent interested in finance and banking pathways.",
+      "interest_tags": [
+        "finance",
+        "banking",
+        "Black Heritage",
+        "insight programme",
+        "diversity",
+        "London"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "two days",
+        "estimated_hours": 14
+      },
+      "reward": [
+        "finance career insight",
+        "networking",
+        "application preparation"
+      ],
+      "best_for": [
+        "Black Heritage students exploring finance",
+        "students seeking insight before internship applications",
+        "students interested in banking careers"
+      ],
+      "eligibility_notes": "Check source for detailed eligibility and date allocation.",
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "Black Heritage finance interest",
+          "August availability",
+          "students preparing for 2027 applications"
+        ],
+        "prep_plan": [
+          "Check eligibility and preferred August date window.",
+          "Prepare finance motivation and one commercial-awareness topic.",
+          "Peer-review CVs before 29 May.",
+          "Share follow-up resources and deadlines after the programme."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Gradcracker listing provides core date/location/deadline fields; confirm organiser and eligibility on source."
+      },
+      "id": "uk-gradcracker-new-world-new-skills-work-experience-2026",
+      "title": "New World. New Skills. Work Experience",
+      "category": "work_experience",
+      "source_platform": "Gradcracker",
+      "source_url": "https://www.gradcracker.com/search/maths-business/fintech-finance-work-placements-internships-in-london-and-south-east?duration=Insight+Events&order=deadline",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-08-03T09:00:00+01:00",
+      "end_datetime": "2026-08-06T17:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Deadline listed as ongoing.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": null,
+        "address": "London, UK"
+      },
+      "summary": "A four-day London work experience opportunity listed for finance/fintech-related early-careers discovery.",
+      "interest_tags": [
+        "work experience",
+        "finance",
+        "skills",
+        "London",
+        "career discovery"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "four days",
+        "estimated_hours": 28
+      },
+      "reward": [
+        "work experience",
+        "skills development",
+        "career exploration"
+      ],
+      "best_for": [
+        "students seeking short work experience",
+        "students exploring finance or professional services",
+        "students building early CV evidence"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "availability 3-6 August",
+          "career-discovery goals",
+          "students who can share notes and contacts"
+        ],
+        "prep_plan": [
+          "Check organiser details and eligibility on the source page.",
+          "Set one skill-development goal each.",
+          "Prepare a CV and LinkedIn profile before attending.",
+          "Share learnings and next-step applications afterwards."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Gradcracker listing confirms date/deadline/location; check source for organiser-specific eligibility."
+      },
+      "id": "uk-gradcracker-tech-insight-women-engineering-2026",
+      "title": "Tech Insight Experience for Women: Engineering",
+      "category": "insight_experience",
+      "source_platform": "Gradcracker",
+      "source_url": "https://www.gradcracker.com/search/maths-business/fintech-finance-work-placements-internships-in-london-and-south-east?duration=Insight+Events&order=deadline",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-09-18T09:00:00+01:00",
+      "end_datetime": "2026-09-18T17:00:00+01:00",
+      "deadline_datetime": "2026-05-31T23:59:00+01:00",
+      "deadline_text": "Application deadline: 31 May 2026.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": null,
+        "address": "London, UK"
+      },
+      "summary": "A one-day London technology/engineering insight experience for women.",
+      "interest_tags": [
+        "technology",
+        "engineering",
+        "women in tech",
+        "insight day",
+        "London"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "one day",
+        "estimated_hours": 8
+      },
+      "reward": [
+        "technology career insight",
+        "networking",
+        "application preparation"
+      ],
+      "best_for": [
+        "women interested in engineering or technology",
+        "students preparing for internships",
+        "students seeking early-career exposure"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "women-focused technology/engineering interest",
+          "application deadline by 31 May",
+          "September availability"
+        ],
+        "prep_plan": [
+          "Check full eligibility on the source page.",
+          "Prepare examples of technical coursework or projects.",
+          "Draft questions about engineering roles and career progression.",
+          "Peer-review applications before the deadline."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-targetjobs-launchpad-previs-artist-internship-2026",
+      "title": "Previs Artist - Launchpad Internship 2026",
+      "category": "internship",
+      "source_platform": "targetjobs",
+      "source_url": "https://targetjobs.co.uk/jobs/previs-artist-launchpad-internship-2026-214368",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-07-06T09:00:00+01:00",
+      "end_datetime": "2026-08-29T17:00:00+01:00",
+      "deadline_datetime": "2026-05-25T23:59:00+01:00",
+      "deadline_text": "Application deadline: 25 May 2026.",
+      "location": {
+        "mode": "uk_based_or_hybrid",
+        "city": null,
+        "region": null,
+        "country": "UK",
+        "venue": null,
+        "address": null
+      },
+      "summary": "A Launchpad internship for aspiring previs artists, open to final-year students or recent graduates who are UK residents or have a current UK visa.",
+      "interest_tags": [
+        "creative tech",
+        "animation",
+        "film",
+        "VFX",
+        "previs",
+        "internship"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "summer internship",
+        "estimated_hours": 280
+      },
+      "reward": [
+        "creative-industry experience",
+        "portfolio development",
+        "VFX/previs exposure"
+      ],
+      "best_for": [
+        "final-year students",
+        "recent graduates",
+        "students with animation/VFX/previs portfolios"
+      ],
+      "eligibility_notes": "Source lists final-year/recent graduate eligibility and UK resident/current UK visa requirement.",
+      "quest_party": {
+        "recommended_party_size": "2-3",
+        "matching_criteria": [
+          "creative tech or animation/VFX interest",
+          "portfolio review needs",
+          "similar application timeline"
+        ],
+        "prep_plan": [
+          "Update showreel/portfolio and CV.",
+          "Check right-to-work/visa eligibility carefully.",
+          "Peer-review portfolio clarity before 25 May.",
+          "Prepare examples showing storytelling, camera, and timing skills."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-targetjobs-epsrc-undergraduate-vacation-internships-summer-2026",
+      "title": "EPSRC Undergraduate Vacation Internships Summer 2026",
+      "category": "research_internship",
+      "source_platform": "targetjobs",
+      "source_url": "https://targetjobs.co.uk/jobs/epsrc-undergraduate-vacation-internships-summer-2026-dynamic-and-accessible-visualisation-helen-hamlyn-centre-designs-research-projects-228480",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-01T09:00:00+01:00",
+      "end_datetime": "2026-08-31T17:00:00+01:00",
+      "deadline_datetime": "2026-05-31T23:59:00+01:00",
+      "deadline_text": "May call with end-of-May deadline/interviews; summer projects run June-August 2026.",
+      "location": {
+        "mode": "uk_based_or_project_specific",
+        "city": null,
+        "region": null,
+        "country": "UK",
+        "venue": null,
+        "address": null
+      },
+      "summary": "EPSRC undergraduate vacation internships for summer research projects, with a May application call and June-August project period.",
+      "interest_tags": [
+        "research",
+        "EPSRC",
+        "undergraduate",
+        "design research",
+        "visualisation",
+        "summer internship"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "summer research project",
+        "estimated_hours": 240
+      },
+      "reward": [
+        "research experience",
+        "academic CV evidence",
+        "project output"
+      ],
+      "best_for": [
+        "undergraduates interested in research",
+        "students considering postgraduate study",
+        "students with design/visualisation interests"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-3",
+        "matching_criteria": [
+          "research interest",
+          "similar academic background",
+          "ability to peer-review statements"
+        ],
+        "prep_plan": [
+          "Read the project description carefully.",
+          "Draft a short research motivation statement.",
+          "Ask a lecturer or tutor for feedback before the end-of-May deadline.",
+          "Prepare examples of independent work and relevant tools."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Extracted page confirms programme length/dates/salary; source should be checked for application deadline/status."
+      },
+      "id": "uk-brightnetwork-fca-regulatory-summer-internship-london-2026",
+      "title": "FCA Regulatory Summer Internship 2026 - London",
+      "category": "internship",
+      "source_platform": "Bright Network / Financial Conduct Authority",
+      "source_url": "https://www.brightnetwork.co.uk/graduate-jobs/financial-conduct-authority/2026-regulatory-summer-internship-london-1",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-15T09:00:00+01:00",
+      "end_datetime": "2026-08-20T17:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Application status/deadline should be confirmed on source page.",
+      "location": {
+        "mode": "in_person_or_hybrid",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Financial Conduct Authority",
+        "address": "London, UK"
+      },
+      "summary": "A 10-week London regulatory summer internship at the FCA, involving work in financial regulation.",
+      "interest_tags": [
+        "finance",
+        "regulation",
+        "public sector",
+        "internship",
+        "policy",
+        "risk"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "10-week internship",
+        "estimated_hours": 350
+      },
+      "reward": [
+        "paid internship",
+        "financial regulation experience",
+        "public-sector insight"
+      ],
+      "best_for": [
+        "students interested in financial regulation",
+        "economics/finance/law/policy students",
+        "students seeking a London summer internship"
+      ],
+      "compensation": {
+        "amount": 24000,
+        "currency": "GBP",
+        "label": "annual pro-rata salary listed"
+      },
+      "quest_party": {
+        "recommended_party_size": "2-3",
+        "matching_criteria": [
+          "regulation/finance interest",
+          "summer internship applicants",
+          "CV/application peer-review"
+        ],
+        "prep_plan": [
+          "Research the FCA's role and current UK financial-regulation themes.",
+          "Prepare examples showing judgement, analysis, and public interest.",
+          "Peer-review applications and CVs.",
+          "Practise answering why regulation rather than banking or consulting."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "Extracted page confirms 10-week full-time programme, mid-June to end-August, London hybrid; source should be checked for deadline/status."
+      },
+      "id": "uk-brightnetwork-verisk-business-analyst-summer-internship-london-2026",
+      "title": "Verisk Business Analyst Summer Internship Programme 2026",
+      "category": "internship",
+      "source_platform": "Bright Network / Verisk",
+      "source_url": "https://www.brightnetwork.co.uk/graduate-jobs/verisk/business-analyst-summer-internship-programme-london-2026",
+      "status": "open",
+      "lifecycle_stage": "applications_open",
+      "start_datetime": "2026-06-15T09:00:00+01:00",
+      "end_datetime": "2026-08-28T17:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Application status/deadline should be confirmed on source page.",
+      "location": {
+        "mode": "hybrid",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Verisk London office",
+        "address": "London, UK"
+      },
+      "summary": "A 10-week business analyst summer internship in London, listed as full-time with hybrid office attendance.",
+      "interest_tags": [
+        "business analysis",
+        "data",
+        "insurance analytics",
+        "consulting",
+        "internship",
+        "London"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "10-week internship",
+        "estimated_hours": 350
+      },
+      "reward": [
+        "business analyst experience",
+        "data/analytics exposure",
+        "paid internship potential"
+      ],
+      "best_for": [
+        "students interested in analytics or consulting",
+        "students who like requirements/problem-solving",
+        "students seeking a London hybrid internship"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-3",
+        "matching_criteria": [
+          "business analysis/data interest",
+          "summer internship applicants",
+          "application peer-review"
+        ],
+        "prep_plan": [
+          "Prepare examples of stakeholder communication and data analysis.",
+          "Review basic business analyst concepts: requirements, user stories, process maps.",
+          "Update CV with analytics or project work.",
+          "Practise explaining one problem you solved with data."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "ICAS Foundation page lists the opportunity category; use KPMG source page for exact date, eligibility, and application status."
+      },
+      "id": "uk-icas-foundation-kpmg-insight-programmes-uk-wide-2026",
+      "title": "KPMG Insight Programmes - UK Wide",
+      "category": "spring_insight",
+      "source_platform": "ICAS Foundation / KPMG",
+      "source_url": "https://www.icasfoundation.org.uk/community/current-students/insight-opportunities-spring-2026",
+      "status": "watchlist",
+      "lifecycle_stage": "listed_opportunity",
+      "start_datetime": null,
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "Listed as open on ICAS Foundation spring 2026 opportunities page; confirm current KPMG dates on source.",
+      "location": {
+        "mode": "uk_wide",
+        "city": null,
+        "region": null,
+        "country": "UK",
+        "venue": "KPMG / UK wide",
+        "address": null
+      },
+      "summary": "A UK-wide KPMG insight-programme listing surfaced by the ICAS Foundation for students exploring professional services and accountancy-related careers.",
+      "interest_tags": [
+        "spring insight",
+        "KPMG",
+        "professional services",
+        "accountancy",
+        "consulting",
+        "UK wide"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "varies by programme",
+        "estimated_hours": null
+      },
+      "reward": [
+        "professional services insight",
+        "application preparation",
+        "networking"
+      ],
+      "best_for": [
+        "students interested in professional services",
+        "students preparing for internships/spring weeks",
+        "students exploring accountancy or consulting"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "professional services interest",
+          "similar target firms",
+          "students tracking spring insight windows"
+        ],
+        "prep_plan": [
+          "Open the KPMG application page and confirm exact dates.",
+          "Prepare a basic CV and motivation statement.",
+          "Research KPMG service lines.",
+          "Add confirmed deadline to a shared tracker."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-trackr-uk-finance-spring-weeks-tracker-2027-watchlist",
+      "title": "Trackr UK Finance Spring Weeks Tracker - 2027 Watchlist",
+      "category": "spring_week_tracker",
+      "source_platform": "Trackr",
+      "source_url": "https://app.the-trackr.com/uk-finance/spring-weeks",
+      "status": "watchlist",
+      "lifecycle_stage": "tracker_live_cycle_monitoring",
+      "start_datetime": null,
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "Use tracker alerts; 2027 spring-week applications typically open around autumn 2026.",
+      "location": {
+        "mode": "tracker",
+        "city": null,
+        "region": null,
+        "country": "UK",
+        "venue": "Online tracker",
+        "address": null
+      },
+      "summary": "A UK finance tracker resource for monitoring spring week openings and deadlines across finance firms.",
+      "interest_tags": [
+        "spring weeks",
+        "finance",
+        "banking",
+        "tracker",
+        "deadlines",
+        "first-year careers"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "recurring deadline tracking",
+        "estimated_hours": 1
+      },
+      "reward": [
+        "deadline awareness",
+        "early application advantage",
+        "finance application pipeline"
+      ],
+      "best_for": [
+        "first-year university students",
+        "students targeting investment banking or finance",
+        "students who need deadline alerts"
+      ],
+      "eligibility_notes": "Spring week eligibility varies by firm, degree year, and programme.",
+      "quest_party": {
+        "recommended_party_size": "3-5",
+        "matching_criteria": [
+          "finance/spring-week interest",
+          "same application cycle",
+          "willingness to maintain deadline tracker"
+        ],
+        "prep_plan": [
+          "Create a shared spreadsheet of target firms and deadlines.",
+          "Assign each person 5-8 firms to monitor weekly from August onward.",
+          "Prepare CV, cover-letter bullets, and psychometric-test practice early.",
+          "Submit applications as soon as they open rather than waiting for final deadlines."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Details may change; users should confirm tickets/applications on the source page before committing."
+      },
+      "id": "uk-intervyo-early-careers-tracker-2027-watchlist",
+      "title": "Intervyo UK Early Careers Tracker - Spring Weeks, Internships & Grad Schemes",
+      "category": "opportunity_tracker",
+      "source_platform": "Intervyo",
+      "source_url": "https://www.intervyo.co.uk/tracker",
+      "status": "watchlist",
+      "lifecycle_stage": "tracker_live_cycle_monitoring",
+      "start_datetime": null,
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "Tracker notes that 2027 cycles open later; monitor from August-October 2026 depending on sector.",
+      "location": {
+        "mode": "tracker",
+        "city": null,
+        "region": null,
+        "country": "UK",
+        "venue": "Online tracker",
+        "address": null
+      },
+      "summary": "A UK early-careers deadline tracker covering spring weeks, summer internships, and graduate schemes across firms and sectors.",
+      "interest_tags": [
+        "early careers",
+        "spring weeks",
+        "summer internships",
+        "graduate schemes",
+        "deadlines",
+        "tracker"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "recurring deadline tracking",
+        "estimated_hours": 1
+      },
+      "reward": [
+        "deadline awareness",
+        "application pipeline",
+        "spring-week and internship planning"
+      ],
+      "best_for": [
+        "students planning 2027 early-careers applications",
+        "students tracking multiple sectors",
+        "career societies"
+      ],
+      "quest_party": {
+        "recommended_party_size": "3-5",
+        "matching_criteria": [
+          "same application cycle",
+          "mixed sector interests",
+          "willingness to maintain a shared tracker"
+        ],
+        "prep_plan": [
+          "Split firms by sector and owner.",
+          "Set weekly checks from August 2026.",
+          "Prepare baseline CV, cover-letter stories, and psychometric practice.",
+          "Create notification rules for deadlines opening or changing."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "medium",
+        "notes": "ICAS Foundation page aggregates insight opportunities; exact stream pages should be used for final application details."
+      },
+      "id": "uk-icas-foundation-natwest-insight-experiences-women-london-2026",
+      "title": "NatWest Insight Experiences for Women - London Watchlist",
+      "category": "spring_insight",
+      "source_platform": "ICAS Foundation / NatWest",
+      "source_url": "https://www.icasfoundation.org.uk/community/current-students/insight-opportunities-spring-2026",
+      "status": "watchlist",
+      "lifecycle_stage": "listed_opportunity",
+      "start_datetime": null,
+      "end_datetime": null,
+      "deadline_datetime": null,
+      "deadline_text": "ICAS Foundation page lists NatWest Insight Experiences for Women in London; confirm exact stream/date/deadline on NatWest/Gradcracker source.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "NatWest",
+        "address": "London, UK"
+      },
+      "summary": "A London watchlist entry for NatWest Insight Experiences for Women, useful for students looking at banking, markets, commercial banking, and technology/engineering streams.",
+      "interest_tags": [
+        "NatWest",
+        "women in finance",
+        "banking",
+        "spring insight",
+        "London",
+        "insight experience"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "varies by stream",
+        "estimated_hours": null
+      },
+      "reward": [
+        "banking insight",
+        "application preparation",
+        "networking"
+      ],
+      "best_for": [
+        "women interested in finance or technology",
+        "students comparing NatWest streams",
+        "students planning insight applications"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "women-focused finance/tech interest",
+          "same target bank",
+          "students comparing different streams"
+        ],
+        "prep_plan": [
+          "Choose target NatWest stream: commercial banking, markets, quantitative, technology, or engineering.",
+          "Confirm exact deadline and date on the final application page.",
+          "Prepare motivation and technical/commercial examples.",
+          "Peer-review applications before submitting."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Marked closed rather than open because Luma registration was closed at verification time."
+      },
+      "id": "uk-luma-student-tech-forum-2026-watchlist",
+      "title": "Student Tech Forum 2026 - London Watchlist",
+      "category": "networking_watchlist",
+      "source_platform": "Luma / London Venture Capital Network",
+      "source_url": "https://luma.com/itdtfx64",
+      "status": "registration_closed_watchlist",
+      "lifecycle_stage": "registration_closed",
+      "start_datetime": "2026-05-16T09:30:00+01:00",
+      "end_datetime": "2026-05-16T17:00:00+01:00",
+      "deadline_datetime": null,
+      "deadline_text": "Registration closed on Luma; keep as a watchlist pattern for future VC/student-tech editions.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "London",
+        "address": "London, UK"
+      },
+      "summary": "A London student-tech and venture networking forum for students, recent graduates, early-stage founders, and aspiring investors; included as a closed watchlist item for future editions.",
+      "interest_tags": [
+        "venture capital",
+        "startups",
+        "student founders",
+        "networking",
+        "tech",
+        "London"
+      ],
+      "difficulty": "easy",
+      "time_commitment": {
+        "label": "one day",
+        "estimated_hours": 7.5
+      },
+      "reward": [
+        "startup/VC network",
+        "founder and investor exposure",
+        "career discovery"
+      ],
+      "best_for": [
+        "student founders",
+        "aspiring investors",
+        "recent graduates interested in tech"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "startup/VC interest",
+          "students tracking future editions",
+          "founders and aspiring investors"
+        ],
+        "prep_plan": [
+          "Join organiser/community updates for future editions.",
+          "Prepare a founder/investor intro for similar events.",
+          "Track related LVCN and student-founder events.",
+          "Use this as a template for similar QuestBoard recommendations."
+        ]
+      }
+    },
+    {
+      "schema_type": "quest_card",
+      "country_focus": "United Kingdom",
+      "timezone": "Europe/London",
+      "visibility": "public",
+      "source_language": "en",
+      "verification": {
+        "checked_at": "2026-05-11",
+        "confidence": "high",
+        "notes": "Marked closed/watchlist because Luma registration was closed and event dates are in the past relative to 2026-05-11."
+      },
+      "id": "uk-luma-hacklondon-2026-watchlist",
+      "title": "HackLondon 2026 - UCL x King’s College London Watchlist",
+      "category": "hackathon_watchlist",
+      "source_platform": "Luma / HackLondon",
+      "source_url": "https://luma.com/8g6djbas",
+      "status": "registration_closed_watchlist",
+      "lifecycle_stage": "registration_closed",
+      "start_datetime": "2026-02-27T18:00:00+00:00",
+      "end_datetime": "2026-03-01T18:00:00+00:00",
+      "deadline_datetime": null,
+      "deadline_text": "Registration closed; included as a recurring university-hackathon signal rather than an open event.",
+      "location": {
+        "mode": "in_person",
+        "city": "London",
+        "region": "England",
+        "country": "UK",
+        "venue": "Bush House North Wing, King’s College London",
+        "address": "30 Aldwych, London WC2B 4BG, UK"
+      },
+      "summary": "The annual hackathon of UCL and King’s College London; included as a closed watchlist item for future campus hackathon cycles.",
+      "interest_tags": [
+        "hackathon",
+        "UCL",
+        "King's College London",
+        "student builders",
+        "London",
+        "MLH-style"
+      ],
+      "difficulty": "medium",
+      "time_commitment": {
+        "label": "24-hour hackathon",
+        "estimated_hours": 24
+      },
+      "reward": [
+        "student hackathon experience",
+        "portfolio project",
+        "campus tech network"
+      ],
+      "best_for": [
+        "London university students",
+        "student builders",
+        "hackathon beginners and experienced hackers"
+      ],
+      "quest_party": {
+        "recommended_party_size": "2-4",
+        "matching_criteria": [
+          "London campus hackathon interest",
+          "future UCL/KCL hackathon availability",
+          "coding/design/product mix"
+        ],
+        "prep_plan": [
+          "Follow HackLondon or university tech societies for the next cycle.",
+          "Start a reusable hackathon idea bank.",
+          "Build a mini-project before the next annual event.",
+          "Form a standing Quest Party for London university hackathons."
+        ]
+      }
+    }
+  ]
+}

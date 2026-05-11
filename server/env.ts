@@ -9,7 +9,7 @@ export function loadAppEnv() {
 
   const root = process.cwd();
   dotenv.config({
-    path: [path.join(root, ".env.local"), path.join(root, ".env")],
+    path: path.join(root, ".env.local"),
     override: false
   });
   appEnvLoaded = true;

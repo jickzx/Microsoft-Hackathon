@@ -5,6 +5,17 @@ import type { QuestCard } from "../src/types";
 
 const prisma = new PrismaClient();
 
+const legacyCampusDemoQuestIds = [
+  "quest-001",
+  "quest-002",
+  "quest-003",
+  "quest-004",
+  "quest-005",
+  "quest-006",
+  "quest-007",
+  "quest-008"
+];
+
 function json(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
@@ -117,10 +128,21 @@ async function seedQuestsAndSources() {
       create: data
     });
   }
+
+  await prisma.quest.updateMany({
+    where: {
+      id: { in: legacyCampusDemoQuestIds },
+      deletedAt: null
+    },
+    data: {
+      status: "expired",
+      deletedAt: new Date()
+    }
+  });
 }
 
 async function seedActions() {
-  for (const questId of ["quest-001", "quest-007"]) {
+  for (const questId of seedQuests.slice(0, 2).map((quest) => quest.id)) {
     await prisma.savedQuest.upsert({
       where: { studentId_questId: { studentId: currentStudent.id, questId } },
       update: {},
@@ -128,7 +150,7 @@ async function seedActions() {
     });
   }
 
-  for (const questId of ["quest-001", "quest-008"]) {
+  for (const questId of seedQuests.slice(0, 2).map((quest) => quest.id)) {
     await prisma.joinedQuest.upsert({
       where: { studentId_questId: { studentId: currentStudent.id, questId } },
       update: { status: "going" },

@@ -1,4 +1,5 @@
 import type { QuestCard, StudentProfile } from "../types";
+import { seedQuests as realSeedQuests } from "./realQuests";
 
 export const currentStudent: StudentProfile = {
   id: "student-you",
@@ -221,7 +222,7 @@ export const students: StudentProfile[] = [
   }
 ];
 
-export const seedQuests: QuestCard[] = [
+const campusDemoQuests: QuestCard[] = [
   {
     id: "quest-001",
     title: "AI Study Buddy Hack Night",
@@ -636,6 +637,10 @@ export const seedQuests: QuestCard[] = [
     updatedAt: "2026-05-08T09:21:00Z"
   }
 ];
+
+void campusDemoQuests;
+
+export const seedQuests: QuestCard[] = realSeedQuests;
 
 export const allInterests = [
   "ai",

@@ -1,4 +1,6 @@
 import { PrismaClient, type Prisma } from "@prisma/client";
+import "./env";
+import { currentStudent, seedQuests, students as seedStudents } from "../src/data/seed";
 import { recommendParties, scoreQuestForStudent } from "../src/lib/matching";
 import type {
   ExtractQuestMeta,
@@ -22,6 +24,17 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+const legacyCampusDemoQuestIds = [
+  "quest-001",
+  "quest-002",
+  "quest-003",
+  "quest-004",
+  "quest-005",
+  "quest-006",
+  "quest-007",
+  "quest-008"
+];
 
 function json(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
@@ -127,6 +140,40 @@ export function studentFromRecord(student: Prisma.StudentGetPayload<object>): St
   };
 }
 
+async function upsertSeedStudent(student: StudentProfile) {
+  await prisma.student.upsert({
+    where: { id: student.id },
+    update: {
+      name: student.name,
+      year: student.year,
+      major: student.major,
+      avatarUrl: student.avatarUrl,
+      interests: json(student.interests),
+      skills: json(student.skills),
+      wantsToBuildSkills: json(student.wantsToBuildSkills),
+      availability: json(student.availability),
+      preferences: json(student.preferences),
+      questCount: student.questCount,
+      communicationStyle: student.communicationStyle
+    },
+    create: {
+      id: student.id,
+      email: student.email ?? null,
+      name: student.name,
+      year: student.year,
+      major: student.major,
+      avatarUrl: student.avatarUrl,
+      interests: json(student.interests),
+      skills: json(student.skills),
+      wantsToBuildSkills: json(student.wantsToBuildSkills),
+      availability: json(student.availability),
+      preferences: json(student.preferences),
+      questCount: student.questCount,
+      communicationStyle: student.communicationStyle
+    }
+  });
+}
+
 function sourceCreateData(quest: QuestCard) {
   return {
     id: quest.source.id,
@@ -138,7 +185,7 @@ function sourceCreateData(quest: QuestCard) {
     fileSize: null,
     rawText: quest.source.rawText ?? null,
     extractionMeta: json({
-      provider: "azure",
+      provider: quest.aiExtraction.model.startsWith("azure") ? "azure" : "local",
       confidence: quest.aiExtraction.confidence,
       missingFields: quest.aiExtraction.missingFields
     }),
@@ -178,7 +225,116 @@ function questWriteData(quest: QuestCard) {
 }
 
 export async function ensureDatabaseSeeded() {
-  await prisma.student.count();
+  const questCount = await prisma.quest.count();
+
+  for (const student of seedStudents) {
+    await upsertSeedStudent(student);
+  }
+
+  for (const quest of seedQuests) {
+    await prisma.questSource.upsert({
+      where: { id: quest.source.id },
+      update: sourceCreateData(quest),
+      create: sourceCreateData(quest)
+    });
+
+    const data = {
+      ...questWriteData(quest),
+      deletedAt: null
+    };
+    await prisma.quest.upsert({
+      where: { id: quest.id },
+      update: data,
+      create: data
+    });
+  }
+
+  await prisma.quest.updateMany({
+    where: {
+      id: { in: legacyCampusDemoQuestIds },
+      deletedAt: null
+    },
+    data: {
+      status: "expired",
+      deletedAt: new Date()
+    }
+  });
+
+  if (questCount > 0) return;
+
+  for (const questId of seedQuests.slice(0, 2).map((quest) => quest.id)) {
+    await prisma.savedQuest.upsert({
+      where: { studentId_questId: { studentId: currentStudent.id, questId } },
+      update: {},
+      create: { studentId: currentStudent.id, questId }
+    });
+  }
+
+  for (const questId of seedQuests.slice(0, 2).map((quest) => quest.id)) {
+    await prisma.joinedQuest.upsert({
+      where: { studentId_questId: { studentId: currentStudent.id, questId } },
+      update: { status: "going" },
+      create: { studentId: currentStudent.id, questId, status: "going" }
+    });
+  }
+
+  for (const quest of seedQuests.filter((candidate) => candidate.party.allowed).slice(0, 2)) {
+    const recommendation = recommendParties(quest, seedStudents, currentStudent.id)[0];
+    if (!recommendation) continue;
+
+    const partyId = `party-${quest.id}`;
+    await prisma.questParty.upsert({
+      where: { id: partyId },
+      update: {
+        status: "forming",
+        matchScore: recommendation.total,
+        reasons: json(recommendation.reasons)
+      },
+      create: {
+        id: partyId,
+        questId: quest.id,
+        creatorId: currentStudent.id,
+        status: "forming",
+        matchScore: recommendation.total,
+        reasons: json(recommendation.reasons)
+      }
+    });
+
+    for (const memberId of recommendation.memberIds) {
+      await prisma.partyMember.upsert({
+        where: { partyId_studentId: { partyId, studentId: memberId } },
+        update: { status: "joined" },
+        create: {
+          partyId,
+          studentId: memberId,
+          fitScore: null,
+          status: "joined"
+        }
+      });
+    }
+
+    for (const item of recommendation.prepPlan) {
+      await prisma.prepPlanItem.upsert({
+        where: { id: `${partyId}-${item.id}` },
+        update: {
+          title: item.title,
+          ownerUserId: item.ownerUserId ?? null,
+          dueAt: dateOrNull(item.dueAt),
+          type: item.type,
+          done: item.done
+        },
+        create: {
+          id: `${partyId}-${item.id}`,
+          partyId,
+          title: item.title,
+          ownerUserId: item.ownerUserId ?? null,
+          dueAt: dateOrNull(item.dueAt),
+          type: item.type,
+          done: item.done
+        }
+      });
+    }
+  }
 }
 
 export async function listStudents() {
