@@ -2,6 +2,8 @@ node_modules
 dist
 .env
 .env.local
+.env.*
+!.env.example
 .playwright-cli
 .playwright-mcp
 .dev-server.*.log
@@ -10,3 +12,5 @@ dist
 .DS_Store
 npm-debug.log*
 token_local.js
+.venv/
+__pycache__/
