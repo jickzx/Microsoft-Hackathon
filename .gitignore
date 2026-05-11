@@ -1,2 +1,7 @@
 token_local.js
 .DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
