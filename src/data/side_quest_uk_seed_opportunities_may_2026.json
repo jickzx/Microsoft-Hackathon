@@ -1,16 +1,16 @@
 {
   "metadata": {
     "schema_version": "1.0",
-    "dataset_name": "questboard_uk_seed_opportunities_may_2026",
+    "dataset_name": "side_quest_uk_seed_opportunities_may_2026",
     "generated_at": "2026-05-11T12:00:00+01:00",
     "focus_region": "United Kingdom",
-    "created_for": "QuestBoard seed import",
+    "created_for": "Side Quest seed import",
     "description": "UK-focused real opportunities/events formatted as Quest Cards for a campus discovery app. Includes hackathons, networking events, insight programmes, internships, careers events, and deadline trackers.",
     "record_count": 38,
     "status_legend": {
       "open": "Source appeared to be accepting registrations/applications or listing tickets at verification time.",
       "watchlist": "Useful tracker or opportunity family; exact next dates/deadlines should be monitored.",
-      "registration_closed_watchlist": "Closed/past item retained only as a recurring/event-pattern signal for future QuestBoard recommendations."
+      "registration_closed_watchlist": "Closed/past item retained only as a recurring/event-pattern signal for future Side Quest recommendations."
     },
     "difficulty_scale": {
       "easy": "Low barrier: networking, webinar, careers fair, or light application.",
@@ -383,7 +383,7 @@
           "Bring a laptop and one use case you want to automate.",
           "Install any required tools listed by the organiser.",
           "Prepare one question about AI product safety or deployment.",
-          "After the meetup, turn the idea into a mini QuestBoard project card."
+          "After the meetup, turn the idea into a mini Side Quest project card."
         ]
       }
     },
@@ -666,7 +666,7 @@
           "Each person chooses one speaker/session to research beforehand.",
           "Prepare two questions about frontier AI risk, capabilities, or careers.",
           "Plan a lunch/coffee debrief to compare notes.",
-          "Turn the best insight into a QuestBoard post for your campus."
+          "Turn the best insight into a Side Quest post for your campus."
         ]
       }
     },
@@ -2626,7 +2626,7 @@
           "Join organiser/community updates for future editions.",
           "Prepare a founder/investor intro for similar events.",
           "Track related LVCN and student-founder events.",
-          "Use this as a template for similar QuestBoard recommendations."
+          "Use this as a template for similar Side Quest recommendations."
         ]
       }
     },

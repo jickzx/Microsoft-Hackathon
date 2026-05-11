@@ -650,7 +650,7 @@ async function start() {
   }
 
   server.listen(port, () => {
-    console.log(`QuestBoard running on http://localhost:${port}`);
+    console.log(`Side Quest running on http://localhost:${port}`);
   });
 }
 

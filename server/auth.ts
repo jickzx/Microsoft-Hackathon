@@ -3,7 +3,7 @@ import type { Response } from "express";
 import { prisma, studentFromRecord } from "./db";
 import type { StudentProfile } from "../src/types";
 
-const sessionCookieName = "questboard_session";
+const sessionCookieName = "side_quest_session";
 const sessionDays = 14;
 
 function normalizeEmail(email: string) {

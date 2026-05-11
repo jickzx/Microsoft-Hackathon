@@ -132,7 +132,7 @@ function joinUrl(base: string, route: string) {
 
 function buildPrompt(quests: QuestCard[], student: StudentProfile) {
   return [
-    "You are QuestBoard's side quest matching engine.",
+    "You are Side Quest's side quest matching engine.",
     "Rank campus opportunities for a student using their interests, skills, preferred rewards, availability, location modes, and appetite for difficulty.",
     "Score exact interests highly, but also credit adjacent interests and skills the student wants to build.",
     "Keep reasons short, practical, and student-facing.",
@@ -292,7 +292,7 @@ async function matchWithCustomAzure(quests: QuestCard[], student: StudentProfile
       ];
   const body = {
     task: "match-side-quests",
-    schema: "questboard.match.v1",
+    schema: "side-quest.match.v1",
     prompt: buildPrompt(quests, student),
     student: compactStudent(student),
     quests: quests.map(compactQuest)

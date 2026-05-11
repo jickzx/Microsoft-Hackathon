@@ -113,7 +113,7 @@ function buildPrompt(
   limit: number
 ) {
   return [
-    "You are QuestBoard's event attendee matchmaking engine.",
+    "You are Side Quest's event attendee matchmaking engine.",
     "Match one event attendee with the strongest people to meet at the same event.",
     "Use only profile details the attendees entered: name, role, work experience, highest education, course or job title, career interests, skills, goals, and hobbies.",
     "Prioritize useful introductions: shared career direction, complementary skills, compatible goals, relevant experience gaps for mentoring, and natural hobby icebreakers.",

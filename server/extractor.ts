@@ -517,7 +517,7 @@ async function scrapeEventPage(url: string) {
       signal: controller.signal,
       headers: {
         Accept: "text/html, text/plain;q=0.9, */*;q=0.5",
-        "User-Agent": "QuestBoard event extractor"
+        "User-Agent": "Side Quest event extractor"
       }
     });
 
@@ -604,7 +604,7 @@ function extractUrlsFromText(text: string) {
 
 function imageContextPrompt(input: ExtractQuestRequest) {
   return [
-    "Inspect this uploaded campus event image, poster, or screenshot before QuestBoard extracts the final marketplace card.",
+    "Inspect this uploaded campus event image, poster, or screenshot before Side Quest extracts the final marketplace card.",
     "Return JSON only with this shape:",
     '{ "visibleText": "all readable poster text", "urls": ["https://..."], "emails": ["name@example.edu"], "eventHints": { "title": "", "organizer": "", "date": "", "time": "", "location": "", "applyUrl": "", "contact": "" } }',
     "Capture every readable title, organizer, date, time, location, price/reward, eligibility note, sponsor, registration instruction, URL, email, QR label, and social handle.",
@@ -680,7 +680,7 @@ async function inspectImageWithAzure(input: ExtractQuestRequest) {
         {
           role: "system",
           content:
-            "You are an Azure vision extraction pass for QuestBoard. Respond with valid JSON only."
+            "You are an Azure vision extraction pass for Side Quest. Respond with valid JSON only."
         },
         {
           role: "user",
@@ -1183,7 +1183,7 @@ function buildPrompt(input: ExtractQuestRequest) {
   const now = new Date();
 
   return [
-    "You are QuestBoard's extraction engine.",
+    "You are Side Quest's extraction engine.",
     "Extract campus opportunities from messy student-submitted material.",
     "Clean the result into practical, social, student-facing quest cards.",
     "Only create cards for campus events, gigs, projects, challenges, volunteering, club activities, research opportunities, or student competitions.",
@@ -1269,7 +1269,7 @@ async function extractWithAzureOpenAI(input: ExtractQuestRequest, endpoint: stri
         {
           role: "system",
           content:
-            "You extract campus opportunity details into QuestBoard cards. Respond with valid JSON only."
+            "You extract campus opportunity details into Side Quest cards. Respond with valid JSON only."
         },
         {
           role: "user",
@@ -1297,7 +1297,7 @@ async function extractWithCustomAzure(input: ExtractQuestRequest, endpoint: stri
     : ["", "/api/extract", "/api/quest/extract", "/api/chat/completions", "/v1/chat/completions"];
   const body = {
     task: "extract-campus-quest",
-    schema: "questboard.v1",
+    schema: "side-quest.v1",
     prompt: buildPrompt(input),
     sourceType: input.sourceType,
     text: input.text,
@@ -1441,7 +1441,7 @@ async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
         endpointHost,
         deploymentConfigured,
         routeConfigured,
-        detail: "Azure OpenAI chat completion returned parseable QuestBoard JSON.",
+        detail: "Azure OpenAI chat completion returned parseable Side Quest JSON.",
         checkedAt
       };
     } catch (error) {
@@ -1528,7 +1528,7 @@ async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
       endpointHost,
       deploymentConfigured,
       routeConfigured,
-      detail: "Custom Azure endpoint returned parseable QuestBoard JSON.",
+      detail: "Custom Azure endpoint returned parseable Side Quest JSON.",
       checkedAt
     };
   } catch (error) {

@@ -1,9 +1,9 @@
-import rawQuestboardData from "./questboard_uk_seed_opportunities_may_2026.json";
+import rawSideQuestData from "./side_quest_uk_seed_opportunities_may_2026.json";
 import type { InterestTag, QuestCard, QuestMode, RewardType, SkillTag } from "../types";
 
-type SeedQuest = (typeof rawQuestboardData.quests)[number];
+type SeedQuest = (typeof rawSideQuestData.quests)[number];
 
-const generatedAt = rawQuestboardData.metadata.generated_at;
+const generatedAt = rawSideQuestData.metadata.generated_at;
 
 const categoryImages: Record<string, string> = {
   hackathon:
@@ -234,7 +234,7 @@ function toQuestCard(quest: SeedQuest, index: number): QuestCard {
         ...(quest.end_datetime ? [] : ["eventEnd"])
       ],
       extractedAt: `${quest.verification.checked_at}T12:00:00.000Z`,
-      model: "questboard-real-seed-import"
+      model: "side-quest-real-seed-import"
     },
     stats: questStats(index, quest),
     createdAt,
@@ -242,4 +242,4 @@ function toQuestCard(quest: SeedQuest, index: number): QuestCard {
   };
 }
 
-export const seedQuests: QuestCard[] = rawQuestboardData.quests.map(toQuestCard);
+export const seedQuests: QuestCard[] = rawSideQuestData.quests.map(toQuestCard);

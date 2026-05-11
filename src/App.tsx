@@ -635,7 +635,7 @@ function LoadingScreen() {
   return (
     <main className="loading-screen">
       <Loader2 className="spin" size={28} />
-      <strong>Loading QuestBoard</strong>
+      <strong>Loading Side Quest</strong>
     </main>
   );
 }
@@ -728,15 +728,15 @@ function AuthPage({
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" aria-label="QuestBoard welcome">
+      <section className="auth-visual" aria-label="Side Quest welcome">
         <div className="auth-brandline">
           <span className="brand-mark">
             <Compass size={18} />
           </span>
-          <strong>QuestBoard</strong>
+          <strong>Side Quest</strong>
         </div>
         <div className="auth-visual-copy">
-          <h1>QuestBoard</h1>
+          <h1>Side Quest</h1>
         </div>
         <div className="auth-profile-preview">
           <div>
@@ -932,7 +932,7 @@ function TopNav({
         <span className="brand-mark">
           <Compass size={18} />
         </span>
-        <strong>QuestBoard</strong>
+        <strong>Side Quest</strong>
       </button>
       <nav className="nav-tabs" aria-label="Primary navigation">
         {navItems.map((item) => {

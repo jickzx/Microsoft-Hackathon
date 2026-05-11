@@ -160,7 +160,7 @@ function importGuidance(source: VerifiedSource) {
   return [
     "Verified source import instructions:",
     source.note,
-    "Create QuestBoard cards only for real, explicitly supported opportunities from the linked source.",
+    "Create Side Quest cards only for real, explicitly supported opportunities from the linked source.",
     "Do not create sample, placeholder, related, or inferred opportunities.",
     "Do not import opportunities that have already closed or happened before the current date.",
     "Preserve concrete names, dates, locations, organizers, and application links from the source.",
