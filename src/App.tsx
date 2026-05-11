@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import {
   Award,
   Bell,
@@ -36,13 +36,25 @@ import {
   Zap,
   X
 } from "lucide-react";
-import { currentStudent, seedQuests, students } from "./data/seed";
-import { daysUntil, formatDeadline, formatLocation, formatTimeCommitment, labelize } from "./lib/format";
-import { recommendParties, scoreQuestForStudent } from "./lib/matching";
+import { currentStudent, seedQuests, students as seedStudents } from "./data/seed";
+import {
+  daysUntil,
+  formatDeadline,
+  formatLocation,
+  formatTimeCommitment,
+  labelize
+} from "./lib/format";
+import { scoreQuestForStudent } from "./lib/matching";
 import type {
+  AzureConnectionHealth,
+  ExtractQuestMeta,
   ExtractQuestResponse,
-  PartyCandidateScore,
+  MatchRecommendationMeta,
+  MatchRecommendationResponse,
+  PrepPlanItem,
   QuestCard,
+  QuestMatchBreakdown,
+  QuestParty,
   QuestSourceType,
   StudentProfile
 } from "./types";
@@ -50,6 +62,22 @@ import type {
 type Page = "home" | "explore" | "submit" | "parties" | "profile";
 type QuickFilter = "Trending" | "New" | "Ending Soon" | "For You";
 type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file";
+
+interface UserState {
+  savedQuestIds: string[];
+  joinedQuestIds: string[];
+  joinedQuestStatuses: Record<string, string>;
+  parties: PersistedParty[];
+}
+
+interface PersistedParty extends QuestParty {
+  quest: QuestCard;
+  members: StudentProfile[];
+}
+
+interface ExtractMetaWithSource extends ExtractQuestMeta {
+  sourceId?: string;
+}
 
 const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
   { page: "home", label: "Home", icon: HomeIcon },
@@ -78,11 +106,11 @@ const submitMethods: {
   label: string;
   description: string;
 }[] = [
-  { id: "link", icon: Globe2, label: "Paste a Link", description: "URL from any website" },
-  { id: "photo", icon: Camera, label: "Take a Photo", description: "Poster, noticeboard, flyer" },
-  { id: "screenshot", icon: ImageIcon, label: "Upload Image", description: "Screenshot or photo" },
-  { id: "text", icon: MessageCircle, label: "Paste Text", description: "WhatsApp, email, etc." },
-  { id: "file", icon: FileText, label: "Upload File", description: "PDF, doc, or email" }
+  { id: "link", icon: Globe2, label: "Paste a Link", description: "Store URL as source" },
+  { id: "photo", icon: Camera, label: "Take a Photo", description: "Poster or noticeboard" },
+  { id: "screenshot", icon: ImageIcon, label: "Upload Image", description: "Screenshot or flyer" },
+  { id: "text", icon: MessageCircle, label: "Paste Text", description: "Email, chat, caption" },
+  { id: "file", icon: FileText, label: "Upload File", description: "PDF, doc, or note" }
 ];
 
 const badgeItems = [
@@ -93,42 +121,255 @@ const badgeItems = [
 ];
 
 const profileMenu = [
-  { icon: Bookmark, label: "Saved Quests", count: 8 },
+  { icon: Bookmark, label: "Saved Quests", count: 0 },
   { icon: History, label: "Quest History", count: 12 },
-  { icon: Users, label: "My Parties", count: 2 },
+  { icon: Users, label: "My Parties", count: 0 },
   { icon: Settings, label: "Settings" }
 ];
 
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+  const data = response.status === 204 ? null : await response.json().catch(() => null);
+  if (!response.ok) {
+    const payload = data as { error?: string; details?: string[] } | null;
+    throw new Error(payload?.details?.join(", ") ?? payload?.error ?? "Request failed");
+  }
+  return data as T;
+}
+
 function App() {
   const [quests, setQuests] = useState<QuestCard[]>(seedQuests);
+  const [users, setUsers] = useState<StudentProfile[]>(seedStudents);
+  const [currentUserId, setCurrentUserId] = useState(currentStudent.id);
   const [activePage, setActivePage] = useState<Page>("home");
   const [selectedQuest, setSelectedQuest] = useState<QuestCard | null>(null);
-  const [savedQuestIds, setSavedQuestIds] = useState(() => new Set<string>(["quest-001", "quest-007"]));
+  const [savedQuestIds, setSavedQuestIds] = useState<Set<string>>(() => new Set());
+  const [joinedQuestIds, setJoinedQuestIds] = useState<Set<string>>(() => new Set());
+  const [parties, setParties] = useState<PersistedParty[]>([]);
+  const [azureHealth, setAzureHealth] = useState<AzureConnectionHealth | null>(null);
+  const [remoteMatches, setRemoteMatches] = useState<Record<string, QuestMatchBreakdown>>({});
+  const [matchMeta, setMatchMeta] = useState<MatchRecommendationMeta | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/quests")
-      .then((response) => response.json())
-      .then((data: { quests?: QuestCard[] }) => {
-        if (data.quests?.length) setQuests(data.quests);
-      })
-      .catch(() => setQuests(seedQuests));
-  }, []);
+  const activeStudent =
+    users.find((student) => student.id === currentUserId) ??
+    seedStudents.find((student) => student.id === currentUserId) ??
+    currentStudent;
 
-  const questMatches = useMemo(
+  const localQuestMatches = useMemo(
     () =>
       Object.fromEntries(
-        quests.map((quest) => [quest.id, scoreQuestForStudent(quest, currentStudent)])
-      ) as Record<string, ReturnType<typeof scoreQuestForStudent>>,
-    [quests]
+        quests.map((quest) => [quest.id, scoreQuestForStudent(quest, activeStudent)])
+      ) as Record<string, QuestMatchBreakdown>,
+    [activeStudent, quests]
   );
 
-  function toggleSaved(questId: string) {
+  const questMatches = useMemo(
+    () => ({ ...localQuestMatches, ...remoteMatches }),
+    [localQuestMatches, remoteMatches]
+  );
+
+  async function refreshQuests() {
+    const data = await fetchJson<{ quests: QuestCard[] }>("/api/quests");
+    setQuests(data.quests);
+    setSelectedQuest((current) =>
+      current ? data.quests.find((quest) => quest.id === current.id) ?? null : null
+    );
+  }
+
+  async function refreshUserState(userId = currentUserId) {
+    const state = await fetchJson<UserState>(`/api/users/${userId}/state`);
+    setSavedQuestIds(new Set(state.savedQuestIds));
+    setJoinedQuestIds(new Set(state.joinedQuestIds));
+    setParties(state.parties);
+  }
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetchJson<{ users: StudentProfile[]; currentUserId: string }>("/api/users"),
+      fetchJson<{ quests: QuestCard[] }>("/api/quests"),
+      fetchJson<AzureConnectionHealth>("/api/azure/health").catch(() => null)
+    ])
+      .then(([userData, questData, health]) => {
+        if (!active) return;
+        setUsers(userData.users.length ? userData.users : seedStudents);
+        setCurrentUserId(userData.currentUserId);
+        setQuests(questData.quests.length ? questData.quests : seedQuests);
+        setAzureHealth(health);
+      })
+      .catch(() => {
+        if (!active) return;
+        setUsers(seedStudents);
+        setQuests(seedQuests);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchJson<UserState>(`/api/users/${currentUserId}/state`)
+      .then((state) => {
+        if (!active) return;
+        setSavedQuestIds(new Set(state.savedQuestIds));
+        setJoinedQuestIds(new Set(state.joinedQuestIds));
+        setParties(state.parties);
+      })
+      .catch(() => {
+        if (!active) return;
+        setSavedQuestIds(new Set(["quest-001", "quest-007"]));
+        setJoinedQuestIds(new Set());
+        setParties([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!quests.length) return undefined;
+    let active = true;
+
+    fetchJson<MatchRecommendationResponse>("/api/matches/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentId: currentUserId,
+        questIds: quests.map((quest) => quest.id)
+      })
+    })
+      .then((data) => {
+        if (!active) return;
+        setRemoteMatches(
+          Object.fromEntries(data.matches.map((match) => [match.questId, match])) as Record<
+            string,
+            QuestMatchBreakdown
+          >
+        );
+        setMatchMeta(data.meta);
+      })
+      .catch(() => {
+        if (!active) return;
+        setRemoteMatches({});
+        setMatchMeta(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUserId, quests]);
+
+  async function toggleSaved(questId: string) {
+    const saved = savedQuestIds.has(questId);
     setSavedQuestIds((current) => {
       const next = new Set(current);
-      if (next.has(questId)) next.delete(questId);
+      if (saved) next.delete(questId);
       else next.add(questId);
       return next;
     });
+
+    try {
+      await fetchJson<UserState>(`/api/users/${currentUserId}/saved-quests/${questId}`, {
+        method: saved ? "DELETE" : "POST"
+      });
+      await Promise.all([refreshUserState(), refreshQuests()]);
+    } catch {
+      setSavedQuestIds((current) => {
+        const next = new Set(current);
+        if (saved) next.add(questId);
+        else next.delete(questId);
+        return next;
+      });
+    }
+  }
+
+  async function toggleJoined(questId: string) {
+    const joined = joinedQuestIds.has(questId);
+    setJoinedQuestIds((current) => {
+      const next = new Set(current);
+      if (joined) next.delete(questId);
+      else next.add(questId);
+      return next;
+    });
+
+    try {
+      await fetchJson<UserState>(`/api/users/${currentUserId}/joined-quests/${questId}`, {
+        method: joined ? "DELETE" : "POST"
+      });
+      await Promise.all([refreshUserState(), refreshQuests()]);
+    } catch {
+      setJoinedQuestIds((current) => {
+        const next = new Set(current);
+        if (joined) next.add(questId);
+        else next.delete(questId);
+        return next;
+      });
+    }
+  }
+
+  async function publishQuest(quest: QuestCard) {
+    setQuests((current) => [quest, ...current.filter((item) => item.id !== quest.id)]);
+    await refreshQuests();
+    setSelectedQuest(null);
+    setActivePage("explore");
+  }
+
+  async function updateQuestCard(quest: QuestCard) {
+    const data = await fetchJson<{ quest: QuestCard }>(`/api/quests/${quest.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quest)
+    });
+    setQuests((current) => current.map((item) => (item.id === data.quest.id ? data.quest : item)));
+    setSelectedQuest(data.quest);
+  }
+
+  async function deleteQuestCard(questId: string) {
+    await fetch(`/api/quests/${questId}`, { method: "DELETE" });
+    setQuests((current) => current.filter((quest) => quest.id !== questId));
+    setSelectedQuest(null);
+  }
+
+  async function createParty(questId: string) {
+    const data = await fetchJson<{ party: PersistedParty }>("/api/parties", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questId, studentId: currentUserId })
+    });
+    setParties((current) => [data.party, ...current.filter((party) => party.id !== data.party.id)]);
+    setJoinedQuestIds((current) => new Set([...current, questId]));
+    setActivePage("parties");
+  }
+
+  async function togglePrepItem(partyId: string, item: PrepPlanItem) {
+    const data = await fetchJson<{ item: PrepPlanItem }>(
+      `/api/parties/${partyId}/prep/${item.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: !item.done })
+      }
+    );
+    setParties((current) =>
+      current.map((party) =>
+        party.id === partyId
+          ? {
+              ...party,
+              prepPlan: party.prepPlan.map((candidate) =>
+                candidate.id === item.id ? data.item : candidate
+              )
+            }
+          : party
+      )
+    );
   }
 
   function showPage(page: Page) {
@@ -136,31 +377,32 @@ function App() {
     setActivePage(page);
   }
 
-  function publishQuest(quest: QuestCard) {
-    setQuests((current) => [quest, ...current.filter((item) => item.id !== quest.id)]);
-    setSelectedQuest(null);
-    setActivePage("explore");
-  }
-
   const page = selectedQuest ? (
     <QuestDetailPage
+      key={selectedQuest.id}
       quest={selectedQuest}
+      student={activeStudent}
       saved={savedQuestIds.has(selectedQuest.id)}
-      matchScore={questMatches[selectedQuest.id]?.total ?? 0}
+      joined={joinedQuestIds.has(selectedQuest.id)}
+      match={questMatches[selectedQuest.id]}
+      matchMeta={matchMeta}
       onBack={() => setSelectedQuest(null)}
       onSave={() => toggleSaved(selectedQuest.id)}
-      onParty={() => {
-        setSelectedQuest(null);
-        setActivePage("parties");
-      }}
+      onJoin={() => toggleJoined(selectedQuest.id)}
+      onParty={() => createParty(selectedQuest.id)}
+      onUpdate={updateQuestCard}
+      onDelete={() => deleteQuestCard(selectedQuest.id)}
     />
   ) : (
     <>
       {activePage === "home" ? (
         <HomePage
           quests={quests}
+          student={activeStudent}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
+          matchProvider={matchMeta?.provider ?? "local"}
+          loading={loading}
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
           onExplore={() => showPage("explore")}
@@ -175,32 +417,73 @@ function App() {
           onSelectQuest={setSelectedQuest}
         />
       ) : null}
-      {activePage === "submit" ? <SubmitQuestPage onPublish={publishQuest} /> : null}
+      {activePage === "submit" ? (
+        <SubmitQuestPage azureHealth={azureHealth} onPublish={publishQuest} />
+      ) : null}
       {activePage === "parties" ? (
-        <PartiesPage quests={quests} onSelectQuest={setSelectedQuest} />
+        <PartiesPage
+          quests={quests}
+          parties={parties}
+          students={users}
+          currentUserId={currentUserId}
+          onCreateParty={createParty}
+          onTogglePrep={togglePrepItem}
+          onSelectQuest={setSelectedQuest}
+        />
       ) : null}
       {activePage === "profile" ? (
-        <ProfilePage quests={quests} savedCount={savedQuestIds.size} onSelectQuest={setSelectedQuest} />
+        <ProfilePage
+          quests={quests}
+          student={activeStudent}
+          savedCount={savedQuestIds.size}
+          partyCount={parties.length}
+          onSelectQuest={setSelectedQuest}
+        />
       ) : null}
     </>
   );
 
   return (
     <div className="app-frame">
-      <TopNav activePage={activePage} onNavigate={showPage} />
+      <TopNav
+        activePage={activePage}
+        users={users}
+        currentUserId={currentUserId}
+        azureHealth={azureHealth}
+        onNavigate={showPage}
+        onUserChange={setCurrentUserId}
+      />
       <main className="app-main">{page}</main>
     </div>
   );
 }
 
-function TopNav({ activePage, onNavigate }: { activePage: Page; onNavigate: (page: Page) => void }) {
+function TopNav({
+  activePage,
+  users,
+  currentUserId,
+  azureHealth,
+  onNavigate,
+  onUserChange
+}: {
+  activePage: Page;
+  users: StudentProfile[];
+  currentUserId: string;
+  azureHealth: AzureConnectionHealth | null;
+  onNavigate: (page: Page) => void;
+  onUserChange: (userId: string) => void;
+}) {
+  const user = users.find((student) => student.id === currentUserId) ?? currentStudent;
+  const azureLabel =
+    azureHealth?.status === "ready" ? "Azure Ready" : azureHealth?.reachable ? "Azure Setup" : "Local AI";
+
   return (
     <header className="topbar">
       <button className="brand" type="button" onClick={() => onNavigate("home")}>
         <span className="brand-mark">
           <Compass size={18} />
         </span>
-        <strong>YouQuest</strong>
+        <strong>QuestBoard</strong>
       </button>
       <nav className="nav-tabs" aria-label="Primary navigation">
         {navItems.map((item) => {
@@ -220,10 +503,22 @@ function TopNav({ activePage, onNavigate }: { activePage: Page; onNavigate: (pag
       </nav>
       <div className="profile-actions">
         <span className="xp-pill">
-          1,240 XP
-          <strong>7</strong>
+          {azureLabel}
+          <strong>{azureHealth?.status === "ready" ? "AI" : "DB"}</strong>
         </span>
-        <img src={currentStudent.avatarUrl} alt={`${currentStudent.name} avatar`} />
+        <select
+          aria-label="Current student"
+          className="student-select"
+          value={currentUserId}
+          onChange={(event) => onUserChange(event.target.value)}
+        >
+          {users.map((student) => (
+            <option key={student.id} value={student.id}>
+              {student.name}
+            </option>
+          ))}
+        </select>
+        <img src={user.avatarUrl} alt={`${user.name} avatar`} />
       </div>
     </header>
   );
@@ -231,15 +526,21 @@ function TopNav({ activePage, onNavigate }: { activePage: Page; onNavigate: (pag
 
 function HomePage({
   quests,
+  student,
   questMatches,
   savedQuestIds,
+  matchProvider,
+  loading,
   onSave,
   onSelectQuest,
   onExplore
 }: {
   quests: QuestCard[];
-  questMatches: Record<string, ReturnType<typeof scoreQuestForStudent>>;
+  student: StudentProfile;
+  questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
+  matchProvider: "azure" | "local";
+  loading: boolean;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
   onExplore: () => void;
@@ -264,8 +565,10 @@ function HomePage({
     <section className="page-shell">
       <div className="home-header">
         <div>
-          <h1>Hey {currentStudent.name.split(" ")[0]}</h1>
-          <p>{quests.length} quests live on campus right now</p>
+          <h1>Hey {student.name.split(" ")[0]}</h1>
+          <p>
+            {loading ? "Loading campus quests..." : `${quests.length} persistent quests live on campus`}
+          </p>
         </div>
         <div className="home-actions">
           <button className="icon-button" type="button" onClick={() => setSearchOpen((value) => !value)}>
@@ -278,9 +581,10 @@ function HomePage({
       </div>
 
       {searchOpen ? (
-        <label className="wide-search">
+        <div className="wide-search" role="search">
           <Search size={17} />
           <input
+            aria-label="Search quests"
             autoFocus
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -291,11 +595,11 @@ function HomePage({
               <X size={16} />
             </button>
           ) : null}
-        </label>
+        </div>
       ) : null}
 
       <div className="stat-grid">
-        <StatCard icon={Sparkles} tone="violet" label="For You" value={recommendedCount} detail="matched quests" />
+        <StatCard icon={Sparkles} tone="violet" label={matchProvider === "azure" ? "Azure Match" : "Local Match"} value={recommendedCount} detail="personalized quests" />
         <StatCard
           icon={Flame}
           tone="coral"
@@ -341,7 +645,7 @@ function ExplorePage({
   onSelectQuest
 }: {
   quests: QuestCard[];
-  questMatches: Record<string, ReturnType<typeof scoreQuestForStudent>>;
+  questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
@@ -371,16 +675,17 @@ function ExplorePage({
       <div className="section-header">
         <div>
           <h1>Explore Quests</h1>
-          <p>{filtered.length} quests available</p>
+          <p>{filtered.length} database-backed quests available</p>
         </div>
         <button className="icon-button" type="button" aria-label="Grid view">
           <Grid3X3 size={18} />
         </button>
       </div>
 
-      <label className="wide-search explore-search">
+      <div className="wide-search explore-search" role="search">
         <Search size={17} />
         <input
+          aria-label="Search quests"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search by name, topic, or keyword..."
@@ -393,16 +698,11 @@ function ExplorePage({
         >
           <Settings size={16} />
         </button>
-      </label>
+      </div>
 
       {showFilters ? (
         <div className="advanced-filters">
-          <FilterGroup
-            label="Category"
-            options={browseFilters}
-            value={category}
-            onChange={setCategory}
-          />
+          <FilterGroup label="Category" options={browseFilters} value={category} onChange={setCategory} />
           <FilterGroup
             label="Difficulty"
             options={[
@@ -440,7 +740,13 @@ function ExplorePage({
   );
 }
 
-function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void }) {
+function SubmitQuestPage({
+  azureHealth,
+  onPublish
+}: {
+  azureHealth: AzureConnectionHealth | null;
+  onPublish: (quest: QuestCard) => void;
+}) {
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState<SubmitMethodId | null>(null);
   const [input, setInput] = useState("");
@@ -448,9 +754,11 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
   const [processing, setProcessing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [extracted, setExtracted] = useState<QuestCard | null>(null);
+  const [extractionMeta, setExtractionMeta] = useState<ExtractMetaWithSource | null>(null);
   const [error, setError] = useState("");
 
   const canProcess = Boolean(method && ((method === "link" || method === "text") ? input.trim() : file));
+  const azureReady = azureHealth?.status === "ready";
 
   async function handleExtract() {
     if (!method || !canProcess) return;
@@ -465,12 +773,13 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
     if (file) body.append("file", file);
 
     try {
-      const response = await fetch("/api/extract", { method: "POST", body });
-      const data = (await response.json()) as ExtractQuestResponse & { error?: string; details?: string[] };
-      if (!response.ok || !data.cards?.[0]) {
-        throw new Error(data.details?.join(", ") ?? data.error ?? "Extraction failed");
-      }
+      const data = await fetchJson<ExtractQuestResponse & { meta: ExtractMetaWithSource }>(
+        "/api/extract",
+        { method: "POST", body }
+      );
+      if (!data.cards?.[0]) throw new Error("Extraction returned no quest cards");
       setExtracted(data.cards[0]);
+      setExtractionMeta(data.meta);
       setStep(3);
     } catch (extractError) {
       setError(extractError instanceof Error ? extractError.message : "Extraction failed");
@@ -486,16 +795,12 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
     const draft = { ...extracted, status: "published" as const, updatedAt: new Date().toISOString() };
 
     try {
-      const response = await fetch("/api/quests", {
+      const data = await fetchJson<{ quest: QuestCard }>("/api/quests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft)
       });
-      const data = (await response.json().catch(() => ({}))) as { quest?: QuestCard; error?: string; details?: string[] };
-      if (!response.ok) {
-        throw new Error(data.details?.join(", ") ?? data.error ?? "Publish failed");
-      }
-      onPublish(data.quest ?? draft);
+      onPublish(data.quest);
     } catch (publishError) {
       setError(publishError instanceof Error ? publishError.message : "Publish failed");
     } finally {
@@ -508,9 +813,17 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
       <div className="section-header submit-heading">
         <div>
           <h1>Submit a Quest</h1>
-          <p>Paste anything - AI extracts the details</p>
+          <p>Upload messy material, review the AI card, then publish to the live board.</p>
         </div>
       </div>
+
+      <section className={azureReady ? "ai-status-card ready" : "ai-status-card"}>
+        <Sparkles size={18} />
+        <span>
+          <strong>{azureReady ? "Azure extraction ready" : "Local fallback protected"}</strong>
+          {azureHealth?.detail ?? "QuestBoard will store the source and use local extraction if Azure is unavailable."}
+        </span>
+      </section>
 
       <div className="stepper" aria-label="Submission progress">
         {[1, 2, 3].map((item) => (
@@ -554,14 +867,13 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
         <section className="input-panel">
           <h2>{inputHeadingForMethod(method)}</h2>
           {method === "link" ? (
-            <label className="large-input">
-              <Link2 size={18} />
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="https://..."
-              />
-            </label>
+            <>
+              <label className="large-input">
+                <Link2 size={18} />
+                <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="https://..." />
+              </label>
+              <p className="helper-text">Links are stored as source metadata for this MVP; paste visible event text too if the page needs rich extraction.</p>
+            </>
           ) : null}
           {method === "text" ? (
             <textarea
@@ -601,41 +913,8 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
             </span>
             <h2>AI extracted this Quest Card</h2>
           </div>
-          <div className="review-grid">
-            <label>
-              Title
-              <input
-                value={extracted.title}
-                onChange={(event) => setExtracted({ ...extracted, title: event.target.value })}
-              />
-            </label>
-            <label>
-              Description
-              <textarea
-                value={extracted.description}
-                onChange={(event) => setExtracted({ ...extracted, description: event.target.value })}
-                rows={4}
-              />
-            </label>
-            <div className="review-field-row">
-              <InfoField label="Category" value={labelize(extracted.interests[0] ?? "Quest")} />
-              <InfoField label="Difficulty" value={difficultyLabel(extracted.difficulty)} />
-              <InfoField label="Time" value={formatTimeCommitment(extracted)} />
-              <InfoField label="Reward" value={extracted.reward.label} />
-              <InfoField label="Location" value={formatLocation(extracted)} />
-              <InfoField label="Deadline" value={formatDeadline(extracted.deadline)} />
-            </div>
-            <div>
-              <span className="field-label">Tags</span>
-              <div className="chip-row">
-                {[...extracted.interests, ...extracted.skillsHelpful.slice(0, 3)].map((tag) => (
-                  <span className="soft-chip active" key={tag}>
-                    #{labelize(tag)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+          {extractionMeta ? <ExtractionDiagnostics meta={extractionMeta} /> : null}
+          <ReviewQuestForm quest={extracted} onChange={setExtracted} />
           {error ? <p className="form-error">{error}</p> : null}
           <div className="form-actions">
             <button className="secondary-button" type="button" onClick={() => setStep(2)}>
@@ -652,29 +931,149 @@ function SubmitQuestPage({ onPublish }: { onPublish: (quest: QuestCard) => void 
   );
 }
 
+function ExtractionDiagnostics({ meta }: { meta: ExtractMetaWithSource }) {
+  return (
+    <section className="diagnostics-grid">
+      <InfoField label="Provider" value={meta.provider === "azure" ? "Azure AI" : "Local fallback"} />
+      <InfoField label="Confidence" value={`${Math.round(meta.confidence * 100)}%`} />
+      <InfoField label="Source" value={labelize(meta.sourceType)} />
+      <InfoField label="Missing" value={meta.missingFields.length ? meta.missingFields.map(labelize).join(", ") : "None"} />
+    </section>
+  );
+}
+
+function ReviewQuestForm({ quest, onChange }: { quest: QuestCard; onChange: (quest: QuestCard) => void }) {
+  return (
+    <div className="review-grid">
+      <label>
+        Title
+        <input value={quest.title} onChange={(event) => onChange({ ...quest, title: event.target.value })} />
+      </label>
+      <label>
+        Organizer
+        <input value={quest.organizer} onChange={(event) => onChange({ ...quest, organizer: event.target.value })} />
+      </label>
+      <label>
+        Summary
+        <textarea value={quest.summary} onChange={(event) => onChange({ ...quest, summary: event.target.value })} rows={3} />
+      </label>
+      <label>
+        Description
+        <textarea value={quest.description} onChange={(event) => onChange({ ...quest, description: event.target.value })} rows={4} />
+      </label>
+      <div className="review-field-row">
+        <label>
+          Deadline
+          <input
+            type="datetime-local"
+            value={toDateTimeLocal(quest.deadline)}
+            onChange={(event) => onChange({ ...quest, deadline: fromDateTimeLocal(event.target.value) })}
+          />
+        </label>
+        <label>
+          Reward
+          <input
+            value={quest.reward.label}
+            onChange={(event) => onChange({ ...quest, reward: { ...quest.reward, label: event.target.value } })}
+          />
+        </label>
+      </div>
+      <div className="review-field-row">
+        <label>
+          Campus
+          <input
+            value={quest.location.campus ?? ""}
+            onChange={(event) => onChange({ ...quest, location: { ...quest.location, campus: event.target.value || undefined } })}
+          />
+        </label>
+        <label>
+          Building
+          <input
+            value={quest.location.building ?? quest.location.address ?? ""}
+            onChange={(event) => onChange({ ...quest, location: { ...quest.location, building: event.target.value || undefined } })}
+          />
+        </label>
+      </div>
+      <div className="review-field-row">
+        <label>
+          Apply URL
+          <input value={quest.applyUrl ?? ""} onChange={(event) => onChange({ ...quest, applyUrl: event.target.value || undefined })} />
+        </label>
+        <label>
+          Contact
+          <input value={quest.contactEmail ?? ""} onChange={(event) => onChange({ ...quest, contactEmail: event.target.value || undefined })} />
+        </label>
+      </div>
+      <div className="review-field-row party-review-row">
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={quest.party.allowed}
+            onChange={(event) => onChange({ ...quest, party: { ...quest.party, allowed: event.target.checked } })}
+          />
+          Party-friendly
+        </label>
+        <label>
+          Open slots
+          <input
+            type="number"
+            min="0"
+            value={quest.party.openSlots}
+            onChange={(event) => onChange({ ...quest, party: { ...quest.party, openSlots: numberFromInput(event.target.value, quest.party.openSlots) } })}
+          />
+        </label>
+      </div>
+      <div>
+        <span className="field-label">Tags</span>
+        <div className="chip-row">
+          {[...quest.interests, ...quest.skillsHelpful.slice(0, 4)].map((tag) => (
+            <span className="soft-chip active" key={tag}>
+              #{labelize(tag)}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PartiesPage({
   quests,
+  parties,
+  students,
+  currentUserId,
+  onCreateParty,
+  onTogglePrep,
   onSelectQuest
 }: {
   quests: QuestCard[];
+  parties: PersistedParty[];
+  students: StudentProfile[];
+  currentUserId: string;
+  onCreateParty: (questId: string) => Promise<void>;
+  onTogglePrep: (partyId: string, item: PrepPlanItem) => Promise<void>;
   onSelectQuest: (quest: QuestCard) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"my" | "browse">("my");
+  const [creatingQuestId, setCreatingQuestId] = useState("");
   const partyQuests = quests.filter((quest) => quest.party.allowed);
-  const myParties = partyQuests
-    .map((quest) => ({
-      quest,
-      party: recommendParties(quest, students, currentStudent.id)[0]
-    }))
-    .filter((item): item is { quest: QuestCard; party: PartyCandidateScore } => Boolean(item.party))
-    .slice(0, 2);
+
+  async function create(questId: string) {
+    setCreatingQuestId(questId);
+    try {
+      await onCreateParty(questId);
+      setActiveTab("my");
+    } finally {
+      setCreatingQuestId("");
+    }
+  }
 
   return (
     <section className="party-shell">
       <div className="section-header">
         <div>
           <h1>Quest Parties</h1>
-          <p>Team up with matched students for shared adventures</p>
+          <p>Persisted teams with matched students, reasons, and prep plans.</p>
         </div>
       </div>
       <div className="party-tabs">
@@ -688,15 +1087,23 @@ function PartiesPage({
 
       {activeTab === "my" ? (
         <div className="party-card-list">
-          {myParties.map(({ quest, party }, index) => (
-            <PartyCard
-              key={quest.id}
-              quest={quest}
-              party={party}
-              status={index === 0 ? "Forming" : "Ready!"}
-              onSelectQuest={onSelectQuest}
-            />
-          ))}
+          {parties.length ? (
+            parties.map((party) => (
+              <PartyCard
+                key={party.id}
+                party={party}
+                currentUserId={currentUserId}
+                onSelectQuest={onSelectQuest}
+                onTogglePrep={onTogglePrep}
+              />
+            ))
+          ) : (
+            <section className="empty-state">
+              <Users size={32} />
+              <h2>No party yet</h2>
+              <p>Create one from the Find a Party tab.</p>
+            </section>
+          )}
         </div>
       ) : (
         <div className="browse-party-panel">
@@ -705,28 +1112,30 @@ function PartiesPage({
               <Users size={30} />
             </div>
             <h2>Smart Party Matching</h2>
-            <p>AI matches you with students based on shared interests, availability, and complementary skills.</p>
-            <button className="primary-button" type="button">
-              <Sparkles size={18} />
-              Find Me a Party
-            </button>
+            <p>QuestBoard matches students by interests, availability, and complementary skills.</p>
           </section>
           <h3>Quests looking for parties</h3>
           {partyQuests.map((quest) => (
-            <button className="party-listing" key={quest.id} type="button" onClick={() => onSelectQuest(quest)}>
-              <img src={quest.imageUrl} alt="" />
-              <span>
-                <strong>{quest.title}</strong>
-                <small>
-                  {quest.party.idealSize} members · {labelize(quest.interests[0] ?? "Quest")}
-                </small>
-              </span>
-              <em>
-                <Users size={13} />
-                {quest.party.openSlots} looking
-              </em>
-              <ChevronRight size={19} />
-            </button>
+            <article className="party-listing-card" key={quest.id}>
+              <button className="party-listing" type="button" onClick={() => onSelectQuest(quest)}>
+                <img src={quest.imageUrl} alt="" />
+                <span>
+                  <strong>{quest.title}</strong>
+                  <small>
+                    {quest.party.idealSize} members - {labelize(quest.interests[0] ?? "Quest")}
+                  </small>
+                </span>
+                <em>
+                  <Users size={13} />
+                  {quest.party.openSlots} open
+                </em>
+                <ChevronRight size={19} />
+              </button>
+              <button className="primary-button" type="button" disabled={creatingQuestId === quest.id} onClick={() => create(quest.id)}>
+                {creatingQuestId === quest.id ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
+                Create Party
+              </button>
+            </article>
           ))}
         </div>
       )}
@@ -736,14 +1145,18 @@ function PartiesPage({
 
 function ProfilePage({
   quests,
+  student,
   savedCount,
+  partyCount,
   onSelectQuest
 }: {
   quests: QuestCard[];
+  student: StudentProfile;
   savedCount: number;
+  partyCount: number;
   onSelectQuest: (quest: QuestCard) => void;
 }) {
-  const totalXp = 1240;
+  const totalXp = 1240 + partyCount * 80 + savedCount * 12;
   const level = 7;
   const nextLevelXp = 200;
   const currentLevelXp = totalXp % nextLevelXp;
@@ -753,11 +1166,11 @@ function ProfilePage({
     <section className="profile-shell">
       <div className="profile-hero">
         <div className="profile-avatar">
-          <img src={currentStudent.avatarUrl} alt="" />
+          <img src={student.avatarUrl} alt="" />
           <span>{level}</span>
         </div>
-        <h1>{currentStudent.name}</h1>
-        <p>{currentStudent.major}</p>
+        <h1>{student.name}</h1>
+        <p>{student.major}</p>
         <small>
           <MapPin size={13} />
           North Campus University
@@ -783,26 +1196,23 @@ function ProfilePage({
             <span>Total XP</span>
           </div>
           <div>
-            <strong>{currentStudent.questCount + 5}</strong>
-            <span>Completed</span>
+            <strong>{savedCount}</strong>
+            <span>Saved</span>
           </div>
           <div>
-            <strong>4</strong>
-            <span>Week streak</span>
+            <strong>{partyCount}</strong>
+            <span>Parties</span>
           </div>
         </div>
       </section>
 
       <ProfileSection title="Interests">
         <div className="chip-row">
-          {currentStudent.interests.map((interest) => (
+          {student.interests.map((interest) => (
             <span className="soft-chip active" key={interest}>
               {labelize(interest)}
             </span>
           ))}
-          <button className="dashed-chip" type="button">
-            + Add
-          </button>
         </div>
       </ProfileSection>
 
@@ -844,7 +1254,7 @@ function ProfilePage({
       <section className="profile-menu">
         {profileMenu.map((item) => {
           const Icon = item.icon;
-          const count = item.label === "Saved Quests" ? savedCount : item.count;
+          const count = item.label === "Saved Quests" ? savedCount : item.label === "My Parties" ? partyCount : item.count;
           return (
             <button type="button" key={item.label}>
               <Icon size={20} />
@@ -861,19 +1271,57 @@ function ProfilePage({
 
 function QuestDetailPage({
   quest,
+  student,
   saved,
-  matchScore,
+  joined,
+  match,
+  matchMeta,
   onBack,
   onSave,
-  onParty
+  onJoin,
+  onParty,
+  onUpdate,
+  onDelete
 }: {
   quest: QuestCard;
+  student: StudentProfile;
   saved: boolean;
-  matchScore: number;
+  joined: boolean;
+  match?: QuestMatchBreakdown;
+  matchMeta: MatchRecommendationMeta | null;
   onBack: () => void;
   onSave: () => void;
+  onJoin: () => void;
   onParty: () => void;
+  onUpdate: (quest: QuestCard) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(quest);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const matchScore = match?.total ?? scoreQuestForStudent(quest, student).total;
+  const providerLabel = matchMeta?.provider === "azure" ? "Azure AI" : "Local";
+
+  async function saveEdit() {
+    setSaving(true);
+    try {
+      await onUpdate(draft);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeQuest() {
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <section className="quest-detail-page">
       <div className="detail-hero">
@@ -900,78 +1348,119 @@ function QuestDetailPage({
       </div>
 
       <div className="detail-content">
-        <h1>{quest.title}</h1>
-        <div className="posted-by">
-          <img src={currentStudent.avatarUrl} alt="" />
-          <span>
-            <strong>{quest.organizer}</strong>
-            Posted this quest
-          </span>
-        </div>
+        {editing ? (
+          <section className="review-card">
+            <div className="review-title">
+              <span>
+                <FileText size={18} />
+              </span>
+              <h2>Edit published quest</h2>
+            </div>
+            <ReviewQuestForm quest={draft} onChange={setDraft} />
+            <div className="form-actions">
+              <button className="secondary-button" type="button" onClick={() => setEditing(false)}>
+                Cancel
+              </button>
+              <button className="primary-button" type="button" onClick={saveEdit} disabled={saving}>
+                {saving ? <Loader2 className="spin" size={17} /> : <Check size={17} />}
+                Save Changes
+              </button>
+            </div>
+          </section>
+        ) : (
+          <>
+            <h1>{quest.title}</h1>
+            <div className="posted-by">
+              <img src={student.avatarUrl} alt="" />
+              <span>
+                <strong>{quest.organizer}</strong>
+                Posted from {labelize(quest.source.type)}
+              </span>
+            </div>
 
-        <div className="detail-info-grid">
-          <InfoTile icon={CalendarDays} label="Deadline" value={formatDeadline(quest.deadline)} />
-          <InfoTile icon={Clock3} label="Time" value={formatTimeCommitment(quest)} />
-          <InfoTile icon={MapPin} label="Location" value={formatLocation(quest)} />
-          <InfoTile icon={Award} label="Reward" value={quest.reward.label} />
-        </div>
+            <div className="detail-info-grid">
+              <InfoTile icon={CalendarDays} label="Deadline" value={formatDeadline(quest.deadline)} />
+              <InfoTile icon={Clock3} label="Time" value={formatTimeCommitment(quest)} />
+              <InfoTile icon={MapPin} label="Location" value={formatLocation(quest)} />
+              <InfoTile icon={Award} label="Reward" value={quest.reward.label} />
+            </div>
 
-        <section className="detail-section">
-          <h2>About this Quest</h2>
-          <p>{quest.description}</p>
-        </section>
+            <section className="detail-section">
+              <h2>About this Quest</h2>
+              <p>{quest.description}</p>
+            </section>
 
-        <section className="best-for">
-          <UserRound size={18} />
-          <span>
-            <strong>Best for</strong>
-            {quest.bestFor.join(", ")}
-          </span>
-        </section>
+            <section className="ai-detail-card">
+              <InfoField label="Matcher" value={`${providerLabel}: ${matchScore}% fit`} />
+              <InfoField label="Extraction" value={`${Math.round(quest.aiExtraction.confidence * 100)}% confidence`} />
+              <InfoField label="Source" value={quest.source.fileName ?? quest.source.rawUrl ?? labelize(quest.source.type)} />
+              <InfoField label="Missing" value={quest.aiExtraction.missingFields.length ? quest.aiExtraction.missingFields.map(labelize).join(", ") : "None"} />
+            </section>
 
-        <div className="chip-row">
-          {[...quest.interests, ...quest.skillsHelpful.slice(0, 4)].map((tag) => (
-            <span className="soft-chip" key={tag}>
-              #{labelize(tag)}
-            </span>
-          ))}
-        </div>
+            <section className="best-for">
+              <UserRound size={18} />
+              <span>
+                <strong>Best for</strong>
+                {quest.bestFor.join(", ")}
+              </span>
+            </section>
 
-        <div className="social-proof">
-          <span>
-            <Heart size={17} />
-            {quest.stats.views} interested
-          </span>
-          <span>
-            <Users size={17} />
-            {quest.stats.partyRequests} going
-          </span>
-          <span>
-            <Bookmark size={17} />
-            {quest.stats.saves}
-          </span>
-          <strong>{matchScore}% match</strong>
-        </div>
+            <div className="chip-row">
+              {[...quest.interests, ...quest.skillsHelpful.slice(0, 4)].map((tag) => (
+                <span className="soft-chip" key={tag}>
+                  #{labelize(tag)}
+                </span>
+              ))}
+            </div>
 
-        {quest.party.allowed ? (
-          <button className="party-cta" type="button" onClick={onParty}>
-            <span>
-              <Users size={22} />
-            </span>
-            <strong>Find a Quest Party</strong>
-            <small>Get matched with {quest.party.idealSize} others · Similar interests</small>
-            <ChevronRight size={20} />
-          </button>
-        ) : null}
+            <div className="social-proof">
+              <span>
+                <Heart size={17} />
+                {quest.stats.views} interested
+              </span>
+              <span>
+                <Users size={17} />
+                {quest.stats.partyRequests} going
+              </span>
+              <span>
+                <Bookmark size={17} />
+                {quest.stats.saves}
+              </span>
+              <strong>{matchScore}% match</strong>
+            </div>
+
+            {quest.party.allowed ? (
+              <button className="party-cta" type="button" onClick={onParty}>
+                <span>
+                  <Users size={22} />
+                </span>
+                <strong>Create a Quest Party</strong>
+                <small>Get matched with {quest.party.idealSize} students and a prep plan</small>
+                <ChevronRight size={20} />
+              </button>
+            ) : null}
+
+            <div className="detail-admin-actions">
+              <button className="secondary-button" type="button" onClick={() => setEditing(true)}>
+                <FileText size={17} />
+                Edit Quest
+              </button>
+              <button className="secondary-button danger-button" type="button" onClick={removeQuest} disabled={deleting}>
+                {deleting ? <Loader2 className="spin" size={17} /> : <X size={17} />}
+                Delete
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="sticky-action-bar">
-        <button className="primary-button" type="button">
+        <button className="primary-button" type="button" onClick={onJoin}>
           <Zap size={18} />
-          I'm Going
+          {joined ? "Going" : "I'm Going"}
         </button>
-        <button className="secondary-button" type="button">
-          Interested
+        <button className="secondary-button" type="button" onClick={onSave}>
+          {saved ? "Saved" : "Interested"}
         </button>
       </div>
     </section>
@@ -986,7 +1475,7 @@ function QuestGrid({
   onSelectQuest
 }: {
   quests: QuestCard[];
-  questMatches: Record<string, ReturnType<typeof scoreQuestForStudent>>;
+  questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
@@ -1076,7 +1565,7 @@ function QuestCardView({
             <i />
           </span>
           <small>
-            {quest.stats.partyRequests + 20} going · {friendNames[index % friendNames.length]} +{Math.max(0, Math.round(matchScore / 30) - 1)}
+            {quest.stats.partyRequests + 20} going - {friendNames[index % friendNames.length]} +{Math.max(0, Math.round(matchScore / 30) - 1)}
           </small>
           <em>
             <Heart size={14} />
@@ -1089,21 +1578,21 @@ function QuestCardView({
 }
 
 function PartyCard({
-  quest,
   party,
-  status,
-  onSelectQuest
+  currentUserId,
+  onSelectQuest,
+  onTogglePrep
 }: {
-  quest: QuestCard;
-  party: PartyCandidateScore;
-  status: "Forming" | "Ready!";
+  party: PersistedParty;
+  currentUserId: string;
   onSelectQuest: (quest: QuestCard) => void;
+  onTogglePrep: (partyId: string, item: PrepPlanItem) => Promise<void>;
 }) {
   return (
     <article className="party-card-large">
       <div className="party-header">
-        <button type="button" onClick={() => onSelectQuest(quest)}>
-          {quest.title}
+        <button type="button" onClick={() => onSelectQuest(party.quest)}>
+          {party.quest.title}
         </button>
         <button className="chat-button" type="button">
           <MessageCircle size={15} />
@@ -1111,36 +1600,41 @@ function PartyCard({
         </button>
       </div>
       <div className="party-status-row">
-        <span className={status === "Ready!" ? "status-ready" : "status-forming"}>{status}</span>
-        <small>{party.total}% match</small>
+        <span className={party.status === "active" ? "status-ready" : "status-forming"}>{labelize(party.status)}</span>
+        <small>{party.matchScore}% match</small>
+      </div>
+      <div className="party-reasons">
+        {party.reasons.slice(0, 3).map((reason) => (
+          <span key={reason}>
+            <Sparkles size={13} />
+            {reason}
+          </span>
+        ))}
       </div>
       <div className="party-members">
-        {party.memberIds.map((memberId, index) => {
-          const member = findStudent(memberId);
-          return member ? (
-            <div key={member.id}>
-              <img src={member.avatarUrl} alt="" />
-              <span>
-                <strong>{member.id === currentStudent.id ? "You" : member.name}</strong>
-                <small>{member.skills.slice(0, 2).map(labelize).join(" · ")}</small>
-              </span>
-              <em className={index < 2 || status === "Ready!" ? "ready" : ""}>
-                {index < 2 || status === "Ready!" ? <Check size={14} /> : <Circle size={14} />}
-              </em>
-            </div>
-          ) : null;
-        })}
+        {party.members.map((member, index) => (
+          <div key={member.id}>
+            <img src={member.avatarUrl} alt="" />
+            <span>
+              <strong>{member.id === currentUserId ? "You" : member.name}</strong>
+              <small>{member.skills.slice(0, 2).map(labelize).join(" / ")}</small>
+            </span>
+            <em className={index < 2 || party.status === "active" ? "ready" : ""}>
+              {index < 2 || party.status === "active" ? <Check size={14} /> : <Circle size={14} />}
+            </em>
+          </div>
+        ))}
       </div>
       <div className="prep-plan-block">
         <h3>Prep Plan</h3>
-        {party.prepPlan.map((item, index) => (
-          <div className="prep-step" key={item.id}>
-            <span className={index < 2 ? "done" : ""}>{index < 2 ? <Check size={13} /> : null}</span>
-            <p className={index < 2 ? "done" : ""}>
+        {party.prepPlan.map((item) => (
+          <button className="prep-step prep-step-button" type="button" key={item.id} onClick={() => onTogglePrep(party.id, item)}>
+            <span className={item.done ? "done" : ""}>{item.done ? <Check size={13} /> : null}</span>
+            <p className={item.done ? "done" : ""}>
               {item.title}
               <small>Due {formatDeadline(item.dueAt)}</small>
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </article>
@@ -1254,15 +1748,7 @@ function InfoField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function InfoTile({
-  icon: Icon,
-  label,
-  value
-}: {
-  icon: typeof CalendarDays;
-  label: string;
-  value: string;
-}) {
+function InfoTile({ icon: Icon, label, value }: { icon: typeof CalendarDays; label: string; value: string }) {
   return (
     <div className="info-tile">
       <span>
@@ -1274,15 +1760,7 @@ function InfoTile({
   );
 }
 
-function ProfileSection({
-  title,
-  aside,
-  children
-}: {
-  title: string;
-  aside?: string;
-  children: React.ReactNode;
-}) {
+function ProfileSection({ title, aside, children }: { title: string; aside?: string; children: ReactNode }) {
   return (
     <section className="profile-section">
       <div>
@@ -1296,7 +1774,7 @@ function ProfileSection({
 
 function filterAndSortQuests(
   quests: QuestCard[],
-  questMatches: Record<string, ReturnType<typeof scoreQuestForStudent>>,
+  questMatches: Record<string, QuestMatchBreakdown>,
   search: string,
   category: string,
   quickFilter: QuickFilter
@@ -1319,9 +1797,7 @@ function filterAndSortQuests(
   });
 
   return [...filtered].sort((a, b) => {
-    if (quickFilter === "New") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
+    if (quickFilter === "New") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     if (quickFilter === "Ending Soon") {
       return (
         new Date(a.deadline ?? "2099-01-01").getTime() -
@@ -1372,10 +1848,6 @@ function shortTitle(title: string) {
   return words.length > 2 ? words.slice(0, 2).join(" ") : title;
 }
 
-function findStudent(studentId: string): StudentProfile | undefined {
-  return students.find((student) => student.id === studentId);
-}
-
 function sourceTypeForMethod(method: SubmitMethodId, file: File | null): QuestSourceType {
   if (method === "link") return "link";
   if (method === "text") return "text";
@@ -1392,6 +1864,22 @@ function inputHeadingForMethod(method: SubmitMethodId) {
   if (method === "photo") return "Upload your photo";
   if (method === "screenshot") return "Upload your image";
   return "Upload your file";
+}
+
+function toDateTimeLocal(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocal(value: string) {
+  return value ? new Date(value).toISOString() : undefined;
+}
+
+function numberFromInput(value: string, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export default App;

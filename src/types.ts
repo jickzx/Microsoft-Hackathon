@@ -261,6 +261,7 @@ export interface ExtractQuestMeta {
   provider: "azure" | "local";
   fallbackUsed: boolean;
   sourceType: QuestSourceType;
+  sourceId?: string;
   confidence: number;
   missingFields: string[];
   warnings: string[];

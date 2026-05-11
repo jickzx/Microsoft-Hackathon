@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id                 String   @id
+  name               String
+  year               String
+  major              String
+  avatarUrl          String
+  interests          Json
+  skills             Json
+  wantsToBuildSkills Json
+  availability       Json
+  preferences        Json
+  questCount         Int
+  communicationStyle String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  sources      QuestSource[]
+  savedQuests  SavedQuest[]
+  joinedQuests JoinedQuest[]
+  matches      MatchRecommendation[]
+  createdParties QuestParty[] @relation("PartyCreator")
+  partyMembers PartyMember[]
+  ownedPrepItems PrepPlanItem[]
+}
+
+model QuestSource {
+  id                String   @id
+  type              String
+  submittedByUserId String
+  rawUrl            String?
+  fileName          String?
+  fileType          String?
+  fileSize          Int?
+  rawText           String?
+  extractionMeta    Json?
+  submittedAt       DateTime @default(now())
+
+  submittedBy Student @relation(fields: [submittedByUserId], references: [id])
+  quests      Quest[]
+}
+
+model Quest {
+  id             String    @id
+  title          String
+  organizer      String
+  summary        String
+  description    String
+  imageUrl       String
+  sourceId       String
+  status         String
+  interests      Json
+  skillsHelpful  Json
+  difficulty     String
+  estimatedHours Json
+  reward         Json
+  location       Json
+  deadline       DateTime?
+  eventStart     DateTime?
+  eventEnd       DateTime?
+  bestFor        Json
+  eligibility    Json
+  applyUrl       String?
+  contactEmail   String?
+  party          Json
+  aiExtraction   Json
+  stats          Json
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  source QuestSource @relation(fields: [sourceId], references: [id])
+  savedBy SavedQuest[]
+  joinedBy JoinedQuest[]
+  matches MatchRecommendation[]
+  parties QuestParty[]
+
+  @@index([status])
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
+model SavedQuest {
+  id        String   @id @default(cuid())
+  studentId String
+  questId   String
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quest   Quest   @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, questId])
+}
+
+model JoinedQuest {
+  id        String   @id @default(cuid())
+  studentId String
+  questId   String
+  status    String   @default("going")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quest   Quest   @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, questId])
+}
+
+model MatchRecommendation {
+  id                String   @id @default(cuid())
+  questId            String
+  studentId          String
+  provider           String
+  fallbackUsed       Boolean
+  model              String
+  total              Int
+  confidence         Float
+  interestScore      Float
+  skillScore         Float
+  availabilityScore  Float
+  difficultyScore    Float
+  rewardScore        Float
+  locationScore      Float
+  urgencyScore       Float
+  reasons            Json
+  matchedAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  quest   Quest   @relation(fields: [questId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([questId, studentId])
+}
+
+model QuestParty {
+  id         String   @id @default(cuid())
+  questId    String
+  creatorId  String
+  status     String   @default("forming")
+  matchScore Int
+  reasons    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  quest   Quest   @relation(fields: [questId], references: [id], onDelete: Cascade)
+  creator Student @relation("PartyCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members PartyMember[]
+  prepPlan PrepPlanItem[]
+}
+
+model PartyMember {
+  id        String   @id @default(cuid())
+  partyId   String
+  studentId String
+  fitScore  Int?
+  status    String   @default("joined")
+  createdAt DateTime @default(now())
+
+  party   QuestParty @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  student Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([partyId, studentId])
+}
+
+model PrepPlanItem {
+  id          String   @id
+  partyId     String
+  title       String
+  ownerUserId String?
+  dueAt       DateTime?
+  type        String
+  done        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  party QuestParty @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  owner Student?   @relation(fields: [ownerUserId], references: [id])
+}

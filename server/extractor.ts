@@ -552,6 +552,12 @@ async function scrapeEventPage(url: string) {
 
 async function prepareExtractionInput(input: ExtractQuestRequest) {
   if (!input.url) return { input, warnings: [] as string[] };
+  if (input.sourceType === "link") {
+    return {
+      input,
+      warnings: ["Link saved as a source. Live page scraping is disabled for this MVP."]
+    };
+  }
 
   const scraped = await scrapeEventPage(input.url);
   return {

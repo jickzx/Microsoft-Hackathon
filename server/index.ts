@@ -8,10 +8,30 @@ import multer from "multer";
 import { z } from "zod";
 import { createServer as createViteServer } from "vite";
 import type { Request, Response } from "express";
-import { seedQuests, students } from "../src/data/seed";
+import { currentStudent } from "../src/data/seed";
 import { recommendParties } from "../src/lib/matching";
 import { questCardSchema, questSourceTypeSchema } from "../src/types";
 import type { ExtractQuestRequest, QuestCard } from "../src/types";
+import {
+  createPartyFromRecommendation,
+  deleteQuest,
+  ensureDatabaseSeeded,
+  findStudent,
+  getQuest,
+  getUserState,
+  joinParty,
+  leaveParty,
+  listPartiesForStudent,
+  listQuests,
+  listStudents,
+  publishQuest,
+  saveSourceFromExtraction,
+  setJoinedQuest,
+  setSavedQuest,
+  updatePrepItem,
+  updateQuest,
+  upsertMatchRecommendations
+} from "./db";
 import { checkAzureConnection, extractQuestCards } from "./extractor";
 import { recommendQuestMatches } from "./matcher";
 
@@ -30,7 +50,6 @@ const upload = multer({
   }
 });
 
-const quests: QuestCard[] = [...seedQuests];
 const maxInlineFileBytes = Number(process.env.EXTRACT_INLINE_FILE_BYTES ?? 4 * 1024 * 1024);
 
 const extractSchema = z.object({
@@ -102,26 +121,37 @@ function parseExtractInput(request: Request, response: Response) {
   return input;
 }
 
-function publishExtractedQuests(cards: QuestCard[]) {
-  const publishedAt = new Date().toISOString();
-  const published = cards.map((quest) => ({
-    ...quest,
-    status: "published" as const,
-    updatedAt: publishedAt
-  }));
-
-  for (const quest of [...published].reverse()) {
-    const existingIndex = quests.findIndex((candidate) => candidate.id === quest.id);
-    if (existingIndex >= 0) quests.splice(existingIndex, 1);
-    quests.unshift(quest);
-  }
-
-  return published;
-}
-
 const matchSchema = z.object({
   studentId: z.string().optional(),
   questIds: z.array(z.string()).optional()
+});
+
+const questParamsSchema = z.object({
+  questId: z.string().min(1)
+});
+
+const userQuestParamsSchema = z.object({
+  userId: z.string().min(1),
+  questId: z.string().min(1)
+});
+
+const createPartySchema = z.object({
+  questId: z.string().min(1),
+  studentId: z.string().optional(),
+  memberIds: z.array(z.string()).optional()
+});
+
+const partyParamsSchema = z.object({
+  partyId: z.string().min(1)
+});
+
+const prepParamsSchema = z.object({
+  partyId: z.string().min(1),
+  itemId: z.string().min(1)
+});
+
+const prepBodySchema = z.object({
+  done: z.boolean()
 });
 
 app.use(cors());
@@ -141,11 +171,41 @@ app.get("/api/azure/health", async (_request, response) => {
   response.json(await checkAzureConnection());
 });
 
-app.get("/api/quests", (_request, response) => {
+app.get("/api/users", async (_request, response) => {
+  response.json({
+    users: await listStudents(),
+    currentUserId: currentStudent.id
+  });
+});
+
+app.get("/api/users/:userId/state", async (request, response) => {
+  const userId = String(request.params.userId);
+  const student = await findStudent(userId);
+  if (!student) {
+    response.status(404).json({ error: "Student not found" });
+    return;
+  }
+
+  response.json(await getUserState(userId));
+});
+
+app.get("/api/users/:userId/parties", async (request, response) => {
+  const userId = String(request.params.userId);
+  const student = await findStudent(userId);
+  if (!student) {
+    response.status(404).json({ error: "Student not found" });
+    return;
+  }
+
+  response.json({ parties: await listPartiesForStudent(userId) });
+});
+
+app.get("/api/quests", async (_request, response) => {
+  const quests = await listQuests();
   response.json({ quests });
 });
 
-app.post("/api/quests", (request, response) => {
+app.post("/api/quests", async (request, response) => {
   const parsed = questCardSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({
@@ -155,20 +215,51 @@ app.post("/api/quests", (request, response) => {
     return;
   }
 
-  const quest = parsed.data;
-  quests.unshift({
-    ...quest,
-    status: "published",
-    updatedAt: new Date().toISOString()
-  });
-  response.status(201).json({ quest: quests[0] });
+  response.status(201).json({ quest: await publishQuest(parsed.data) });
+});
+
+app.patch("/api/quests/:questId", async (request, response) => {
+  const params = questParamsSchema.safeParse(request.params);
+  const parsed = questCardSchema.safeParse(request.body);
+  if (!params.success || !parsed.success) {
+    response.status(400).json({
+      error: "Invalid quest update",
+      details: [
+        ...(params.success ? [] : params.error.issues.map((issue) => issue.message)),
+        ...(parsed.success ? [] : parsed.error.issues.map((issue) => issue.message))
+      ]
+    });
+    return;
+  }
+
+  response.json({ quest: await updateQuest(params.data.questId, parsed.data) });
+});
+
+app.delete("/api/quests/:questId", async (request, response) => {
+  const params = questParamsSchema.safeParse(request.params);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid quest id" });
+    return;
+  }
+
+  await deleteQuest(params.data.questId);
+  response.status(204).end();
 });
 
 app.post("/api/extract", upload.single("file"), async (request, response) => {
   const input = parseExtractInput(request, response);
   if (!input) return;
 
-  response.json(await extractQuestCards(input));
+  const extraction = await extractQuestCards(input);
+  const sourceId = extraction.cards[0]?.source.id;
+  if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta);
+  response.json({
+    ...extraction,
+    meta: {
+      ...extraction.meta,
+      sourceId
+    }
+  });
 });
 
 app.post("/api/quests/import", upload.single("file"), async (request, response) => {
@@ -176,16 +267,59 @@ app.post("/api/quests/import", upload.single("file"), async (request, response) 
   if (!input) return;
 
   const extraction = await extractQuestCards(input);
-  const cards = publishExtractedQuests(extraction.cards);
+  const sourceId = extraction.cards[0]?.source.id;
+  if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta);
+  const cards = await Promise.all(extraction.cards.map((quest) => publishQuest(quest)));
 
   response.status(201).json({
     ...extraction,
     cards,
     meta: {
       ...extraction.meta,
+      sourceId,
       cardCount: cards.length
     }
   });
+});
+
+app.post("/api/users/:userId/saved-quests/:questId", async (request, response) => {
+  const params = userQuestParamsSchema.safeParse(request.params);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+
+  response.json(await setSavedQuest(params.data.userId, params.data.questId, true));
+});
+
+app.delete("/api/users/:userId/saved-quests/:questId", async (request, response) => {
+  const params = userQuestParamsSchema.safeParse(request.params);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+
+  response.json(await setSavedQuest(params.data.userId, params.data.questId, false));
+});
+
+app.post("/api/users/:userId/joined-quests/:questId", async (request, response) => {
+  const params = userQuestParamsSchema.safeParse(request.params);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+
+  response.json(await setJoinedQuest(params.data.userId, params.data.questId, true));
+});
+
+app.delete("/api/users/:userId/joined-quests/:questId", async (request, response) => {
+  const params = userQuestParamsSchema.safeParse(request.params);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+
+  response.json(await setJoinedQuest(params.data.userId, params.data.questId, false));
 });
 
 app.post("/api/matches/recommend", async (request, response) => {
@@ -199,24 +333,27 @@ app.post("/api/matches/recommend", async (request, response) => {
   }
 
   const studentId = parsed.data.studentId ?? "student-you";
-  const student = students.find((candidate) => candidate.id === studentId);
+  const student = await findStudent(studentId);
   if (!student) {
     response.status(404).json({ error: "Student not found" });
     return;
   }
 
+  const quests = await listQuests();
   const selectedQuestIds = new Set(parsed.data.questIds ?? []);
   const selectedQuests = selectedQuestIds.size
     ? quests.filter((quest) => selectedQuestIds.has(quest.id))
     : quests;
 
-  response.json(await recommendQuestMatches(selectedQuests, student));
+  const result = await recommendQuestMatches(selectedQuests, student);
+  await upsertMatchRecommendations(result.matches, result.meta);
+  response.json(result);
 });
 
-app.post("/api/parties/recommend", (request, response) => {
+app.post("/api/parties/recommend", async (request, response) => {
   const questId = String(request.body.questId ?? "");
   const studentId = String(request.body.studentId ?? "student-you");
-  const quest = quests.find((candidate) => candidate.id === questId);
+  const [quest, studentList] = await Promise.all([getQuest(questId), listStudents()]);
 
   if (!quest) {
     response.status(404).json({ error: "Quest not found" });
@@ -224,12 +361,82 @@ app.post("/api/parties/recommend", (request, response) => {
   }
 
   response.json({
-    parties: recommendParties(quest, students, studentId),
-    students
+    parties: recommendParties(quest, studentList, studentId),
+    students: studentList
+  });
+});
+
+app.post("/api/parties", async (request, response) => {
+  const parsed = createPartySchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({
+      error: "Invalid party request",
+      details: parsed.error.issues.map((issue) => issue.message)
+    });
+    return;
+  }
+
+  const studentId = parsed.data.studentId ?? currentStudent.id;
+  const [quest, studentList] = await Promise.all([getQuest(parsed.data.questId), listStudents()]);
+  if (!quest) {
+    response.status(404).json({ error: "Quest not found" });
+    return;
+  }
+
+  const recommendations = recommendParties(quest, studentList, studentId);
+  const requestedMembers = parsed.data.memberIds?.join("|");
+  const recommendation =
+    recommendations.find((item) => item.memberIds.join("|") === requestedMembers) ??
+    recommendations[0];
+
+  if (!recommendation) {
+    response.status(400).json({ error: "No party recommendation available for this quest." });
+    return;
+  }
+
+  response.status(201).json({
+    party: await createPartyFromRecommendation(quest, recommendation, studentId)
+  });
+});
+
+app.post("/api/parties/:partyId/join", async (request, response) => {
+  const params = partyParamsSchema.safeParse(request.params);
+  const studentId = String(request.body.studentId ?? currentStudent.id);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid party id" });
+    return;
+  }
+
+  response.json({ party: await joinParty(params.data.partyId, studentId) });
+});
+
+app.delete("/api/parties/:partyId/leave", async (request, response) => {
+  const params = partyParamsSchema.safeParse(request.params);
+  const studentId = String(request.body.studentId ?? currentStudent.id);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid party id" });
+    return;
+  }
+
+  await leaveParty(params.data.partyId, studentId);
+  response.status(204).end();
+});
+
+app.patch("/api/parties/:partyId/prep/:itemId", async (request, response) => {
+  const params = prepParamsSchema.safeParse(request.params);
+  const body = prepBodySchema.safeParse(request.body);
+  if (!params.success || !body.success) {
+    response.status(400).json({ error: "Invalid prep item update" });
+    return;
+  }
+
+  response.json({
+    item: await updatePrepItem(params.data.partyId, params.data.itemId, body.data.done)
   });
 });
 
 async function start() {
+  await ensureDatabaseSeeded();
   const port = Number(process.env.PORT ?? 4173);
   const server = http.createServer(app);
 
