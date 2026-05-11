@@ -1269,7 +1269,7 @@ async function extractWithAzureOpenAI(input: ExtractQuestRequest, endpoint: stri
         {
           role: "system",
           content:
-            "You extract campus opportunity details into Side Side quest cards. Respond with valid JSON only."
+              "You extract campus opportunity details into Side Quest cards. Respond with valid JSON only."
         },
         {
           role: "user",
