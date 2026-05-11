@@ -1,4 +1,5 @@
 import "dotenv/config";
+import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
@@ -226,6 +227,7 @@ app.post("/api/parties/recommend", (request, response) => {
 
 async function start() {
   const port = Number(process.env.PORT ?? 4173);
+  const server = http.createServer(app);
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(projectRoot, "dist", "client")));
@@ -234,14 +236,14 @@ async function start() {
     });
   } else {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { hmr: { server }, middlewareMode: true },
       appType: "spa",
       root: projectRoot
     });
     app.use(vite.middlewares);
   }
 
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`QuestBoard running on http://localhost:${port}`);
   });
 }
