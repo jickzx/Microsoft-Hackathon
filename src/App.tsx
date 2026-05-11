@@ -251,7 +251,19 @@ function App() {
   const [importingSources, setImportingSources] = useState(false);
 
   const activeStudent = users.find((student) => student.id === currentUserId) ?? authUser;
-  const questMatches = remoteMatches;
+  const localQuestMatches = useMemo(
+    () =>
+      activeStudent
+        ? (Object.fromEntries(
+            quests.map((quest) => [quest.id, scoreQuestForStudent(quest, activeStudent)])
+          ) as Record<string, QuestMatchBreakdown>)
+        : {},
+    [activeStudent, quests]
+  );
+  const questMatches = useMemo(
+    () => ({ ...localQuestMatches, ...remoteMatches }),
+    [localQuestMatches, remoteMatches]
+  );
 
   async function refreshQuests() {
     const data = await fetchJson<{ quests: QuestCard[] }>("/api/quests");
@@ -564,7 +576,7 @@ function App() {
           student={activeStudent}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
-          matchReady={matchMeta?.provider === "azure"}
+          matchProvider={matchMeta?.provider ?? "local"}
           loading={loading}
           importingSources={importingSources}
           onSave={toggleSaved}
@@ -602,6 +614,7 @@ function App() {
         <ProfilePage
           quests={quests}
           student={activeStudent}
+          signupProfile={null}
           savedCount={savedQuestIds.size}
           partyCount={parties.length}
           onSelectQuest={setSelectedQuest}
@@ -627,18 +640,40 @@ function App() {
   );
 }
 
-function OnboardingPage({
-  initialProfile,
-  onComplete,
-  onDemoLogin
-}: {
-  initialProfile: SignupProfile | null;
-  onComplete: (profile: SignupProfile) => void;
-  onDemoLogin: () => void;
-}) {
+function LoadingScreen() {
+  return (
+    <main className="loading-screen">
+      <Loader2 className="spin" size={28} />
+      <strong>Loading QuestBoard</strong>
+    </main>
+  );
+}
+
+function AppBanner({ message }: { message: string }) {
+  return (
+    <div className="app-banner" role="status">
+      <Sparkles size={16} />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile) => void }) {
   const [mode, setMode] = useState<AuthMode>("signup");
-  const [profile, setProfile] = useState<SignupProfile>(() => initialProfile ?? signupInitialProfile);
+  const [profile, setProfile] = useState<SignupProfile>(() => {
+    if (typeof window === "undefined") return signupInitialProfile;
+    const raw = window.localStorage.getItem(authProfileStorageKey);
+    if (!raw) return signupInitialProfile;
+    try {
+      return JSON.parse(raw) as SignupProfile;
+    } catch {
+      return signupInitialProfile;
+    }
+  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const completedCount = requiredSignupFields.filter(({ key }) => profile[key].trim()).length;
   const completion = Math.round((completedCount / requiredSignupFields.length) * 100);
 
@@ -647,14 +682,63 @@ function OnboardingPage({
     setError("");
   }
 
-  function submitSignup(event: FormEvent<HTMLFormElement>) {
+  async function submitSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const missingField = requiredSignupFields.find(({ key }) => !profile[key].trim());
     if (missingField) {
       setError(`${missingField.label} is required.`);
       return;
     }
-    onComplete(profile);
+    if (!email.trim() || password.length < 8) {
+      setError("Use a valid email and a password with at least 8 characters.");
+      return;
+    }
+
+    const cleanProfile = trimSignupProfile(profile);
+    setSubmitting(true);
+    setError("");
+    try {
+      const data = await fetchJson<{ user: StudentProfile }>("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          name: cleanProfile.name,
+          major: cleanProfile.courseOrJobTitle || cleanProfile.careerInterest || "Undeclared",
+          year: deriveYearFromEducation(cleanProfile.education)
+        })
+      });
+      saveAuthProfile(cleanProfile);
+      onAuthenticated(data.user);
+    } catch (signupError) {
+      setError(signupError instanceof Error ? signupError.message : "Signup failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!email.trim() || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+    try {
+      const data = await fetchJson<{ user: StudentProfile }>("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password })
+      });
+      onAuthenticated(data.user);
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Login failed.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -709,20 +793,64 @@ function OnboardingPage({
         </div>
 
         {mode === "login" ? (
-          <div className="login-panel">
+          <form className="login-panel" onSubmit={submitLogin}>
             <div className="login-avatar">
               <UserRound size={30} />
             </div>
-            <h3>{initialProfile?.name ? `Continue as ${initialProfile.name}` : "Use the demo profile"}</h3>
-            <p>{initialProfile?.courseOrJobTitle ?? currentStudent.major}</p>
-            <button className="primary-button" type="button" onClick={() => (initialProfile ? onComplete(initialProfile) : onDemoLogin())}>
-              <ChevronRight size={17} />
+            <h3>Welcome back</h3>
+            <AuthField icon={MessageCircle} label="Email" wide>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setError("");
+                }}
+                placeholder="you@example.com"
+              />
+            </AuthField>
+            <AuthField icon={Settings} label="Password" wide>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setError("");
+                }}
+                placeholder="Password"
+              />
+            </AuthField>
+            {error ? <p className="form-error">{error}</p> : null}
+            <button className="primary-button" type="submit" disabled={submitting}>
+              {submitting ? <Loader2 className="spin" size={17} /> : <ChevronRight size={17} />}
               Continue
             </button>
-          </div>
+          </form>
         ) : (
           <form className="signup-form" onSubmit={submitSignup}>
             <div className="auth-form-grid">
+              <AuthField icon={MessageCircle} label="Email">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="you@example.com"
+                />
+              </AuthField>
+              <AuthField icon={Settings} label="Password">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="At least 8 characters"
+                />
+              </AuthField>
               <AuthField icon={UserRound} label="Name">
                 <input
                   value={profile.name}
@@ -809,11 +937,8 @@ function OnboardingPage({
             {error ? <p className="form-error">{error}</p> : null}
 
             <div className="auth-actions">
-              <button className="secondary-button" type="button" onClick={onDemoLogin}>
-                Demo profile
-              </button>
-              <button className="primary-button" type="submit">
-                <Check size={17} />
+              <button className="primary-button" type="submit" disabled={submitting}>
+                {submitting ? <Loader2 className="spin" size={17} /> : <Check size={17} />}
                 Create Profile
               </button>
             </div>
@@ -848,20 +973,17 @@ function AuthField({
 
 function TopNav({
   activePage,
-  users,
-  currentUserId,
+  user,
   azureHealth,
   onNavigate,
-  onUserChange
+  onLogout
 }: {
   activePage: Page;
-  users: StudentProfile[];
-  currentUserId: string;
+  user: StudentProfile;
   azureHealth: AzureConnectionHealth | null;
   onNavigate: (page: Page) => void;
-  onUserChange: (userId: string) => void;
+  onLogout: () => void;
 }) {
-  const user = users.find((student) => student.id === currentUserId) ?? currentStudent;
   const azureLabel =
     azureHealth?.status === "ready" ? "Azure Ready" : azureHealth?.reachable ? "Azure Setup" : "Local AI";
 
@@ -894,19 +1016,11 @@ function TopNav({
           {azureLabel}
           <strong>{azureHealth?.status === "ready" ? "AI" : "DB"}</strong>
         </span>
-        <select
-          aria-label="Current student"
-          className="student-select"
-          value={currentUserId}
-          onChange={(event) => onUserChange(event.target.value)}
-        >
-          {users.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.name}
-            </option>
-          ))}
-        </select>
+        <span className="student-select">{user.name}</span>
         <img src={user.avatarUrl} alt={`${user.name} avatar`} />
+        <button className="secondary-button topbar-logout" type="button" onClick={onLogout}>
+          Log out
+        </button>
       </div>
     </header>
   );
@@ -919,9 +1033,11 @@ function HomePage({
   savedQuestIds,
   matchProvider,
   loading,
+  importingSources,
   onSave,
   onSelectQuest,
-  onExplore
+  onExplore,
+  onImportSources
 }: {
   quests: QuestCard[];
   student: StudentProfile;
@@ -929,9 +1045,11 @@ function HomePage({
   savedQuestIds: Set<string>;
   matchProvider: "azure" | "local";
   loading: boolean;
+  importingSources: boolean;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
   onExplore: () => void;
+  onImportSources: () => void;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -959,6 +1077,10 @@ function HomePage({
           </p>
         </div>
         <div className="home-actions">
+          <button className="secondary-button" type="button" onClick={onImportSources} disabled={importingSources}>
+            {importingSources ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />}
+            Import Sources
+          </button>
           <button className="icon-button" type="button" onClick={() => setSearchOpen((value) => !value)}>
             <Search size={20} />
           </button>
@@ -1029,14 +1151,18 @@ function ExplorePage({
   quests,
   questMatches,
   savedQuestIds,
+  importingSources,
   onSave,
-  onSelectQuest
+  onSelectQuest,
+  onImportSources
 }: {
   quests: QuestCard[];
   questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
+  importingSources: boolean;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
+  onImportSources: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -1065,9 +1191,15 @@ function ExplorePage({
           <h1>Explore Quests</h1>
           <p>{filtered.length} database-backed quests available</p>
         </div>
-        <button className="icon-button" type="button" aria-label="Grid view">
-          <Grid3X3 size={18} />
-        </button>
+        <div className="home-actions">
+          <button className="secondary-button" type="button" onClick={onImportSources} disabled={importingSources}>
+            {importingSources ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />}
+            Import Sources
+          </button>
+          <button className="icon-button" type="button" aria-label="Grid view">
+            <Grid3X3 size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="wide-search explore-search" role="search">
