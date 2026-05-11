@@ -11,7 +11,8 @@ import type {
   AzureConnectionHealth,
   ExtractQuestRequest,
   ExtractQuestResponse,
-  QuestCard
+  QuestCard,
+  ScrapedPage
 } from "../src/types";
 
 const defaultImageUrl =
@@ -551,12 +552,31 @@ async function scrapeEventPage(url: string) {
 }
 
 async function prepareExtractionInput(input: ExtractQuestRequest) {
-  if (!input.url) return { input, warnings: [] as string[] };
+  const urls = new Set<string>();
+  if (input.url) urls.add(input.url);
 
-  const scraped = await scrapeEventPage(input.url);
+  // Detect URLs in text
+  if (input.text) {
+    const matches = input.text.match(/\bhttps?:\/\/[^\s<>"')]+/gi);
+    if (matches) {
+      matches.forEach((url) => urls.add(url.replace(/[.,;!?]+$/, "")));
+    }
+  }
+
+  if (urls.size === 0) return { input, warnings: [] as string[] };
+
+  const results = await Promise.all(Array.from(urls).map((url) => scrapeEventPage(url)));
+  const scrapedPages = results.map((r) => r.page).filter((p): p is ScrapedPage => !!p);
+  const warnings = results.flatMap((r) => r.warnings);
+
   return {
-    input: scraped.page ? { ...input, scrapedPage: scraped.page } : input,
-    warnings: scraped.warnings
+    input: {
+      ...input,
+      scrapedPages,
+      // Keep scrapedPage for backward compatibility if needed, using the first one
+      scrapedPage: scrapedPages[0]
+    },
+    warnings
   };
 }
 
@@ -609,13 +629,15 @@ function extractionMeta(
       ? 0
       : cards.reduce((total, card) => total + card.aiExtraction.confidence, 0) / cards.length;
 
+  const scrapedWarnings = input.scrapedPages?.flatMap((p) => p.warnings) ?? input.scrapedPage?.warnings ?? [];
+
   return {
     provider,
     fallbackUsed,
     sourceType: input.sourceType,
     confidence: Number(confidence.toFixed(2)),
     missingFields: unique(cards.flatMap((card) => card.aiExtraction.missingFields)),
-    warnings: unique([...fileWarnings(input), ...(input.scrapedPage?.warnings ?? []), ...warnings]),
+    warnings: unique([...fileWarnings(input), ...scrapedWarnings, ...warnings]),
     cardCount: cards.length
   };
 }
@@ -658,11 +680,15 @@ function summaryFrom(text: string, title: string) {
 }
 
 function contentFromInput(input: ExtractQuestRequest) {
+  const scrapedContent = (input.scrapedPages ?? (input.scrapedPage ? [input.scrapedPage] : [])).flatMap((page) => [
+    page.title ? `Page title: ${page.title}` : "",
+    page.description ? `Page description: ${page.description}` : "",
+    page.text
+  ]);
+
   return [
     input.text,
-    input.scrapedPage?.title ? `Page title: ${input.scrapedPage.title}` : "",
-    input.scrapedPage?.description ? `Page description: ${input.scrapedPage.description}` : "",
-    input.scrapedPage?.text,
+    ...scrapedContent,
     input.url,
     input.file?.text,
     input.file?.name
@@ -1009,9 +1035,9 @@ function buildPrompt(input: ExtractQuestRequest) {
     "",
     `Source type: ${input.sourceType}`,
     input.url ? `URL: ${input.url}` : "",
-    input.scrapedPage
-      ? `Scraped event page (${input.scrapedPage.finalUrl}):\n${input.scrapedPage.text}`
-      : "",
+    ...(input.scrapedPages ?? (input.scrapedPage ? [input.scrapedPage] : [])).map(
+      (page) => `Scraped event page (${page.finalUrl}):\n${page.text}`
+    ),
     input.file ? `File: ${input.file.name} (${input.file.type}, ${input.file.size} bytes)` : "",
     input.file?.dataUrl?.startsWith("data:image/")
       ? "Attached image: read all visible text, dates, locations, QR/link text, and organizer details from the screenshot or poster."
@@ -1127,7 +1153,50 @@ async function extractWithCustomAzure(input: ExtractQuestRequest, endpoint: stri
   throw new Error(errors.slice(0, 3).join("; "));
 }
 
+async function extractWithGenericOpenAI(input: ExtractQuestRequest, endpoint: string, key: string) {
+  const url = endpoint.endsWith("/chat/completions") ? endpoint : joinUrl(endpoint, "/chat/completions");
+  const payload = await fetchJsonWithTimeout(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model: process.env.GENERIC_MODEL ?? "openai/gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You extract campus opportunity details into QuestBoard cards. Respond with valid JSON only."
+        },
+        {
+          role: "user",
+          content: input.file?.dataUrl?.startsWith("data:image/")
+            ? [
+                { type: "text", text: buildPrompt(input) },
+                { type: "image_url", image_url: { url: input.file.dataUrl } }
+              ]
+            : buildPrompt(input)
+        }
+      ],
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  return normalizeAzureCards(payload, input);
+}
+
 async function extractWithAzure(input: ExtractQuestRequest) {
+  const useAzure = process.env.USE_AZURE !== "false";
+  
+  if (!useAzure) {
+    const genericEndpoint = process.env.GENERIC_ENDPOINT;
+    const genericKey = process.env.GENERIC_API_KEY;
+    if (genericEndpoint && genericKey) {
+      return extractWithGenericOpenAI(input, genericEndpoint, genericKey);
+    }
+  }
+
   const endpoint = process.env.AZURE_AI_ENDPOINT;
   const resolvedEndpoint = getAzureEndpoint();
   const key = getAzureKey();
@@ -1136,11 +1205,9 @@ async function extractWithAzure(input: ExtractQuestRequest) {
   if (!resolvedEndpoint || !key || !enabled) return null;
 
   const mode = getAzureMode();
-  if (
-    mode === "azure-openai" ||
-    process.env.AZURE_OPENAI_DEPLOYMENT ||
-    process.env.AZURE_AI_DEPLOYMENT
-  ) {
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT;
+
+  if (mode === "azure-openai" || deployment) {
     return extractWithAzureOpenAI(input, resolvedEndpoint, key);
   }
 
@@ -1208,14 +1275,31 @@ export async function checkAzureConnection(): Promise<AzureConnectionHealth> {
 }
 
 async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
+  const useAzure = process.env.USE_AZURE !== "false";
   const endpoint = getAzureEndpoint();
   const key = getAzureKey();
   const mode = getAzureMode();
   const checkedAt = new Date().toISOString();
-  const deploymentConfigured = Boolean(
-    process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT
-  );
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT;
+  const deploymentConfigured = Boolean(deployment);
   const routeConfigured = Boolean(getConfiguredRoute());
+
+  if (!useAzure) {
+    const genericEndpoint = process.env.GENERIC_ENDPOINT;
+    const genericKey = process.env.GENERIC_API_KEY;
+    return {
+      configured: Boolean(genericEndpoint && genericKey),
+      reachable: Boolean(genericEndpoint && genericKey),
+      mode: "generic-openai",
+      status: genericEndpoint && genericKey ? "ready" : "not_configured",
+      deploymentConfigured: false,
+      routeConfigured: false,
+      detail: genericEndpoint && genericKey
+        ? `Using generic OpenAI-compatible endpoint: ${genericEndpoint}`
+        : "USE_AZURE is false but GENERIC_ENDPOINT/GENERIC_API_KEY are missing.",
+      checkedAt
+    };
+  }
 
   if (!endpoint || !key || process.env.AZURE_AI_ENABLED === "false") {
     return {
@@ -1230,6 +1314,8 @@ async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
       checkedAt
     };
   }
+
+  const isAzureOpenAI = mode === "azure-openai" || !!deployment;
 
   let endpointHost: string | undefined;
   try {
@@ -1247,7 +1333,7 @@ async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
     };
   }
 
-  if (mode === "azure-openai" || deploymentConfigured) {
+  if (isAzureOpenAI) {
     try {
       await extractWithAzureOpenAI(
         {

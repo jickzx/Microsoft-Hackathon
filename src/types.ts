@@ -234,6 +234,15 @@ export interface MatchRecommendationResponse {
   meta: MatchRecommendationMeta;
 }
 
+export interface ScrapedPage {
+  finalUrl: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  text: string;
+  warnings: string[];
+}
+
 export interface ExtractQuestRequest {
   sourceType: QuestSourceType;
   text?: string;
@@ -247,14 +256,8 @@ export interface ExtractQuestRequest {
     dataUrl?: string;
     truncated?: boolean;
   };
-  scrapedPage?: {
-    finalUrl: string;
-    title?: string;
-    description?: string;
-    imageUrl?: string;
-    text: string;
-    warnings: string[];
-  };
+  scrapedPage?: ScrapedPage;
+  scrapedPages?: ScrapedPage[];
 }
 
 export interface ExtractQuestMeta {
