@@ -32,16 +32,26 @@ export function firstEnv(...names: string[]) {
 }
 
 export function azureConfig() {
+  const openAiEndpoint = envValue("AZURE_OPENAI_ENDPOINT");
+  const aiEndpoint = envValue("AZURE_AI_ENDPOINT");
+  const endpoint = openAiEndpoint ?? aiEndpoint;
   const openAiKey =
     envValue("AZURE_OPENAI_API_KEY") ?? readSecretFile(envValue("AZURE_OPENAI_API_KEY_FILE"));
+  const key = openAiEndpoint ? openAiKey : envValue("AZURE_AI_KEY") ?? openAiKey;
+  const deployment = openAiEndpoint
+    ? firstEnv("AZURE_OPENAI_DEPLOYMENT", "AZURE_AI_DEPLOYMENT")
+    : firstEnv("AZURE_AI_DEPLOYMENT", "AZURE_OPENAI_DEPLOYMENT");
+  const apiVersion = openAiEndpoint
+    ? firstEnv("AZURE_OPENAI_API_VERSION", "AZURE_AI_API_VERSION")
+    : firstEnv("AZURE_AI_API_VERSION", "AZURE_OPENAI_API_VERSION");
 
   return {
     enabled: envValue("AZURE_AI_ENABLED") !== "false",
-    endpoint: firstEnv("AZURE_OPENAI_ENDPOINT", "AZURE_AI_ENDPOINT"),
-    key: openAiKey ?? envValue("AZURE_AI_KEY"),
+    endpoint,
+    key,
     mode: envValue("AZURE_AI_MODE") ?? "auto",
-    deployment: firstEnv("AZURE_OPENAI_DEPLOYMENT", "AZURE_AI_DEPLOYMENT"),
-    apiVersion: firstEnv("AZURE_OPENAI_API_VERSION", "AZURE_AI_API_VERSION") ?? "2024-10-21",
+    deployment,
+    apiVersion: apiVersion ?? "2024-10-21",
     route: firstEnv("AZURE_AI_ROUTE", "AZURE_OPENAI_ROUTE") ?? "",
     matchRoute: envValue("AZURE_MATCH_ROUTE") ?? "",
     authHeader: envValue("AZURE_AI_AUTH_HEADER"),
