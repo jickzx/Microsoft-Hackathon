@@ -149,6 +149,7 @@ export type QuestCard = z.infer<typeof questCardSchema>;
 
 export interface StudentProfile {
   id: string;
+  email?: string;
   name: string;
   year: "freshman" | "sophomore" | "junior" | "senior" | "masters" | "phd";
   major: string;
@@ -234,8 +235,69 @@ export interface MatchRecommendationResponse {
   meta: MatchRecommendationMeta;
 }
 
+const textListSchema = z.preprocess(
+  (value) =>
+    typeof value === "string"
+      ? value
+          .split(/[,;\n|]/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : value,
+  z.array(z.string().min(1))
+);
+
+export const eventUserProfileSchema = z.object({
+  id: z.string().min(1),
+  eventId: z.string().min(1),
+  name: z.string().min(1),
+  role: z.string().min(1),
+  workExperience: z.string().min(1),
+  highestEducation: z.string().min(1),
+  courseOrJobTitle: z.string().min(1),
+  careerInterests: textListSchema,
+  skills: textListSchema,
+  goals: textListSchema,
+  hobbies: textListSchema
+});
+
+export type EventUserProfile = z.infer<typeof eventUserProfileSchema>;
+
+export interface EventProfileMatchBreakdown {
+  profileId: string;
+  candidateId: string;
+  eventId: string;
+  total: number;
+  careerScore: number;
+  skillScore: number;
+  goalScore: number;
+  roleScore: number;
+  experienceScore: number;
+  educationScore: number;
+  hobbyScore: number;
+  reasons: string[];
+  conversationStarters: string[];
+}
+
+export interface EventProfileMatchMeta {
+  provider: "azure" | "local";
+  fallbackUsed: boolean;
+  eventId: string;
+  profileId: string;
+  profileCount: number;
+  confidence: number;
+  warnings: string[];
+  model: string;
+  matchedAt: string;
+}
+
+export interface EventProfileMatchResponse {
+  matches: EventProfileMatchBreakdown[];
+  meta: EventProfileMatchMeta;
+}
+
 export interface ExtractQuestRequest {
   sourceType: QuestSourceType;
+  submittedByUserId?: string;
   text?: string;
   url?: string;
   file?: {

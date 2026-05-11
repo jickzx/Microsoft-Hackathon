@@ -11,6 +11,7 @@ dist
 .dev-server.*.log
 .prod-server.*.log
 .codex-status-server.*.log
+.vite-client.*.log
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*

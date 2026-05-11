@@ -7,11 +7,21 @@ import express from "express";
 import multer from "multer";
 import { z } from "zod";
 import { createServer as createViteServer } from "vite";
-import type { Request, Response } from "express";
-import { currentStudent } from "../src/data/seed";
+import type { NextFunction, Request, Response } from "express";
+import { eventProfiles } from "../src/data/eventProfiles";
 import { recommendParties } from "../src/lib/matching";
-import { questCardSchema, questSourceTypeSchema } from "../src/types";
+import { eventUserProfileSchema, questCardSchema, questSourceTypeSchema } from "../src/types";
 import type { ExtractQuestRequest, QuestCard } from "../src/types";
+import {
+  authenticateStudent,
+  clearSessionCookie,
+  createSession,
+  createStudentAccount,
+  deleteSession,
+  readSessionCookie,
+  setSessionCookie,
+  studentForSession
+} from "./auth";
 import {
   createPartyFromRecommendation,
   deleteQuest,
@@ -32,8 +42,11 @@ import {
   updateQuest,
   upsertMatchRecommendations
 } from "./db";
+import { azureConfig } from "./env";
 import { checkAzureConnection, extractQuestCards } from "./extractor";
 import { recommendQuestMatches } from "./matcher";
+import { importVerifiedSources, verifiedSourceUrls } from "./sources";
+import { recommendEventProfileMatches } from "./profileMatcher";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
@@ -126,6 +139,16 @@ const matchSchema = z.object({
   questIds: z.array(z.string()).optional()
 });
 
+const eventParamsSchema = z.object({
+  eventId: z.string().min(1)
+});
+
+const eventProfileMatchSchema = z.object({
+  profileId: z.string().optional(),
+  profiles: z.array(eventUserProfileSchema).optional(),
+  limit: z.coerce.number().int().min(1).max(20).optional()
+});
+
 const questParamsSchema = z.object({
   questId: z.string().min(1)
 });
@@ -154,16 +177,49 @@ const prepBodySchema = z.object({
   done: z.boolean()
 });
 
+const authSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8)
+});
+
+const signupSchema = authSchema.extend({
+  name: z.string().min(2),
+  major: z.string().min(2),
+  year: z.enum(["freshman", "sophomore", "junior", "senior", "masters", "phd"])
+});
+
+const importSourcesSchema = z.object({
+  urls: z.array(z.string().url()).min(1).max(12).optional()
+});
+
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+interface AuthenticatedRequest extends Request {
+  auth?: Awaited<ReturnType<typeof studentForSession>>;
+}
+
+async function attachAuth(request: AuthenticatedRequest, _response: Response, next: NextFunction) {
+  request.auth = await studentForSession(readSessionCookie(request.headers.cookie));
+  next();
+}
+
+function requireAuth(request: AuthenticatedRequest, response: Response, next: NextFunction) {
+  if (!request.auth?.student) {
+    response.status(401).json({ error: "Sign in required." });
+    return;
+  }
+  next();
+}
+
+app.use(attachAuth);
+
 app.get("/api/health", (_request, response) => {
-  const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT ?? process.env.AZURE_AI_ENDPOINT;
-  const azureKey = process.env.AZURE_OPENAI_API_KEY ?? process.env.AZURE_AI_KEY;
+  const azure = azureConfig();
 
   response.json({
     ok: true,
-    azureConfigured: Boolean(azureEndpoint && azureKey)
+    azureConfigured: Boolean(azure.endpoint && azure.key)
   });
 });
 
@@ -171,14 +227,117 @@ app.get("/api/azure/health", async (_request, response) => {
   response.json(await checkAzureConnection());
 });
 
-app.get("/api/users", async (_request, response) => {
+app.get("/api/auth/me", (request: AuthenticatedRequest, response) => {
   response.json({
-    users: await listStudents(),
-    currentUserId: currentStudent.id
+    authenticated: Boolean(request.auth?.student),
+    user: request.auth?.student ?? null
   });
 });
 
-app.get("/api/users/:userId/state", async (request, response) => {
+app.post("/api/auth/signup", async (request, response) => {
+  const parsed = signupSchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({
+      error: "Invalid signup details",
+      details: parsed.error.issues.map((issue) => issue.message)
+    });
+    return;
+  }
+
+  const student = await createStudentAccount(parsed.data);
+  const token = await createSession(student.id);
+  setSessionCookie(response, token);
+  response.status(201).json({ user: student });
+});
+
+app.post("/api/auth/login", async (request, response) => {
+  const parsed = authSchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({
+      error: "Invalid login details",
+      details: parsed.error.issues.map((issue) => issue.message)
+    });
+    return;
+  }
+
+  const student = await authenticateStudent(parsed.data.email, parsed.data.password);
+  const token = await createSession(student.id);
+  setSessionCookie(response, token);
+  response.json({ user: student });
+});
+
+app.post("/api/auth/logout", async (request, response) => {
+  await deleteSession(readSessionCookie(request.headers.cookie));
+  clearSessionCookie(response);
+  response.status(204).end();
+});
+
+app.get("/api/users", requireAuth, async (request: AuthenticatedRequest, response) => {
+  response.json({
+    users: await listStudents(),
+    currentUserId: request.auth!.student.id
+  });
+});
+
+app.get("/api/events/:eventId/profiles", requireAuth, (request, response) => {
+  const params = eventParamsSchema.safeParse(request.params);
+  if (!params.success) {
+    response.status(400).json({ error: "Invalid event id" });
+    return;
+  }
+
+  response.json({
+    profiles: eventProfiles.filter((profile) => profile.eventId === params.data.eventId)
+  });
+});
+
+app.post(
+  "/api/events/:eventId/matches",
+  requireAuth,
+  async (request: AuthenticatedRequest, response) => {
+    const params = eventParamsSchema.safeParse(request.params);
+    const parsed = eventProfileMatchSchema.safeParse(request.body);
+    if (!params.success || !parsed.success) {
+      response.status(400).json({
+        error: "Invalid event matchmaking request",
+        details: [
+          ...(params.success ? [] : params.error.issues.map((issue) => issue.message)),
+          ...(parsed.success ? [] : parsed.error.issues.map((issue) => issue.message))
+        ]
+      });
+      return;
+    }
+
+    const profiles = (parsed.data.profiles ?? eventProfiles).filter(
+      (profile) => profile.eventId === params.data.eventId
+    );
+    const profileId = parsed.data.profileId ?? request.auth!.student.id;
+
+    if (!parsed.data.profiles && profileId !== request.auth!.student.id) {
+      response.status(403).json({ error: "Cannot request profile matches for another user." });
+      return;
+    }
+
+    if (!profiles.length) {
+      response.status(404).json({ error: "No profiles found for this event." });
+      return;
+    }
+
+    if (!profiles.some((profile) => profile.id === profileId)) {
+      response.status(404).json({ error: "Profile not found for this event." });
+      return;
+    }
+
+    const result = await recommendEventProfileMatches(
+      profiles,
+      profileId,
+      parsed.data.limit ?? 5
+    );
+    response.json({ ...result, profiles });
+  }
+);
+
+app.get("/api/users/:userId/state", requireAuth, async (request, response) => {
   const userId = String(request.params.userId);
   const student = await findStudent(userId);
   if (!student) {
@@ -189,7 +348,7 @@ app.get("/api/users/:userId/state", async (request, response) => {
   response.json(await getUserState(userId));
 });
 
-app.get("/api/users/:userId/parties", async (request, response) => {
+app.get("/api/users/:userId/parties", requireAuth, async (request, response) => {
   const userId = String(request.params.userId);
   const student = await findStudent(userId);
   if (!student) {
@@ -200,12 +359,30 @@ app.get("/api/users/:userId/parties", async (request, response) => {
   response.json({ parties: await listPartiesForStudent(userId) });
 });
 
-app.get("/api/quests", async (_request, response) => {
+app.get("/api/quests", requireAuth, async (_request, response) => {
   const quests = await listQuests();
   response.json({ quests });
 });
 
-app.post("/api/quests", async (request, response) => {
+app.get("/api/sources/verified", requireAuth, (_request, response) => {
+  response.json({ urls: verifiedSourceUrls });
+});
+
+app.post("/api/sources/import", requireAuth, async (request: AuthenticatedRequest, response) => {
+  const parsed = importSourcesSchema.safeParse(request.body ?? {});
+  if (!parsed.success) {
+    response.status(400).json({
+      error: "Invalid source import request",
+      details: parsed.error.issues.map((issue) => issue.message)
+    });
+    return;
+  }
+
+  const result = await importVerifiedSources(request.auth!.student.id, parsed.data.urls);
+  response.status(result.cards.length ? 201 : 502).json(result);
+});
+
+app.post("/api/quests", requireAuth, async (request, response) => {
   const parsed = questCardSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({
@@ -218,7 +395,7 @@ app.post("/api/quests", async (request, response) => {
   response.status(201).json({ quest: await publishQuest(parsed.data) });
 });
 
-app.patch("/api/quests/:questId", async (request, response) => {
+app.patch("/api/quests/:questId", requireAuth, async (request, response) => {
   const params = questParamsSchema.safeParse(request.params);
   const parsed = questCardSchema.safeParse(request.body);
   if (!params.success || !parsed.success) {
@@ -235,7 +412,7 @@ app.patch("/api/quests/:questId", async (request, response) => {
   response.json({ quest: await updateQuest(params.data.questId, parsed.data) });
 });
 
-app.delete("/api/quests/:questId", async (request, response) => {
+app.delete("/api/quests/:questId", requireAuth, async (request, response) => {
   const params = questParamsSchema.safeParse(request.params);
   if (!params.success) {
     response.status(400).json({ error: "Invalid quest id" });
@@ -246,13 +423,14 @@ app.delete("/api/quests/:questId", async (request, response) => {
   response.status(204).end();
 });
 
-app.post("/api/extract", upload.single("file"), async (request, response) => {
+app.post("/api/extract", requireAuth, upload.single("file"), async (request: AuthenticatedRequest, response) => {
   const input = parseExtractInput(request, response);
   if (!input) return;
 
+  input.submittedByUserId = request.auth!.student.id;
   const extraction = await extractQuestCards(input);
   const sourceId = extraction.cards[0]?.source.id;
-  if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta);
+  if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta, request.auth!.student.id);
   response.json({
     ...extraction,
     meta: {
@@ -262,13 +440,14 @@ app.post("/api/extract", upload.single("file"), async (request, response) => {
   });
 });
 
-app.post("/api/quests/import", upload.single("file"), async (request, response) => {
+app.post("/api/quests/import", requireAuth, upload.single("file"), async (request: AuthenticatedRequest, response) => {
   const input = parseExtractInput(request, response);
   if (!input) return;
 
+  input.submittedByUserId = request.auth!.student.id;
   const extraction = await extractQuestCards(input);
   const sourceId = extraction.cards[0]?.source.id;
-  if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta);
+  if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta, request.auth!.student.id);
   const cards = await Promise.all(extraction.cards.map((quest) => publishQuest(quest)));
 
   response.status(201).json({
@@ -282,47 +461,63 @@ app.post("/api/quests/import", upload.single("file"), async (request, response) 
   });
 });
 
-app.post("/api/users/:userId/saved-quests/:questId", async (request, response) => {
+app.post("/api/users/:userId/saved-quests/:questId", requireAuth, async (request: AuthenticatedRequest, response) => {
   const params = userQuestParamsSchema.safeParse(request.params);
   if (!params.success) {
     response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+  if (params.data.userId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot change another user." });
     return;
   }
 
   response.json(await setSavedQuest(params.data.userId, params.data.questId, true));
 });
 
-app.delete("/api/users/:userId/saved-quests/:questId", async (request, response) => {
+app.delete("/api/users/:userId/saved-quests/:questId", requireAuth, async (request: AuthenticatedRequest, response) => {
   const params = userQuestParamsSchema.safeParse(request.params);
   if (!params.success) {
     response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+  if (params.data.userId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot change another user." });
     return;
   }
 
   response.json(await setSavedQuest(params.data.userId, params.data.questId, false));
 });
 
-app.post("/api/users/:userId/joined-quests/:questId", async (request, response) => {
+app.post("/api/users/:userId/joined-quests/:questId", requireAuth, async (request: AuthenticatedRequest, response) => {
   const params = userQuestParamsSchema.safeParse(request.params);
   if (!params.success) {
     response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+  if (params.data.userId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot change another user." });
     return;
   }
 
   response.json(await setJoinedQuest(params.data.userId, params.data.questId, true));
 });
 
-app.delete("/api/users/:userId/joined-quests/:questId", async (request, response) => {
+app.delete("/api/users/:userId/joined-quests/:questId", requireAuth, async (request: AuthenticatedRequest, response) => {
   const params = userQuestParamsSchema.safeParse(request.params);
   if (!params.success) {
     response.status(400).json({ error: "Invalid user or quest id" });
+    return;
+  }
+  if (params.data.userId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot change another user." });
     return;
   }
 
   response.json(await setJoinedQuest(params.data.userId, params.data.questId, false));
 });
 
-app.post("/api/matches/recommend", async (request, response) => {
+app.post("/api/matches/recommend", requireAuth, async (request: AuthenticatedRequest, response) => {
   const parsed = matchSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({
@@ -332,7 +527,11 @@ app.post("/api/matches/recommend", async (request, response) => {
     return;
   }
 
-  const studentId = parsed.data.studentId ?? "student-you";
+  const studentId = parsed.data.studentId ?? request.auth!.student.id;
+  if (studentId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot request matches for another user." });
+    return;
+  }
   const student = await findStudent(studentId);
   if (!student) {
     response.status(404).json({ error: "Student not found" });
@@ -350,9 +549,9 @@ app.post("/api/matches/recommend", async (request, response) => {
   response.json(result);
 });
 
-app.post("/api/parties/recommend", async (request, response) => {
+app.post("/api/parties/recommend", requireAuth, async (request: AuthenticatedRequest, response) => {
   const questId = String(request.body.questId ?? "");
-  const studentId = String(request.body.studentId ?? "student-you");
+  const studentId = String(request.body.studentId ?? request.auth!.student.id);
   const [quest, studentList] = await Promise.all([getQuest(questId), listStudents()]);
 
   if (!quest) {
@@ -366,7 +565,7 @@ app.post("/api/parties/recommend", async (request, response) => {
   });
 });
 
-app.post("/api/parties", async (request, response) => {
+app.post("/api/parties", requireAuth, async (request: AuthenticatedRequest, response) => {
   const parsed = createPartySchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({
@@ -376,7 +575,11 @@ app.post("/api/parties", async (request, response) => {
     return;
   }
 
-  const studentId = parsed.data.studentId ?? currentStudent.id;
+  const studentId = parsed.data.studentId ?? request.auth!.student.id;
+  if (studentId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot create a party for another user." });
+    return;
+  }
   const [quest, studentList] = await Promise.all([getQuest(parsed.data.questId), listStudents()]);
   if (!quest) {
     response.status(404).json({ error: "Quest not found" });
@@ -399,22 +602,30 @@ app.post("/api/parties", async (request, response) => {
   });
 });
 
-app.post("/api/parties/:partyId/join", async (request, response) => {
+app.post("/api/parties/:partyId/join", requireAuth, async (request: AuthenticatedRequest, response) => {
   const params = partyParamsSchema.safeParse(request.params);
-  const studentId = String(request.body.studentId ?? currentStudent.id);
+  const studentId = String(request.body.studentId ?? request.auth!.student.id);
   if (!params.success) {
     response.status(400).json({ error: "Invalid party id" });
+    return;
+  }
+  if (studentId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot join a party for another user." });
     return;
   }
 
   response.json({ party: await joinParty(params.data.partyId, studentId) });
 });
 
-app.delete("/api/parties/:partyId/leave", async (request, response) => {
+app.delete("/api/parties/:partyId/leave", requireAuth, async (request: AuthenticatedRequest, response) => {
   const params = partyParamsSchema.safeParse(request.params);
-  const studentId = String(request.body.studentId ?? currentStudent.id);
+  const studentId = String(request.body.studentId ?? request.auth!.student.id);
   if (!params.success) {
     response.status(400).json({ error: "Invalid party id" });
+    return;
+  }
+  if (studentId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot leave a party for another user." });
     return;
   }
 
@@ -422,7 +633,7 @@ app.delete("/api/parties/:partyId/leave", async (request, response) => {
   response.status(204).end();
 });
 
-app.patch("/api/parties/:partyId/prep/:itemId", async (request, response) => {
+app.patch("/api/parties/:partyId/prep/:itemId", requireAuth, async (request, response) => {
   const params = prepParamsSchema.safeParse(request.params);
   const body = prepBodySchema.safeParse(request.body);
   if (!params.success || !body.success) {
@@ -433,6 +644,19 @@ app.patch("/api/parties/:partyId/prep/:itemId", async (request, response) => {
   response.json({
     item: await updatePrepItem(params.data.partyId, params.data.itemId, body.data.done)
   });
+});
+
+app.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
+  const status =
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof (error as { status?: unknown }).status === "number"
+      ? (error as { status: number }).status
+      : 500;
+  const message = error instanceof Error ? error.message : "Unexpected server error.";
+  console.error(message);
+  response.status(status).json({ error: message });
 });
 
 async function start() {

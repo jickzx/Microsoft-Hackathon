@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent, ReactNode } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import {
   Award,
   Bell,
@@ -45,6 +45,7 @@ import {
   labelize
 } from "./lib/format";
 import { scoreQuestForStudent } from "./lib/matching";
+import { interestTags } from "./types";
 import type {
   AzureConnectionHealth,
   ExtractQuestMeta,
@@ -91,6 +92,11 @@ interface UserState {
 interface PersistedParty extends QuestParty {
   quest: QuestCard;
   members: StudentProfile[];
+}
+
+interface AuthResponse {
+  authenticated?: boolean;
+  user: StudentProfile | null;
 }
 
 interface ExtractMetaWithSource extends ExtractQuestMeta {
@@ -152,15 +158,12 @@ const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
 
 const quickFilters: QuickFilter[] = ["Trending", "New", "Ending Soon", "For You"];
 
-const browseFilters = [
+const browseFilters: { value: string; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "ai", label: "Hackathon" },
-  { value: "events", label: "Spring Week" },
-  { value: "career", label: "Internship" },
-  { value: "startups", label: "Grad Scheme" },
-  { value: "design", label: "Workshop" },
-  { value: "competitions", label: "Competition" },
-  { value: "networking", label: "Networking" }
+  ...interestTags.map((tag) => ({ value: tag, label: labelize(tag) })),
+  { value: "internship", label: "Internship" },
+  { value: "spring-week", label: "Spring Week" },
+  { value: "grad-scheme", label: "Grad Scheme" }
 ];
 
 const submitMethods: {
@@ -184,9 +187,9 @@ const badgeItems = [
 ];
 
 const profileMenu = [
-  { icon: Bookmark, label: "Saved Quests", count: 0 },
-  { icon: History, label: "Quest History", count: 12 },
-  { icon: Users, label: "My Parties", count: 0 },
+  { icon: Bookmark, label: "Saved Quests" },
+  { icon: History, label: "Quest History" },
+  { icon: Users, label: "My Parties" },
   { icon: Settings, label: "Settings" }
 ];
 
@@ -230,10 +233,11 @@ function saveDemoLogin() {
 }
 
 function App() {
-  const [authState, setAuthState] = useState<AuthState>(() => readStoredAuthState());
-  const [quests, setQuests] = useState<QuestCard[]>(seedQuests);
-  const [users, setUsers] = useState<StudentProfile[]>(seedStudents);
-  const [currentUserId, setCurrentUserId] = useState(currentStudent.id);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authUser, setAuthUser] = useState<StudentProfile | null>(null);
+  const [quests, setQuests] = useState<QuestCard[]>([]);
+  const [users, setUsers] = useState<StudentProfile[]>([]);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [activePage, setActivePage] = useState<Page>("home");
   const [selectedQuest, setSelectedQuest] = useState<QuestCard | null>(null);
   const [savedQuestIds, setSavedQuestIds] = useState<Set<string>>(() => new Set());
@@ -243,39 +247,11 @@ function App() {
   const [remoteMatches, setRemoteMatches] = useState<Record<string, QuestMatchBreakdown>>({});
   const [matchMeta, setMatchMeta] = useState<MatchRecommendationMeta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [appError, setAppError] = useState("");
+  const [importingSources, setImportingSources] = useState(false);
 
-  const signupStudent = useMemo(
-    () => (authState.profile ? createStudentFromSignup(authState.profile, currentStudent) : null),
-    [authState.profile]
-  );
-
-  const displayUsers = useMemo(() => {
-    if (!signupStudent) return users;
-    const nextUsers = users.map((student) =>
-      student.id === signupStudent.id ? signupStudent : student
-    );
-    return nextUsers.some((student) => student.id === signupStudent.id)
-      ? nextUsers
-      : [signupStudent, ...nextUsers];
-  }, [signupStudent, users]);
-
-  const activeStudent =
-    displayUsers.find((student) => student.id === currentUserId) ??
-    seedStudents.find((student) => student.id === currentUserId) ??
-    currentStudent;
-
-  const localQuestMatches = useMemo(
-    () =>
-      Object.fromEntries(
-        quests.map((quest) => [quest.id, scoreQuestForStudent(quest, activeStudent)])
-      ) as Record<string, QuestMatchBreakdown>,
-    [activeStudent, quests]
-  );
-
-  const questMatches = useMemo(
-    () => ({ ...localQuestMatches, ...remoteMatches }),
-    [localQuestMatches, remoteMatches]
-  );
+  const activeStudent = users.find((student) => student.id === currentUserId) ?? authUser;
+  const questMatches = remoteMatches;
 
   async function refreshQuests() {
     const data = await fetchJson<{ quests: QuestCard[] }>("/api/quests");
@@ -286,6 +262,7 @@ function App() {
   }
 
   async function refreshUserState(userId = currentUserId) {
+    if (!userId) return;
     const state = await fetchJson<UserState>(`/api/users/${userId}/state`);
     setSavedQuestIds(new Set(state.savedQuestIds));
     setJoinedQuestIds(new Set(state.joinedQuestIds));
@@ -294,25 +271,18 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      fetchJson<{ users: StudentProfile[]; currentUserId: string }>("/api/users"),
-      fetchJson<{ quests: QuestCard[] }>("/api/quests"),
-      fetchJson<AzureConnectionHealth>("/api/azure/health").catch(() => null)
-    ])
-      .then(([userData, questData, health]) => {
+    fetchJson<AuthResponse>("/api/auth/me")
+      .then((data) => {
         if (!active) return;
-        setUsers(userData.users.length ? userData.users : seedStudents);
-        setCurrentUserId(userData.currentUserId);
-        setQuests(questData.quests.length ? questData.quests : seedQuests);
-        setAzureHealth(health);
+        setAuthUser(data.user);
+        setCurrentUserId(data.user?.id ?? "");
       })
       .catch(() => {
         if (!active) return;
-        setUsers(seedStudents);
-        setQuests(seedQuests);
+        setAuthUser(null);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) setAuthChecked(true);
       });
 
     return () => {
@@ -321,6 +291,41 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!authUser) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+    setLoading(true);
+    setAppError("");
+    Promise.all([
+      fetchJson<{ users: StudentProfile[]; currentUserId: string }>("/api/users"),
+      fetchJson<{ quests: QuestCard[] }>("/api/quests"),
+      fetchJson<AzureConnectionHealth>("/api/azure/health").catch(() => null)
+    ])
+      .then(([userData, questData, health]) => {
+        if (!active) return;
+        setUsers(userData.users);
+        setCurrentUserId(userData.currentUserId);
+        setQuests(questData.quests);
+        setAzureHealth(health);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setAppError(error instanceof Error ? error.message : "Unable to load app data.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authUser]);
+
+  useEffect(() => {
+    if (!currentUserId) return undefined;
     let active = true;
 
     fetchJson<UserState>(`/api/users/${currentUserId}/state`)
@@ -330,9 +335,9 @@ function App() {
         setJoinedQuestIds(new Set(state.joinedQuestIds));
         setParties(state.parties);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
-        setSavedQuestIds(new Set(["quest-001", "quest-007"]));
+        setAppError(error instanceof Error ? error.message : "Unable to load user state.");
         setJoinedQuestIds(new Set());
         setParties([]);
       });
@@ -343,7 +348,7 @@ function App() {
   }, [currentUserId]);
 
   useEffect(() => {
-    if (!quests.length) return undefined;
+    if (!currentUserId || !quests.length) return undefined;
     let active = true;
 
     fetchJson<MatchRecommendationResponse>("/api/matches/recommend", {
@@ -374,6 +379,28 @@ function App() {
       active = false;
     };
   }, [currentUserId, quests]);
+
+  function handleAuth(user: StudentProfile) {
+    setAuthUser(user);
+    setCurrentUserId(user.id);
+    setUsers((current) => [user, ...current.filter((student) => student.id !== user.id)]);
+    setActivePage("home");
+    setSelectedQuest(null);
+  }
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setAuthUser(null);
+    setCurrentUserId("");
+    setUsers([]);
+    setQuests([]);
+    setRemoteMatches({});
+    setMatchMeta(null);
+    setSavedQuestIds(new Set());
+    setJoinedQuestIds(new Set());
+    setParties([]);
+    setSelectedQuest(null);
+  }
 
   async function toggleSaved(questId: string) {
     const saved = savedQuestIds.has(questId);
@@ -457,21 +484,24 @@ function App() {
     setActivePage("parties");
   }
 
-  function completeSignup(profile: SignupProfile) {
-    const cleanProfile = trimSignupProfile(profile);
-    saveAuthProfile(cleanProfile);
-    setAuthState({ signedIn: true, profile: cleanProfile });
-    setCurrentUserId(currentStudent.id);
-    setActivePage("home");
-    setSelectedQuest(null);
-  }
-
-  function continueWithDemoProfile() {
-    saveDemoLogin();
-    setAuthState({ signedIn: true, profile: null });
-    setCurrentUserId(currentStudent.id);
-    setActivePage("home");
-    setSelectedQuest(null);
+  async function importLiveSources() {
+    setImportingSources(true);
+    setAppError("");
+    try {
+      await fetchJson<{ cards: QuestCard[]; errors: { url: string; error: string }[] }>(
+        "/api/sources/import",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        }
+      );
+      await refreshQuests();
+    } catch (error) {
+      setAppError(error instanceof Error ? error.message : "Unable to import live sources.");
+    } finally {
+      setImportingSources(false);
+    }
   }
 
   async function togglePrepItem(partyId: string, item: PrepPlanItem) {
@@ -502,6 +532,14 @@ function App() {
     setActivePage(page);
   }
 
+  if (!authChecked) {
+    return <LoadingScreen />;
+  }
+
+  if (!authUser || !activeStudent) {
+    return <AuthPage onAuthenticated={handleAuth} />;
+  }
+
   const page = selectedQuest ? (
     <QuestDetailPage
       key={selectedQuest.id}
@@ -526,11 +564,13 @@ function App() {
           student={activeStudent}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
-          matchProvider={matchMeta?.provider ?? "local"}
+          matchReady={matchMeta?.provider === "azure"}
           loading={loading}
+          importingSources={importingSources}
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
           onExplore={() => showPage("explore")}
+          onImportSources={importLiveSources}
         />
       ) : null}
       {activePage === "explore" ? (
@@ -538,8 +578,10 @@ function App() {
           quests={quests}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
+          importingSources={importingSources}
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
+          onImportSources={importLiveSources}
         />
       ) : null}
       {activePage === "submit" ? (
@@ -572,14 +614,235 @@ function App() {
     <div className="app-frame">
       <TopNav
         activePage={activePage}
-        users={users}
-        currentUserId={currentUserId}
+        user={activeStudent}
         azureHealth={azureHealth}
         onNavigate={showPage}
-        onUserChange={setCurrentUserId}
+        onLogout={logout}
       />
-      <main className="app-main">{page}</main>
+      <main className="app-main">
+        {appError ? <AppBanner message={appError} /> : null}
+        {page}
+      </main>
     </div>
+  );
+}
+
+function OnboardingPage({
+  initialProfile,
+  onComplete,
+  onDemoLogin
+}: {
+  initialProfile: SignupProfile | null;
+  onComplete: (profile: SignupProfile) => void;
+  onDemoLogin: () => void;
+}) {
+  const [mode, setMode] = useState<AuthMode>("signup");
+  const [profile, setProfile] = useState<SignupProfile>(() => initialProfile ?? signupInitialProfile);
+  const [error, setError] = useState("");
+  const completedCount = requiredSignupFields.filter(({ key }) => profile[key].trim()).length;
+  const completion = Math.round((completedCount / requiredSignupFields.length) * 100);
+
+  function updateField(field: keyof SignupProfile, value: string) {
+    setProfile((current) => ({ ...current, [field]: value }));
+    setError("");
+  }
+
+  function submitSignup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const missingField = requiredSignupFields.find(({ key }) => !profile[key].trim());
+    if (missingField) {
+      setError(`${missingField.label} is required.`);
+      return;
+    }
+    onComplete(profile);
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-visual" aria-label="QuestBoard welcome">
+        <div className="auth-brandline">
+          <span className="brand-mark">
+            <Compass size={18} />
+          </span>
+          <strong>QuestBoard</strong>
+        </div>
+        <div className="auth-visual-copy">
+          <span>User Profile</span>
+          <h1>Start with the person behind the quest.</h1>
+          <p>Matchmaking works better when your ambitions, skills, and outside interests are in the room from the first click.</p>
+        </div>
+        <div className="auth-profile-preview">
+          <div>
+            <Sparkles size={18} />
+            <span>{completion}% profile</span>
+          </div>
+          <div className="auth-progress-track">
+            <span style={{ width: `${completion}%` }} />
+          </div>
+        </div>
+      </section>
+
+      <section className="auth-panel">
+        <div className="auth-toggle" aria-label="Authentication mode">
+          <button
+            className={mode === "signup" ? "active" : ""}
+            type="button"
+            onClick={() => setMode("signup")}
+          >
+            Sign up
+          </button>
+          <button
+            className={mode === "login" ? "active" : ""}
+            type="button"
+            onClick={() => setMode("login")}
+          >
+            Log in
+          </button>
+        </div>
+
+        <div className="auth-panel-header">
+          <span>
+            User Profile
+            <ChevronRight size={15} />
+          </span>
+          <h2>{mode === "signup" ? "Create your profile" : "Welcome back"}</h2>
+        </div>
+
+        {mode === "login" ? (
+          <div className="login-panel">
+            <div className="login-avatar">
+              <UserRound size={30} />
+            </div>
+            <h3>{initialProfile?.name ? `Continue as ${initialProfile.name}` : "Use the demo profile"}</h3>
+            <p>{initialProfile?.courseOrJobTitle ?? currentStudent.major}</p>
+            <button className="primary-button" type="button" onClick={() => (initialProfile ? onComplete(initialProfile) : onDemoLogin())}>
+              <ChevronRight size={17} />
+              Continue
+            </button>
+          </div>
+        ) : (
+          <form className="signup-form" onSubmit={submitSignup}>
+            <div className="auth-form-grid">
+              <AuthField icon={UserRound} label="Name">
+                <input
+                  value={profile.name}
+                  onChange={(event) => updateField("name", event.target.value)}
+                  placeholder="Your name"
+                />
+              </AuthField>
+              <AuthField icon={UserRound} label="Role">
+                <select value={profile.role} onChange={(event) => updateField("role", event.target.value)}>
+                  {roleOptions.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+              </AuthField>
+              <AuthField icon={FileText} label="Work experience">
+                <select
+                  value={profile.workExperience}
+                  onChange={(event) => updateField("workExperience", event.target.value)}
+                >
+                  <option value="" disabled>
+                    Select experience
+                  </option>
+                  {workExperienceOptions.map((experience) => (
+                    <option key={experience} value={experience}>
+                      {experience}
+                    </option>
+                  ))}
+                </select>
+              </AuthField>
+              <AuthField icon={Award} label="Highest level of education">
+                <select value={profile.education} onChange={(event) => updateField("education", event.target.value)}>
+                  <option value="" disabled>
+                    Select education
+                  </option>
+                  {educationOptions.map((education) => (
+                    <option key={education} value={education}>
+                      {education}
+                    </option>
+                  ))}
+                </select>
+              </AuthField>
+              <AuthField icon={FileText} label="Course or job title">
+                <input
+                  value={profile.courseOrJobTitle}
+                  onChange={(event) => updateField("courseOrJobTitle", event.target.value)}
+                  placeholder="Computer Science, UX intern..."
+                />
+              </AuthField>
+              <AuthField icon={Compass} label="Career interest">
+                <input
+                  value={profile.careerInterest}
+                  onChange={(event) => updateField("careerInterest", event.target.value)}
+                  placeholder="AI product, finance, healthcare..."
+                />
+              </AuthField>
+              <AuthField icon={Zap} label="Skills" wide>
+                <textarea
+                  rows={3}
+                  value={profile.skills}
+                  onChange={(event) => updateField("skills", event.target.value)}
+                  placeholder="React, Python, pitching, research..."
+                />
+              </AuthField>
+              <AuthField icon={Sparkles} label="Goals" wide>
+                <textarea
+                  rows={3}
+                  value={profile.goals}
+                  onChange={(event) => updateField("goals", event.target.value)}
+                  placeholder="Find internships, build a portfolio, join hackathons..."
+                />
+              </AuthField>
+              <AuthField icon={Star} label="Hobbies" wide>
+                <textarea
+                  rows={3}
+                  value={profile.hobbies}
+                  onChange={(event) => updateField("hobbies", event.target.value)}
+                  placeholder="Music, gaming, volunteering, sports..."
+                />
+              </AuthField>
+            </div>
+
+            {error ? <p className="form-error">{error}</p> : null}
+
+            <div className="auth-actions">
+              <button className="secondary-button" type="button" onClick={onDemoLogin}>
+                Demo profile
+              </button>
+              <button className="primary-button" type="submit">
+                <Check size={17} />
+                Create Profile
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function AuthField({
+  icon: Icon,
+  label,
+  children,
+  wide
+}: {
+  icon: typeof UserRound;
+  label: string;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <label className={wide ? "auth-field wide" : "auth-field"}>
+      <span>
+        <Icon size={16} />
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 
@@ -1271,12 +1534,14 @@ function PartiesPage({
 function ProfilePage({
   quests,
   student,
+  signupProfile,
   savedCount,
   partyCount,
   onSelectQuest
 }: {
   quests: QuestCard[];
   student: StudentProfile;
+  signupProfile: SignupProfile | null;
   savedCount: number;
   partyCount: number;
   onSelectQuest: (quest: QuestCard) => void;
@@ -1331,11 +1596,36 @@ function ProfilePage({
         </div>
       </section>
 
+      {signupProfile ? (
+        <ProfileSection title="Profile Details">
+          <div className="profile-detail-grid">
+            <ProfileDetail label="Role" value={signupProfile.role} />
+            <ProfileDetail label="Work experience" value={signupProfile.workExperience} />
+            <ProfileDetail label="Education" value={signupProfile.education} />
+            <ProfileDetail label="Course or job title" value={signupProfile.courseOrJobTitle} />
+            <ProfileDetail label="Career interest" value={signupProfile.careerInterest} wide />
+            <ProfileDetail label="Skills" value={signupProfile.skills} wide />
+            <ProfileDetail label="Goals" value={signupProfile.goals} wide />
+            <ProfileDetail label="Hobbies" value={signupProfile.hobbies} wide />
+          </div>
+        </ProfileSection>
+      ) : null}
+
       <ProfileSection title="Interests">
         <div className="chip-row">
           {student.interests.map((interest) => (
             <span className="soft-chip active" key={interest}>
               {labelize(interest)}
+            </span>
+          ))}
+        </div>
+      </ProfileSection>
+
+      <ProfileSection title="Skills">
+        <div className="chip-row">
+          {student.skills.map((skill) => (
+            <span className="soft-chip" key={skill}>
+              {labelize(skill)}
             </span>
           ))}
         </div>
@@ -1895,6 +2185,122 @@ function ProfileSection({ title, aside, children }: { title: string; aside?: str
       {children}
     </section>
   );
+}
+
+function ProfileDetail({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
+  return (
+    <div className={wide ? "profile-detail wide" : "profile-detail"}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function trimSignupProfile(profile: SignupProfile): SignupProfile {
+  return {
+    name: profile.name.trim(),
+    role: profile.role.trim(),
+    workExperience: profile.workExperience.trim(),
+    education: profile.education.trim(),
+    courseOrJobTitle: profile.courseOrJobTitle.trim(),
+    careerInterest: profile.careerInterest.trim(),
+    skills: profile.skills.trim(),
+    goals: profile.goals.trim(),
+    hobbies: profile.hobbies.trim()
+  };
+}
+
+function createStudentFromSignup(profile: SignupProfile, fallback: StudentProfile): StudentProfile {
+  const cleanProfile = trimSignupProfile(profile);
+  const interests = deriveInterestTags(cleanProfile, fallback.interests);
+  const skills = deriveSkillTags(cleanProfile.skills, fallback.skills);
+  const wantsToBuildSkills = deriveSkillTags(
+    `${cleanProfile.goals} ${cleanProfile.careerInterest}`,
+    fallback.wantsToBuildSkills
+  );
+
+  return {
+    ...fallback,
+    id: currentStudent.id,
+    name: cleanProfile.name || fallback.name,
+    year: deriveYearFromEducation(cleanProfile.education),
+    major: cleanProfile.courseOrJobTitle || cleanProfile.careerInterest || fallback.major,
+    interests,
+    skills,
+    wantsToBuildSkills
+  };
+}
+
+function deriveYearFromEducation(education: string): StudentProfile["year"] {
+  const value = education.toLowerCase();
+  if (value.includes("phd")) return "phd";
+  if (value.includes("master")) return "masters";
+  if (value.includes("bachelor")) return "senior";
+  if (value.includes("undergraduate")) return "sophomore";
+  return "freshman";
+}
+
+function deriveInterestTags(
+  profile: SignupProfile,
+  fallback: StudentProfile["interests"]
+): StudentProfile["interests"] {
+  const text = `${profile.courseOrJobTitle} ${profile.careerInterest} ${profile.goals} ${profile.hobbies}`.toLowerCase();
+  const rules: { tag: StudentProfile["interests"][number]; terms: string[] }[] = [
+    { tag: "ai", terms: ["ai", "artificial", "machine learning", "ml"] },
+    { tag: "career", terms: ["career", "intern", "job", "placement", "graduate"] },
+    { tag: "climate", terms: ["climate", "sustainability", "environment"] },
+    { tag: "clubs", terms: ["club", "society", "community"] },
+    { tag: "competitions", terms: ["competition", "hackathon", "challenge", "case"] },
+    { tag: "design", terms: ["design", "ux", "ui", "product"] },
+    { tag: "education", terms: ["education", "teaching", "tutor", "learning"] },
+    { tag: "events", terms: ["event", "meetup", "conference"] },
+    { tag: "finance", terms: ["finance", "investment", "banking", "accounting"] },
+    { tag: "gaming", terms: ["game", "gaming", "esports"] },
+    { tag: "health", terms: ["health", "medical", "medicine", "wellbeing"] },
+    { tag: "research", terms: ["research", "lab", "academic"] },
+    { tag: "robotics", terms: ["robot", "robotics", "hardware"] },
+    { tag: "social-impact", terms: ["impact", "charity", "nonprofit", "volunteer"] },
+    { tag: "startups", terms: ["startup", "founder", "entrepreneur", "venture"] },
+    { tag: "volunteering", terms: ["volunteer", "service", "charity"] },
+    { tag: "writing", terms: ["writing", "journalism", "blog", "copy"] }
+  ];
+  const matches = rules
+    .filter((rule) => rule.terms.some((term) => text.includes(term)))
+    .map((rule) => rule.tag);
+  const uniqueMatches = uniqueTags(matches).slice(0, 5);
+  return uniqueMatches.length ? uniqueMatches : fallback;
+}
+
+function deriveSkillTags(
+  textValue: string,
+  fallback: StudentProfile["skills"]
+): StudentProfile["skills"] {
+  const text = textValue.toLowerCase();
+  const rules: { tag: StudentProfile["skills"][number]; terms: string[] }[] = [
+    { tag: "backend", terms: ["backend", "api", "server", "database", "node"] },
+    { tag: "community", terms: ["community", "organising", "organizing", "volunteer"] },
+    { tag: "coding", terms: ["coding", "code", "python", "java", "javascript", "typescript", "software"] },
+    { tag: "data", terms: ["data", "sql", "analytics", "excel", "statistics"] },
+    { tag: "design", terms: ["design", "figma", "ux", "ui", "visual"] },
+    { tag: "frontend", terms: ["frontend", "react", "html", "css", "web"] },
+    { tag: "hardware", terms: ["hardware", "robot", "electronics", "arduino"] },
+    { tag: "marketing", terms: ["marketing", "growth", "social media", "brand"] },
+    { tag: "ml", terms: ["ml", "machine learning", "ai", "model"] },
+    { tag: "photography", terms: ["photo", "photography", "camera"] },
+    { tag: "pitching", terms: ["pitch", "pitching", "sales", "present"] },
+    { tag: "public-speaking", terms: ["public speaking", "presentation", "debate"] },
+    { tag: "video", terms: ["video", "editing", "film"] },
+    { tag: "writing", terms: ["writing", "copy", "essay", "blog"] }
+  ];
+  const matches = rules
+    .filter((rule) => rule.terms.some((term) => text.includes(term)))
+    .map((rule) => rule.tag);
+  const uniqueMatches = uniqueTags(matches).slice(0, 5);
+  return uniqueMatches.length ? uniqueMatches : fallback;
+}
+
+function uniqueTags<T extends string>(tags: T[]): T[] {
+  return [...new Set(tags)];
 }
 
 function filterAndSortQuests(
