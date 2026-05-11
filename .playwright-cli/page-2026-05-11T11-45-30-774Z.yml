@@ -1,0 +1,229 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - button "Skip to main content"
+    - banner "Microsoft Azure" [ref=e3]:
+      - button "Show Microsoft Cloud menu" [ref=e5] [cursor=pointer]:
+        - img [ref=e7]
+      - button "Show portal menu" [ref=e9] [cursor=pointer]:
+        - img [ref=e10]
+      - heading "Microsoft Azure" [level=1] [ref=e12]:
+        - link "Microsoft Azure" [ref=e13] [cursor=pointer]:
+          - /url: "#home"
+      - search [ref=e14]:
+        - generic [ref=e15]:
+          - img [ref=e17]
+          - textbox "Search resources, services, and docs (G+/)" [ref=e20]
+      - button "Copilot" [ref=e21] [cursor=pointer]:
+        - img [ref=e23]
+      - generic [ref=e25]:
+        - button "Cloud Shell" [ref=e26] [cursor=pointer]:
+          - img [ref=e27]
+        - button "Notifications" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+        - button "Settings" [ref=e33] [cursor=pointer]:
+          - img [ref=e34]
+        - button "Support + Troubleshooting" [ref=e37] [cursor=pointer]:
+          - img [ref=e38]
+        - button "Feedback" [ref=e40] [cursor=pointer]:
+          - img [ref=e41]
+      - button "Account menu Currently signed in as psyag24@nottingham.ac.uk, under The University of Nottingham (UniofNottm.onmicrosoft.com) tenant" [ref=e44] [cursor=pointer]:
+        - 'generic "Name: Ayush Gupta Email: psyag24@nottingham.ac.uk Directory: The University of Nottingham (67bda7ee-fd80-41ef-ac91-358418290a1e) Domain: UniofNottm.onmicrosoft.com Your sign in used multifactor authentication." [ref=e45]':
+          - generic [ref=e46]:
+            - generic [ref=e47]: psyag24@nottingham.ac.uk
+            - generic [ref=e48]: The University of Nottingham (UniofNottm.onmicrosoft.com)
+          - img [ref=e51]
+    - main [ref=e56]:
+      - generic [ref=e59]:
+        - heading "Azure services" [level=3] [ref=e60]
+        - grid "Azure services" [ref=e61]:
+          - row "Create a resource Resource Manager API Connections Quickstart Center Foundry Kubernetes services Virtual machines App Services Storage accounts More services" [ref=e62]:
+            - gridcell "Create a resource" [ref=e63] [cursor=pointer]:
+              - link "Create a resource" [ref=e64]:
+                - /url: "#create/hub"
+                - img [ref=e66]
+                - generic [ref=e69]: Create a resource
+            - gridcell "Resource Manager" [ref=e70] [cursor=pointer]:
+              - link "Resource Manager" [ref=e71]:
+                - /url: "#view/HubsExtension/ServiceMenuBlade/extension/Microsoft_Azure_Resources/menuId/ResourceManager"
+                - img [ref=e73]
+                - generic [ref=e75]: Resource Manager
+            - gridcell "API Connections" [ref=e76] [cursor=pointer]:
+              - link "API Connections" [ref=e77]:
+                - /url: "#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Web%2Fconnections"
+                - img [ref=e79]
+                - generic [ref=e81]: API Connections
+            - gridcell "Quickstart Center" [ref=e82] [cursor=pointer]:
+              - link "Quickstart Center" [ref=e83]:
+                - /url: "#blade/Microsoft_Azure_Resources/QuickstartCenterMenuBlade"
+                - img [ref=e85]
+                - generic [ref=e87]: Quickstart Center
+            - gridcell "Foundry" [ref=e88] [cursor=pointer]:
+              - link "Foundry" [ref=e89]:
+                - /url: "#blade/Microsoft_Azure_ProjectOxford/CognitiveServicesHub"
+                - img [ref=e91]
+                - generic [ref=e93]: Foundry
+            - gridcell "Kubernetes services" [ref=e94] [cursor=pointer]:
+              - link "Kubernetes services" [ref=e95]:
+                - /url: "#view/Microsoft_Azure_KubernetesFleet/KubernetesHub.MenuView/~/clusters"
+                - img [ref=e97]
+                - generic [ref=e99]: Kubernetes services
+            - gridcell "Virtual machines" [ref=e100] [cursor=pointer]:
+              - link "Virtual machines" [ref=e101]:
+                - /url: "#blade/Microsoft_Azure_ComputeHub/ComputeHubMenuBlade/virtualMachinesBrowse"
+                - img [ref=e103]
+                - generic [ref=e105]: Virtual machines
+            - gridcell "App Services" [ref=e106] [cursor=pointer]:
+              - link "App Services" [ref=e107]:
+                - /url: "#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Web%2Fsites"
+                - img [ref=e109]
+                - generic [ref=e111]: App Services
+            - gridcell "Storage accounts" [ref=e112] [cursor=pointer]:
+              - link "Storage accounts" [ref=e113]:
+                - /url: "#view/Microsoft_Azure_StorageHub/StorageHub.MenuView/~/StorageAccountsBrowse"
+                - img [ref=e115]
+                - generic [ref=e117]: Storage accounts
+            - gridcell "More services" [ref=e118] [cursor=pointer]:
+              - link "More services" [ref=e119]:
+                - /url: "#allservices"
+                - img [ref=e121]
+                - generic [ref=e124]: More services
+        - heading "Resources" [level=3] [ref=e125]
+        - generic [ref=e127]:
+          - tablist [ref=e129]:
+            - tab "Recent" [selected] [ref=e130] [cursor=pointer]:
+              - generic [ref=e132]: Recent
+            - tab "Favorite" [ref=e133] [cursor=pointer]:
+              - generic [ref=e135]: Favorite
+          - tabpanel [ref=e136]:
+            - grid "Resources" [ref=e139]:
+              - row "Name Type Last Viewed" [ref=e140]:
+                - columnheader "Name" [ref=e141]
+                - columnheader "Type" [ref=e142]
+                - columnheader "Last Viewed" [ref=e143]
+              - generic [ref=e144]:
+                - img [ref=e146]
+                - generic [ref=e148]: No resources have been viewed recently
+                - button "View all resources" [ref=e151] [cursor=pointer]:
+                  - generic [ref=e152]: View all resources
+        - heading "Navigate" [level=3] [ref=e153]
+        - grid "Navigate" [ref=e154]:
+          - row "Subscriptions Resource groups All resources Dashboard" [ref=e155]:
+            - gridcell "Subscriptions" [ref=e156]:
+              - link "Subscriptions" [ref=e157] [cursor=pointer]:
+                - /url: "#view/HubsExtension/ServiceMenuBlade/extension/Microsoft_Azure_Resources/menuId/ResourceManager/itemId/subscriptions"
+                - img [ref=e159]
+                - generic [ref=e161]: Subscriptions
+            - gridcell "Resource groups" [ref=e162]:
+              - link "Resource groups" [ref=e163] [cursor=pointer]:
+                - /url: "#view/HubsExtension/ServiceMenuBlade/extension/Microsoft_Azure_Resources/menuId/ResourceManager/itemId/resourcegroups"
+                - img [ref=e165]
+                - generic [ref=e167]: Resource groups
+            - gridcell "All resources" [ref=e168]:
+              - link "All resources" [ref=e169] [cursor=pointer]:
+                - /url: "#view/HubsExtension/ServiceMenuBlade/extension/Microsoft_Azure_Resources/menuId/ResourceManager/itemId/browseAll"
+                - img [ref=e171]
+                - generic [ref=e173]: All resources
+            - gridcell "Dashboard" [ref=e174]:
+              - link "Dashboard" [ref=e175] [cursor=pointer]:
+                - /url: "#dashboard"
+                - img [ref=e177]
+                - generic [ref=e179]: Dashboard
+        - heading "Tools" [level=3] [ref=e180]
+        - grid "Tools" [ref=e181]:
+          - row "Microsoft Learn Azure Monitor Microsoft Defender for Cloud Cost Management" [ref=e182]:
+            - gridcell "Microsoft Learn" [ref=e183]:
+              - link "Microsoft Learn" [ref=e184] [cursor=pointer]:
+                - /url: https://aka.ms/homemslearn
+                - img [ref=e187]
+                - generic [ref=e189]:
+                  - generic [ref=e190]:
+                    - text: Microsoft Learn
+                    - img [ref=e192]
+                  - generic [ref=e195]: Learn Azure with free online training from Microsoft
+            - gridcell "Azure Monitor" [ref=e196]:
+              - link "Azure Monitor" [ref=e197] [cursor=pointer]:
+                - /url: "#blade/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade"
+                - img [ref=e200]
+                - generic [ref=e202]:
+                  - generic [ref=e203]: Azure Monitor
+                  - generic [ref=e205]: Monitor your apps and infrastructure
+            - gridcell "Microsoft Defender for Cloud" [ref=e206]:
+              - link "Microsoft Defender for Cloud" [ref=e207] [cursor=pointer]:
+                - /url: "#blade/Microsoft_Azure_Security/SecurityMenuBlade"
+                - img [ref=e210]
+                - generic [ref=e212]:
+                  - generic [ref=e213]: Microsoft Defender for Cloud
+                  - generic [ref=e215]: Secure your apps and infrastructure
+            - gridcell "Cost Management" [ref=e216]:
+              - link "Cost Management" [ref=e217] [cursor=pointer]:
+                - /url: "#blade/Microsoft_Azure_CostManagement/Menu/openedBy/AzurePortal"
+                - img [ref=e220]
+                - generic [ref=e222]:
+                  - generic [ref=e223]: Cost Management
+                  - generic [ref=e225]: Analyze and optimize your cloud spend for free
+        - generic [ref=e226]:
+          - generic [ref=e227]:
+            - heading "Useful links" [level=3] [ref=e228]
+            - generic [ref=e229]:
+              - link "Technical Documentation" [ref=e231] [cursor=pointer]:
+                - /url: https://aka.ms/hometechnicaldocumentation
+                - text: Technical Documentation
+                - img [ref=e233]
+              - link "Azure Services" [ref=e236] [cursor=pointer]:
+                - /url: https://go.microsoft.com/fwlink/?linkid=2009591
+                - text: Azure Services
+                - img [ref=e238]
+              - link "Recent Azure Updates" [ref=e241] [cursor=pointer]:
+                - /url: https://go.microsoft.com/fwlink/?linkid=2043134
+                - text: Recent Azure Updates
+                - img [ref=e243]
+              - link "Azure Migration Tools" [ref=e246] [cursor=pointer]:
+                - /url: "#blade/Microsoft_Azure_Migrate/AmhResourceMenuBlade/overview"
+              - link "Find an Azure expert" [ref=e248] [cursor=pointer]:
+                - /url: "#blade/Microsoft_Azure_CustomerHub/ServiceProvidersBlade/overview"
+              - link "Quickstart Center" [ref=e250] [cursor=pointer]:
+                - /url: "#blade/Microsoft_Azure_Resources/QuickstartCenterBlade"
+          - generic [ref=e251]:
+            - heading "Azure mobile app" [level=3] [ref=e252]
+            - generic [ref=e253]:
+              - link "Download on the App Store" [ref=e254] [cursor=pointer]:
+                - /url: https://itunes.apple.com/app/microsoft-azure/id1219013620?ls=1&mt=8
+                - img "Download on the App Store" [ref=e255]
+              - link "Get it on Google Play" [ref=e256] [cursor=pointer]:
+                - /url: https://play.google.com/store/apps/details?id=com.microsoft.azure
+                - img "Get it on Google Play" [ref=e257]
+  - img [ref=e269]
+  - img [ref=e270]
+  - img [ref=e271]
+  - img [ref=e272]
+  - img [ref=e273]
+  - img [ref=e274]
+  - img [ref=e275]
+  - img [ref=e276]
+  - img [ref=e277]
+  - img [ref=e278]
+  - img [ref=e279]
+  - img [ref=e280]
+  - img [ref=e281]
+  - img [ref=e282]
+  - img [ref=e283]
+  - img [ref=e284]
+  - img [ref=e285]
+  - img [ref=e286]
+  - img [ref=e287]
+  - img [ref=e288]
+  - img [ref=e289]
+  - img [ref=e290]
+  - img [ref=e291]
+  - img [ref=e292]
+  - img [ref=e293]
+  - img [ref=e294]
+  - img [ref=e295]
+  - img [ref=e296]
+  - img [ref=e297]
+  - img [ref=e298]
+  - img [ref=e299]
+  - img [ref=e300]
+  - img [ref=e301]
+  - img [ref=e302]
+  - img [ref=e303]
