@@ -252,20 +252,34 @@ function App() {
     });
   }
 
-  function publishQuest(quest: QuestCard) {
+  async function publishQuest(quest: QuestCard) {
     const published = {
       ...quest,
       status: "published" as const,
       updatedAt: new Date().toISOString()
     };
 
-    fetch("/api/quests", {
+    const response = await fetch("/api/quests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(published)
-    }).catch(() => undefined);
-    setQuests((current) => [published, ...current.filter((item) => item.id !== quest.id)]);
-    setSelectedQuest(published);
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      quest?: QuestCard;
+      error?: string;
+      details?: string[];
+    };
+
+    if (!response.ok) {
+      throw new Error(data.details?.join(", ") ?? data.error ?? "Quest publish failed");
+    }
+
+    const savedQuest = data.quest ?? published;
+    setQuests((current) => [
+      savedQuest,
+      ...current.filter((item) => item.id !== savedQuest.id)
+    ]);
+    setSelectedQuest(savedQuest);
   }
 
   return (
@@ -346,8 +360,8 @@ function App() {
         <PostQuestModal
           azureHealth={azureHealth}
           onClose={() => setPostOpen(false)}
-          onPublish={(quest) => {
-            publishQuest(quest);
+          onPublish={async (quest) => {
+            await publishQuest(quest);
             setPostOpen(false);
           }}
         />
@@ -931,7 +945,7 @@ function PostQuestModal({
 }: {
   azureHealth: AzureConnectionHealth | null;
   onClose: () => void;
-  onPublish: (quest: QuestCard) => void;
+  onPublish: (quest: QuestCard) => Promise<void>;
 }) {
   const [sourceType, setSourceType] = useState<QuestSourceType>("text");
   const [url, setUrl] = useState("");
@@ -940,6 +954,7 @@ function PostQuestModal({
   );
   const [file, setFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [response, setResponse] = useState<ExtractQuestResponse | null>(null);
   const [draftCard, setDraftCard] = useState<QuestCard | null>(null);
   const [extractError, setExtractError] = useState("");
@@ -973,6 +988,20 @@ function PostQuestModal({
       setExtractError(error instanceof Error ? error.message : "Extraction failed");
     } finally {
       setExtracting(false);
+    }
+  }
+
+  async function publishDraft() {
+    if (!card) return;
+    setPublishing(true);
+    setExtractError("");
+
+    try {
+      await onPublish(card);
+    } catch (error) {
+      setExtractError(error instanceof Error ? error.message : "Quest publish failed");
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -1099,9 +1128,10 @@ function PostQuestModal({
                   <button
                     className="primary-button"
                     type="button"
-                    onClick={() => onPublish(card)}
-                    disabled={!card.title.trim() || !card.organizer.trim()}
+                    onClick={publishDraft}
+                    disabled={publishing || !card.title.trim() || !card.organizer.trim()}
                   >
+                    {publishing ? <Loader2 className="spin" size={17} /> : null}
                     Publish Quest
                   </button>
                 </div>

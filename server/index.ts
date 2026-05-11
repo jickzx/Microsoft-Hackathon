@@ -149,7 +149,7 @@ async function start() {
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(projectRoot, "dist", "client")));
-    app.get("*", (_request, response) => {
+    app.get("/{*splat}", (_request, response) => {
       response.sendFile(path.join(projectRoot, "dist", "client", "index.html"));
     });
   } else {

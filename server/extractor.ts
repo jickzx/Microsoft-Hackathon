@@ -1,5 +1,12 @@
 import crypto from "node:crypto";
-import { questCardSchema } from "../src/types";
+import {
+  interestTags,
+  questCardSchema,
+  questDifficulties,
+  questModes,
+  rewardTypes,
+  skillTags
+} from "../src/types";
 import type {
   AzureConnectionHealth,
   ExtractQuestRequest,
@@ -9,6 +16,15 @@ import type {
 
 const defaultImageUrl =
   "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80";
+
+const healthCacheTtlMs = Number(process.env.AZURE_HEALTH_CACHE_MS ?? 5 * 60 * 1000);
+let azureHealthCache:
+  | {
+      key: string;
+      expiresAt: number;
+      value: AzureConnectionHealth;
+    }
+  | null = null;
 
 const interestKeywords = {
   ai: ["ai", "machine learning", "ml", "openai", "copilot", "chatbot"],
@@ -51,10 +67,12 @@ const questJsonInstruction = `Return JSON only with this shape:
 {
   "cards": [
     {
+      "id": "stable id if known",
       "title": "short opportunity title",
       "organizer": "club or department",
       "summary": "one sentence",
       "description": "clear student-facing detail",
+      "imageUrl": "optional representative image URL",
       "interests": ["ai", "design", "events"],
       "skillsHelpful": ["frontend", "writing"],
       "difficulty": "easy | medium | hard",
@@ -62,9 +80,14 @@ const questJsonInstruction = `Return JSON only with this shape:
       "reward": { "type": ["experience"], "label": "reward summary", "estimatedValueUsd": 0 },
       "location": { "mode": "in_person | remote | hybrid", "campus": "North Campus", "building": "" },
       "deadline": "2026-05-17T23:59:00Z",
+      "eventStart": "optional ISO datetime",
+      "eventEnd": "optional ISO datetime",
       "bestFor": ["specific student audience"],
       "eligibility": ["eligibility note"],
-      "party": { "allowed": true, "idealSize": 3, "openSlots": 4 }
+      "applyUrl": "optional URL",
+      "contactEmail": "optional email",
+      "party": { "allowed": true, "idealSize": 3, "openSlots": 4 },
+      "aiExtraction": { "confidence": 0.87, "missingFields": [], "model": "azure" }
     }
   ]
 }`;
@@ -162,28 +185,42 @@ function detectDeadline(text: string) {
   const iso = text.match(/\b(2026-\d{2}-\d{2})\b/);
   if (iso) return `${iso[1]}T23:59:00Z`;
 
+  const now = new Date();
   const monthDay = text.match(
     /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})\b/i
   );
   if (monthDay) {
-    const parsed = new Date(`${monthDay[1]} ${monthDay[2]}, 2026 23:59:00 UTC`);
+    const parsed = new Date(
+      `${monthDay[1]} ${monthDay[2]}, ${now.getUTCFullYear()} 23:59:00 UTC`
+    );
+    if (parsed.getTime() < now.getTime()) parsed.setUTCFullYear(parsed.getUTCFullYear() + 1);
     if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
   }
 
   const lower = text.toLowerCase();
-  const weekdays = [
-    ["monday", "2026-05-11"],
-    ["tuesday", "2026-05-12"],
-    ["wednesday", "2026-05-13"],
-    ["thursday", "2026-05-14"],
-    ["friday", "2026-05-15"],
-    ["saturday", "2026-05-16"],
-    ["sunday", "2026-05-17"]
-  ] as const;
-  const weekday = weekdays.find(([day]) => lower.includes(day));
-  if (weekday) return `${weekday[1]}T23:59:00Z`;
-  if (lower.includes("tomorrow")) return "2026-05-12T23:59:00Z";
-  if (lower.includes("this weekend")) return "2026-05-17T23:59:00Z";
+  const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const weekdayIndex = weekdays.findIndex((day) => lower.includes(day));
+  if (weekdayIndex >= 0) {
+    const date = new Date(now);
+    const daysAhead = (weekdayIndex - date.getDay() + 7) % 7 || 7;
+    date.setDate(date.getDate() + daysAhead);
+    date.setHours(23, 59, 0, 0);
+    return date.toISOString();
+  }
+  if (lower.includes("tomorrow")) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + 1);
+    date.setHours(23, 59, 0, 0);
+    return date.toISOString();
+  }
+  if (lower.includes("this weekend")) {
+    const date = new Date(now);
+    const saturday = 6;
+    const daysAhead = (saturday - date.getDay() + 7) % 7 || 7;
+    date.setDate(date.getDate() + daysAhead);
+    date.setHours(23, 59, 0, 0);
+    return date.toISOString();
+  }
   return undefined;
 }
 
@@ -222,7 +259,7 @@ function missingFieldsFor(card: QuestCard) {
   ]);
 }
 
-function finalizeCard(card: QuestCard) {
+function finalizeCard(card: QuestCard, fallback?: QuestCard) {
   const audited = {
     ...card,
     aiExtraction: {
@@ -233,7 +270,9 @@ function finalizeCard(card: QuestCard) {
   };
   const parsed = questCardSchema.safeParse(audited);
 
-  return parsed.success ? parsed.data : audited;
+  if (parsed.success) return parsed.data;
+  if (fallback) return questCardSchema.parse(fallback);
+  throw new Error("Quest card normalization failed.");
 }
 
 function fileWarnings(input: ExtractQuestRequest) {
@@ -392,6 +431,146 @@ function normalizeAzurePayload(value: unknown) {
   return value;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function stringValue(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function optionalString(value: unknown, fallback?: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function numberValue(value: unknown, fallback: number) {
+  const number = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function booleanValue(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function stringArray(value: unknown, fallback: string[]) {
+  if (Array.isArray(value)) {
+    const values = value.filter((item): item is string => typeof item === "string" && item.trim());
+    return values.length ? values.map((item) => item.trim()) : fallback;
+  }
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return fallback;
+}
+
+function enumValue<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number]) {
+  return typeof value === "string" && (allowed as readonly string[]).includes(value)
+    ? (value as T[number])
+    : fallback;
+}
+
+function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number][]) {
+  const candidates = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[,|]/)
+      : [];
+  const values = candidates.filter(
+    (item): item is T[number] =>
+      typeof item === "string" && (allowed as readonly string[]).includes(item.trim())
+  );
+
+  return values.length ? unique(values) : fallback;
+}
+
+function recordValue(value: unknown) {
+  return isRecord(value) ? value : {};
+}
+
+function mergeAzureCard(card: Record<string, unknown>, localBase: QuestCard, index: number) {
+  const reward = recordValue(card.reward);
+  const location = recordValue(card.location);
+  const estimatedHours = recordValue(card.estimatedHours);
+  const party = recordValue(card.party);
+  const aiExtraction = recordValue(card.aiExtraction);
+  const stats = recordValue(card.stats);
+  const source = recordValue(card.source);
+  const now = new Date().toISOString();
+  const title = stringValue(card.title, localBase.title);
+
+  return finalizeCard(
+    {
+      ...localBase,
+      id: stringValue(card.id, `quest-azure-${idFrom(`${title}-${index}-${now}`)}`),
+      title,
+      organizer: stringValue(card.organizer, localBase.organizer),
+      summary: stringValue(card.summary, localBase.summary),
+      description: stringValue(card.description, localBase.description),
+      imageUrl: stringValue(card.imageUrl, localBase.imageUrl),
+      source: {
+        ...localBase.source,
+        id: stringValue(source.id, localBase.source.id),
+        rawUrl: optionalString(source.rawUrl, localBase.source.rawUrl),
+        fileName: optionalString(source.fileName, localBase.source.fileName),
+        rawText: optionalString(source.rawText, localBase.source.rawText)
+      },
+      status: "needs_review",
+      interests: enumArray(card.interests, interestTags, localBase.interests),
+      skillsHelpful: enumArray(card.skillsHelpful, skillTags, localBase.skillsHelpful),
+      difficulty: enumValue(card.difficulty, questDifficulties, localBase.difficulty),
+      estimatedHours: {
+        min: Math.max(0, numberValue(estimatedHours.min, localBase.estimatedHours.min)),
+        max: Math.max(0, numberValue(estimatedHours.max, localBase.estimatedHours.max))
+      },
+      reward: {
+        ...localBase.reward,
+        type: enumArray(reward.type, rewardTypes, localBase.reward.type),
+        label: stringValue(reward.label, localBase.reward.label),
+        estimatedValueUsd:
+          reward.estimatedValueUsd === undefined
+            ? localBase.reward.estimatedValueUsd
+            : numberValue(reward.estimatedValueUsd, localBase.reward.estimatedValueUsd ?? 0)
+      },
+      location: {
+        ...localBase.location,
+        mode: enumValue(location.mode, questModes, localBase.location.mode),
+        campus: optionalString(location.campus, localBase.location.campus),
+        building: optionalString(location.building, localBase.location.building),
+        room: optionalString(location.room, localBase.location.room),
+        address: optionalString(location.address, localBase.location.address),
+        onlineUrl: optionalString(location.onlineUrl, localBase.location.onlineUrl)
+      },
+      deadline: optionalString(card.deadline, localBase.deadline),
+      eventStart: optionalString(card.eventStart, localBase.eventStart),
+      eventEnd: optionalString(card.eventEnd, localBase.eventEnd),
+      bestFor: stringArray(card.bestFor, localBase.bestFor),
+      eligibility: stringArray(card.eligibility, localBase.eligibility),
+      applyUrl: optionalString(card.applyUrl, localBase.applyUrl),
+      contactEmail: optionalString(card.contactEmail, localBase.contactEmail),
+      party: {
+        allowed: booleanValue(party.allowed, localBase.party.allowed),
+        idealSize: Math.max(1, Math.round(numberValue(party.idealSize, localBase.party.idealSize))),
+        openSlots: Math.max(0, Math.round(numberValue(party.openSlots, localBase.party.openSlots)))
+      },
+      aiExtraction: {
+        confidence: numberValue(aiExtraction.confidence, 0.86),
+        missingFields: stringArray(aiExtraction.missingFields, []),
+        extractedAt: stringValue(aiExtraction.extractedAt, now),
+        model: stringValue(aiExtraction.model, "azure-ai")
+      },
+      stats: {
+        saves: Math.max(0, Math.round(numberValue(stats.saves, localBase.stats.saves))),
+        views: Math.max(0, Math.round(numberValue(stats.views, localBase.stats.views))),
+        partyRequests: Math.max(
+          0,
+          Math.round(numberValue(stats.partyRequests, localBase.stats.partyRequests))
+        )
+      },
+      createdAt: stringValue(card.createdAt, localBase.createdAt),
+      updatedAt: stringValue(card.updatedAt, now)
+    },
+    localBase
+  );
+}
+
 function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestCard[] {
   if (!value || typeof value !== "object") return [];
   const normalized = normalizeAzurePayload(value);
@@ -407,25 +586,8 @@ function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestC
   const localBase = extractLocally(input)[0];
 
   return cards
-    .filter((card): card is Partial<QuestCard> => Boolean(card) && typeof card === "object")
-    .map((card, index) =>
-      finalizeCard({
-        ...localBase,
-        ...card,
-        id: card.id ?? `quest-azure-${index}-${Date.now()}`,
-        source: {
-          ...localBase.source,
-          ...card.source
-        },
-        status: "needs_review",
-        aiExtraction: {
-          confidence: card.aiExtraction?.confidence ?? 0.86,
-          missingFields: card.aiExtraction?.missingFields ?? [],
-          extractedAt: new Date().toISOString(),
-          model: card.aiExtraction?.model ?? "azure-ai"
-        }
-      })
-    );
+    .filter(isRecord)
+    .map((card, index) => mergeAzureCard(card, localBase, index));
 }
 
 function getAzureMode() {
@@ -643,6 +805,30 @@ export async function extractQuestCards(
 }
 
 export async function checkAzureConnection(): Promise<AzureConnectionHealth> {
+  const cacheKey = [
+    getAzureEndpoint(),
+    getAzureKey() ? "key-set" : "no-key",
+    getAzureMode(),
+    process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT ?? "",
+    getConfiguredRoute(),
+    process.env.AZURE_AI_ENABLED ?? "true"
+  ].join("|");
+  const now = Date.now();
+
+  if (azureHealthCache?.key === cacheKey && azureHealthCache.expiresAt > now) {
+    return azureHealthCache.value;
+  }
+
+  const value = await checkAzureConnectionUncached();
+  azureHealthCache = {
+    key: cacheKey,
+    expiresAt: now + healthCacheTtlMs,
+    value
+  };
+  return value;
+}
+
+async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
   const endpoint = getAzureEndpoint();
   const key = getAzureKey();
   const mode = getAzureMode();
@@ -660,7 +846,8 @@ export async function checkAzureConnection(): Promise<AzureConnectionHealth> {
       status: "not_configured",
       deploymentConfigured,
       routeConfigured,
-      detail: "Set AZURE_AI_ENDPOINT and AZURE_AI_KEY on the server to enable Azure extraction.",
+      detail:
+        "Set AZURE_AI_ENDPOINT/AZURE_AI_KEY for a custom Azure gateway, or AZURE_OPENAI_ENDPOINT/AZURE_OPENAI_API_KEY plus AZURE_OPENAI_DEPLOYMENT for Azure OpenAI.",
       checkedAt
     };
   }
