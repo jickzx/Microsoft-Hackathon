@@ -1004,6 +1004,13 @@ p {
   background: #eafaf4;
 }
 
+.integration-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 .ai-status-card span {
   display: grid;
   gap: 3px;
@@ -1946,6 +1953,80 @@ p {
 
 .profile-detail.wide {
   grid-column: 1 / -1;
+}
+
+.integration-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.integration-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 8px;
+}
+
+.integration-card.ready {
+  border-color: #cceee4;
+  background: #fbfffd;
+}
+
+.integration-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #5865f2;
+  background: #eef0ff;
+  border-radius: 8px;
+}
+
+.integration-card div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.integration-card strong,
+.integration-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.integration-card strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.integration-card small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.integration-status {
+  display: inline-grid;
+  min-width: 54px;
+  min-height: 26px;
+  place-items: center;
+  padding: 0 10px;
+  color: #9a5b00;
+  background: #fff0c8;
+  border-radius: 999px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.integration-status.ready {
+  color: #007c55;
+  background: #dcffef;
 }
 
 .profile-detail span {

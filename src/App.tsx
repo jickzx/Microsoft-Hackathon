@@ -45,6 +45,7 @@ import {
 import { interestTags } from "./types";
 import type {
   AzureConnectionHealth,
+  DiscordIntegrationHealth,
   ExtractQuestMeta,
   ExtractQuestResponse,
   MatchRecommendationMeta,
@@ -60,7 +61,7 @@ import type {
 type Page = "home" | "map" | "submit" | "parties" | "quests" | "saved" | "profile";
 type AuthMode = "signup" | "login";
 type QuickFilter = "Trending" | "New" | "Ending Soon" | "For You";
-type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file";
+type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file" | "discord";
 
 interface SignupProfile {
   name: string;
@@ -93,6 +94,10 @@ interface AuthResponse {
 
 interface ExtractMetaWithSource extends ExtractQuestMeta {
   sourceId?: string;
+}
+
+interface IntegrationHealthResponse {
+  discord: DiscordIntegrationHealth;
 }
 
 const signupInitialProfile: SignupProfile = {
@@ -162,8 +167,11 @@ const submitMethods: {
   id: SubmitMethodId;
   icon: typeof Globe2;
   label: string;
+  detail?: string;
+  requiresDiscord?: boolean;
 }[] = [
   { id: "link", icon: Globe2, label: "Paste a Link" },
+  { id: "discord", icon: MessageCircle, label: "Discord Message", detail: "Import by message link", requiresDiscord: true },
   { id: "photo", icon: Camera, label: "Take a Photo" },
   { id: "screenshot", icon: ImageIcon, label: "Upload Image" },
   { id: "text", icon: MessageCircle, label: "Paste Text" },
@@ -204,6 +212,7 @@ function App() {
   const [joinedQuestIds, setJoinedQuestIds] = useState<Set<string>>(() => new Set());
   const [parties, setParties] = useState<PersistedParty[]>([]);
   const [azureHealth, setAzureHealth] = useState<AzureConnectionHealth | null>(null);
+  const [discordHealth, setDiscordHealth] = useState<DiscordIntegrationHealth | null>(null);
   const [remoteMatches, setRemoteMatches] = useState<Record<string, QuestMatchBreakdown>>({});
   const [matchMeta, setMatchMeta] = useState<MatchRecommendationMeta | null>(null);
   const [loading, setLoading] = useState(false);
@@ -258,14 +267,16 @@ function App() {
     Promise.all([
       fetchJson<{ users: StudentProfile[]; currentUserId: string }>("/api/users"),
       fetchJson<{ quests: QuestCard[] }>("/api/quests"),
-      fetchJson<AzureConnectionHealth>("/api/azure/health").catch(() => null)
+      fetchJson<AzureConnectionHealth>("/api/azure/health").catch(() => null),
+      fetchJson<IntegrationHealthResponse>("/api/integrations").catch(() => null)
     ])
-      .then(([userData, questData, health]) => {
+      .then(([userData, questData, health, integrations]) => {
         if (!active) return;
         setUsers(userData.users);
         setCurrentUserId(userData.currentUserId);
         setQuests(questData.quests);
         setAzureHealth(health);
+        setDiscordHealth(integrations?.discord ?? null);
       })
       .catch((error) => {
         if (!active) return;
@@ -554,7 +565,7 @@ function App() {
         />
       ) : null}
       {activePage === "submit" ? (
-        <SubmitQuestPage azureHealth={azureHealth} onPublish={publishQuest} />
+        <SubmitQuestPage azureHealth={azureHealth} discordHealth={discordHealth} onPublish={publishQuest} />
       ) : null}
       {activePage === "parties" ? (
         <PartiesPage
@@ -603,6 +614,7 @@ function App() {
           student={activeStudent}
           savedCount={savedQuestIds.size}
           partyCount={parties.length}
+          discordHealth={discordHealth}
           onSelectQuest={setSelectedQuest}
         />
       ) : null}
@@ -1399,9 +1411,11 @@ function ExplorePage({
 
 function SubmitQuestPage({
   azureHealth,
+  discordHealth,
   onPublish
 }: {
   azureHealth: AzureConnectionHealth | null;
+  discordHealth: DiscordIntegrationHealth | null;
   onPublish: (quest: QuestCard) => void | Promise<void>;
 }) {
   const [step, setStep] = useState(1);
@@ -1414,8 +1428,11 @@ function SubmitQuestPage({
   const [publishedCards, setPublishedCards] = useState<QuestCard[]>([]);
   const [error, setError] = useState("");
 
-  const canProcess = Boolean(method && (method === "link" || method === "text" ? input.trim() : file));
+  const canProcess = Boolean(
+    method && (method === "link" || method === "text" || method === "discord" ? input.trim() : file)
+  );
   const azureReady = azureHealth?.status === "ready";
+  const discordReady = discordHealth?.status === "ready";
 
   async function handleExtract() {
     if (!method || !canProcess) return;
@@ -1425,7 +1442,7 @@ function SubmitQuestPage({
     const body = new FormData();
     const sourceType = sourceTypeForMethod(method, file);
     body.append("sourceType", sourceType);
-    if (method === "link") body.append("url", input.trim());
+    if (method === "link" || method === "discord") body.append("url", input.trim());
     if (method === "text") body.append("text", input.trim());
     if (method !== "link" && method !== "text" && input.trim()) body.append("url", input.trim());
     if (file) body.append("file", file);
@@ -1476,12 +1493,20 @@ function SubmitQuestPage({
         </div>
       </div>
 
-      <section className={azureReady ? "ai-status-card ready" : "ai-status-card"}>
-        <Sparkles size={18} />
-        <span>
-          <strong>{azureReady ? "Import ready" : "Import unavailable"}</strong>
-        </span>
-      </section>
+      <div className="integration-health-grid">
+        <section className={azureReady ? "ai-status-card ready" : "ai-status-card"}>
+          <Sparkles size={18} />
+          <span>
+            <strong>{azureReady ? "Import ready" : "Import unavailable"}</strong>
+          </span>
+        </section>
+        <section className={discordReady ? "ai-status-card ready discord" : "ai-status-card discord"}>
+          <MessageCircle size={18} />
+          <span>
+            <strong>{discordReady ? "Discord ready" : "Discord unavailable"}</strong>
+          </span>
+        </section>
+      </div>
 
       <div className="stepper" aria-label="Submission progress">
         {[1, 2, 3].map((item) => (
@@ -1497,11 +1522,14 @@ function SubmitQuestPage({
           <div className="method-grid">
             {submitMethods.map((item) => {
               const Icon = item.icon;
+              const disabled = item.requiresDiscord && !discordReady;
               return (
                 <button
                   type="button"
                   key={item.id}
+                  disabled={disabled}
                   onClick={() => {
+                    if (disabled) return;
                     setMethod(item.id);
                     setStep(2);
                     setInput("");
@@ -1515,6 +1543,7 @@ function SubmitQuestPage({
                     <Icon size={21} />
                   </span>
                   <strong>{item.label}</strong>
+                  <small>{item.requiresDiscord ? (discordReady ? item.detail : "Connect Discord first") : item.detail}</small>
                 </button>
               );
             })}
@@ -1525,14 +1554,14 @@ function SubmitQuestPage({
       {step === 2 && method ? (
         <section className="input-panel">
           <h2>{inputHeadingForMethod(method)}</h2>
-          {method === "link" ? (
+          {method === "link" || method === "discord" ? (
             <>
               <label className="large-input">
-                <Link2 size={18} />
+                {method === "discord" ? <MessageCircle size={18} /> : <Link2 size={18} />}
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="https://..."
+                  placeholder={method === "discord" ? "https://discord.com/channels/..." : "https://..."}
                 />
               </label>
             </>
@@ -1802,12 +1831,14 @@ function ProfilePage({
   student,
   savedCount,
   partyCount,
+  discordHealth,
   onSelectQuest
 }: {
   quests: QuestCard[];
   student: StudentProfile;
   savedCount: number;
   partyCount: number;
+  discordHealth: DiscordIntegrationHealth | null;
   onSelectQuest: (quest: QuestCard) => void;
 }) {
   return (
@@ -1857,6 +1888,17 @@ function ProfilePage({
         </div>
       </ProfileSection>
 
+      <ProfileSection title="Integrations" aside={discordHealth?.status === "ready" ? "1 ready" : "needs setup"}>
+        <div className="integration-grid">
+          <IntegrationCard
+            icon={MessageCircle}
+            name="Discord"
+            status={discordHealth?.status ?? "unknown"}
+            detail={discordHealth?.detail ?? "Discord status has not loaded yet."}
+          />
+        </div>
+      </ProfileSection>
+
       <ProfileSection title="Active Side Quests" aside={`${Math.min(quests.length, 3)} active`}>
         <div className="active-quest-list">
           {quests.slice(0, 3).map((quest) => (
@@ -1877,6 +1919,34 @@ function ProfilePage({
       </ProfileSection>
 
     </section>
+  );
+}
+
+function IntegrationCard({
+  icon: Icon,
+  name,
+  status,
+  detail
+}: {
+  icon: typeof MessageCircle;
+  name: string;
+  status: DiscordIntegrationHealth["status"] | "unknown";
+  detail: string;
+}) {
+  const ready = status === "ready";
+  return (
+    <article className={ready ? "integration-card ready" : "integration-card"}>
+      <span className="integration-icon">
+        <Icon size={20} />
+      </span>
+      <div>
+        <strong>{name}</strong>
+        <small>{detail}</small>
+      </div>
+      <em className={ready ? "integration-status ready" : "integration-status"}>
+        {ready ? "Ready" : "Setup"}
+      </em>
+    </article>
   );
 }
 
@@ -2459,6 +2529,7 @@ function shortTitle(title: string) {
 
 function sourceTypeForMethod(method: SubmitMethodId, file: File | null): QuestSourceType {
   if (method === "link") return "link";
+  if (method === "discord") return "message";
   if (method === "text") return "text";
   if (method === "photo") return "photo";
   if (method === "screenshot") return "screenshot";
@@ -2469,6 +2540,7 @@ function sourceTypeForMethod(method: SubmitMethodId, file: File | null): QuestSo
 
 function inputHeadingForMethod(method: SubmitMethodId) {
   if (method === "link") return "Paste the URL";
+  if (method === "discord") return "Paste the Discord message link";
   if (method === "text") return "Paste the message";
   if (method === "photo") return "Upload your photo";
   if (method === "screenshot") return "Upload your image";

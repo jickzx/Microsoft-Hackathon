@@ -40,6 +40,7 @@ import {
   updateQuest,
   upsertMatchRecommendations
 } from "./db";
+import { checkDiscordConnection, enrichWithDiscordMessage } from "./discord";
 import { azureConfig } from "./env";
 import { checkAzureConnection, extractQuestCards } from "./extractor";
 import { recommendQuestMatches } from "./matcher";
@@ -171,8 +172,15 @@ const authSchema = z.object({
 
 const signupSchema = authSchema.extend({
   name: z.string().min(2),
+  role: z.string().min(1).optional(),
+  workExperience: z.string().min(1).optional(),
+  highestEducation: z.string().min(1).optional(),
   major: z.string().min(2),
-  year: z.enum(["freshman", "sophomore", "junior", "senior", "masters", "phd"])
+  year: z.enum(["freshman", "sophomore", "junior", "senior", "masters", "phd"]),
+  careerInterest: z.string().min(1).optional(),
+  skills: z.string().min(1).optional(),
+  goals: z.string().min(1).optional(),
+  hobbies: z.string().min(1).optional()
 });
 
 const importSourcesSchema = z.object({
@@ -220,6 +228,12 @@ app.get("/api/health", (_request, response) => {
 
 app.get("/api/azure/health", async (_request, response) => {
   response.json(await checkAzureConnection());
+});
+
+app.get("/api/integrations", requireAuth, async (_request, response) => {
+  response.json({
+    discord: await checkDiscordConnection()
+  });
 });
 
 app.get("/api/auth/me", (request: AuthenticatedRequest, response) => {
@@ -393,10 +407,13 @@ app.delete("/api/quests/:questId", requireAuth, async (request, response) => {
 });
 
 app.post("/api/extract", requireAuth, upload.single("file"), async (request: AuthenticatedRequest, response) => {
-  const input = parseExtractInput(request, response);
-  if (!input) return;
+  const parsedInput = parseExtractInput(request, response);
+  if (!parsedInput) return;
 
-  input.submittedByUserId = request.auth!.student.id;
+  const input = await enrichWithDiscordMessage({
+    ...parsedInput,
+    submittedByUserId: request.auth!.student.id
+  });
   const extraction = await extractQuestCards(input);
   const sourceId = extraction.cards[0]?.source.id;
   if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta, request.auth!.student.id);
@@ -410,10 +427,13 @@ app.post("/api/extract", requireAuth, upload.single("file"), async (request: Aut
 });
 
 app.post("/api/quests/import", requireAuth, upload.single("file"), async (request: AuthenticatedRequest, response) => {
-  const input = parseExtractInput(request, response);
-  if (!input) return;
+  const parsedInput = parseExtractInput(request, response);
+  if (!parsedInput) return;
 
-  input.submittedByUserId = request.auth!.student.id;
+  const input = await enrichWithDiscordMessage({
+    ...parsedInput,
+    submittedByUserId: request.auth!.student.id
+  });
   const extraction = await extractQuestCards(input);
   const sourceId = extraction.cards[0]?.source.id;
   if (sourceId) await saveSourceFromExtraction(input, sourceId, extraction.meta, request.auth!.student.id);
