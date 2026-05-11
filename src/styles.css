@@ -45,6 +45,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -783,6 +788,15 @@ textarea:focus-visible {
   height: 48px;
 }
 
+.avatar-stack.small {
+  min-height: 32px;
+}
+
+.avatar-stack.small img {
+  width: 32px;
+  height: 32px;
+}
+
 .pulse-meter {
   width: 100%;
   height: 10px;
@@ -1018,6 +1032,13 @@ textarea:focus-visible {
   font-weight: 750;
 }
 
+.error-text {
+  margin: 0;
+  color: #9f1239;
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .preview-panel {
   min-height: 430px;
 }
@@ -1063,6 +1084,116 @@ textarea:focus-visible {
   height: 170px;
 }
 
+.diagnostics-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dbeaf4;
+  background: #f8fbff;
+  border-radius: 8px;
+}
+
+.diagnostics-panel div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.diagnostics-panel span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.diagnostics-panel strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.diagnostics-panel .warning-text {
+  grid-column: 1 / -1;
+}
+
+.review-form {
+  display: grid;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: #fbfcfd;
+  border-radius: 8px;
+}
+
+.review-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-heading h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.review-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #344255;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.review-form input,
+.review-form select,
+.review-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: white;
+  border-radius: 8px;
+}
+
+.review-form input,
+.review-form select {
+  height: 38px;
+  padding: 0 10px;
+}
+
+.review-form textarea {
+  min-height: 78px;
+  resize: vertical;
+  padding: 10px;
+  line-height: 1.4;
+}
+
+.review-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.party-review-row {
+  grid-template-columns: minmax(130px, 1fr) minmax(90px, 0.7fr) minmax(90px, 0.7fr);
+  align-items: end;
+}
+
+.review-form .toggle-filter {
+  display: inline-flex;
+  min-height: 38px;
+}
+
+.preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .party-backdrop {
   place-items: stretch end;
   padding: 0;
@@ -1079,6 +1210,64 @@ textarea:focus-visible {
 .party-drawer > section,
 .drawer-actions {
   margin: 18px;
+}
+
+.drawer-status,
+.drawer-error {
+  margin: 12px 18px 0;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.drawer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #405064;
+}
+
+.drawer-error {
+  color: #8b2411;
+}
+
+.party-options {
+  display: grid;
+  gap: 9px;
+}
+
+.party-options button {
+  display: grid;
+  grid-template-columns: minmax(108px, 1fr) auto;
+  gap: 9px 12px;
+  align-items: center;
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: #fbfcfd;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.party-options button.active {
+  border-color: #9fc0f6;
+  background: var(--blue-soft);
+}
+
+.party-options strong,
+.party-options span {
+  display: block;
+}
+
+.party-options span,
+.party-options small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.party-options small {
+  grid-column: 1 / -1;
 }
 
 .party-hero {
@@ -1128,6 +1317,21 @@ textarea:focus-visible {
 .student-card p {
   margin: 3px 0 8px;
   font-size: 13px;
+}
+
+.student-reasons {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.student-reasons span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #405064;
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .prep-item {
@@ -1268,8 +1472,14 @@ textarea:focus-visible {
   }
 
   .field-row,
+  .review-field-row,
+  .party-review-row,
   .detail-meta-grid,
   .party-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnostics-panel {
     grid-template-columns: 1fr;
   }
 

@@ -44,7 +44,7 @@ export function formatLocation(quest: QuestCard) {
 
   if (quest.location.mode === "remote") return "Remote";
   if (parts.length === 0) return labelMode(quest.location.mode);
-  return parts.join(" · ");
+  return parts.join(" / ");
 }
 
 export function labelMode(mode: QuestMode) {
