@@ -1124,6 +1124,23 @@ textarea:focus-visible {
   grid-column: 1 / -1;
 }
 
+.discord-auth-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f0f4ff;
+  border: 1px solid #c2d1ff;
+  border-radius: 8px;
+}
+
+.discord-auth-card p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
 .review-form {
   display: grid;
   gap: 11px;

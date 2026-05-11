@@ -129,6 +129,59 @@ const matchSchema = z.object({
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+// In-memory session store for Discord tokens (demo only)
+const discordSessions: Record<string, string> = {};
+
+app.get("/api/discord/auth", (request, response) => {
+  const clientId = process.env.DISCORD_CLIENT_ID;
+  const redirectUri = encodeURIComponent(
+    process.env.DISCORD_REDIRECT_URI || `${request.protocol}://${request.get("host")}/api/discord/callback`
+  );
+  const scope = "identify guilds.join";
+
+  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+  response.redirect(url);
+});
+
+app.get("/api/discord/callback", async (request, response) => {
+  const { code } = request.query;
+  if (!code) return response.status(400).send("No code provided");
+
+  const clientId = process.env.DISCORD_CLIENT_ID;
+  const clientSecret = process.env.DISCORD_CLIENT_SECRET;
+  const redirectUri =
+    process.env.DISCORD_REDIRECT_URI || `${request.protocol}://${request.get("host")}/api/discord/callback`;
+
+  try {
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId!,
+        client_secret: clientSecret!,
+        grant_type: "authorization_code",
+        code: code as string,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    const data = await tokenResponse.json() as { access_token: string };
+    if (data.access_token) {
+      // For demo, we use a fixed key "current-user"
+      discordSessions["current-user"] = data.access_token;
+      response.send("<html><body><script>window.close()</script>Discord linked! You can close this window.</body></html>");
+    } else {
+      response.status(400).json(data);
+    }
+  } catch (error) {
+    response.status(500).send("Auth failed");
+  }
+});
+
+app.get("/api/discord/status", (_request, response) => {
+  response.json({ linked: !!discordSessions["current-user"] });
+});
+
 app.get("/api/health", (_request, response) => {
   const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT ?? process.env.AZURE_AI_ENDPOINT;
   const azureKey = process.env.AZURE_OPENAI_API_KEY ?? process.env.AZURE_AI_KEY;
@@ -170,14 +223,16 @@ app.post("/api/extract", upload.single("file"), async (request, response) => {
   const input = parseExtractInput(request, response);
   if (!input) return;
 
-  response.json(await extractQuestCards(input));
+  const userToken = discordSessions["current-user"];
+  response.json(await extractQuestCards(input, userToken));
 });
 
 app.post("/api/quests/import", upload.single("file"), async (request, response) => {
   const input = parseExtractInput(request, response);
   if (!input) return;
 
-  const extraction = await extractQuestCards(input);
+  const userToken = discordSessions["current-user"];
+  const extraction = await extractQuestCards(input, userToken);
   const cards = publishExtractedQuests(extraction.cards);
 
   response.status(201).json({

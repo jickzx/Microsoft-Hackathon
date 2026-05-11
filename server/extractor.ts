@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { joinDiscordServer } from "./discord";
 import {
   interestTags,
   questCardSchema,
@@ -551,7 +552,12 @@ async function scrapeEventPage(url: string) {
   }
 }
 
-async function prepareExtractionInput(input: ExtractQuestRequest) {
+function extractDiscordInviteCode(text: string) {
+  const match = text.match(/discord\.(?:gg|com\/invite)\/([a-zA-Z0-9-]+)/i);
+  return match?.[1];
+}
+
+async function prepareExtractionInput(input: ExtractQuestRequest, discordToken?: string) {
   const urls = new Set<string>();
   if (input.url) urls.add(input.url);
 
@@ -564,6 +570,14 @@ async function prepareExtractionInput(input: ExtractQuestRequest) {
   }
 
   if (urls.size === 0) return { input, warnings: [] as string[] };
+
+  // Handle Discord invites
+  for (const url of urls) {
+    const inviteCode = extractDiscordInviteCode(url);
+    if (inviteCode && discordToken) {
+      void joinDiscordServer(inviteCode, discordToken);
+    }
+  }
 
   const results = await Promise.all(Array.from(urls).map((url) => scrapeEventPage(url)));
   const scrapedPages = results.map((r) => r.page).filter((p): p is ScrapedPage => !!p);
@@ -1219,10 +1233,11 @@ async function extractWithAzure(input: ExtractQuestRequest) {
 }
 
 export async function extractQuestCards(
-  input: ExtractQuestRequest
+  input: ExtractQuestRequest,
+  discordToken?: string
 ): Promise<ExtractQuestResponse> {
   let azureWarning = "";
-  const prepared = await prepareExtractionInput(input);
+  const prepared = await prepareExtractionInput(input, discordToken);
 
   try {
     const azureCards = await extractWithAzure(prepared.input);

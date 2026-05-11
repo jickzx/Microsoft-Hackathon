@@ -1054,6 +1054,35 @@ function PostQuestModal({
   const [response, setResponse] = useState<ExtractQuestResponse | null>(null);
   const [draftCard, setDraftCard] = useState<QuestCard | null>(null);
   const [extractError, setExtractError] = useState("");
+  const [discordLinked, setDiscordLinked] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/discord/status")
+      .then((res) => res.json())
+      .then((data) => setDiscordLinked(data.linked))
+      .catch(() => {});
+  }, []);
+
+  function linkDiscord() {
+    const width = 500;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(
+      "/api/discord/auth",
+      "discord-auth",
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+
+    const timer = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(timer);
+        fetch("/api/discord/status")
+          .then((res) => res.json())
+          .then((data) => setDiscordLinked(data.linked));
+      }
+    }, 1000);
+  }
 
   async function runExtraction(importNow = false) {
     if (importNow) setImporting(true);
@@ -1141,6 +1170,20 @@ function PostQuestModal({
                     "Server will use local extraction until Azure settings are available."}
                 </p>
               </div>
+            </div>
+            <div className="discord-auth-card">
+              <MessageCircle size={18} />
+              <div>
+                <strong>Discord Auto-Join</strong>
+                <p>Link Discord to automatically join servers from extracted links.</p>
+              </div>
+              <button
+                type="button"
+                className={discordLinked ? "secondary-button compact" : "primary-button compact"}
+                onClick={linkDiscord}
+              >
+                {discordLinked ? "Linked" : "Link Discord"}
+              </button>
             </div>
             <div className="field-row">
               <label>
