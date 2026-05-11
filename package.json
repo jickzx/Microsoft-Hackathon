@@ -15,9 +15,6 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@vitejs/plugin-react": "^5.1.1",

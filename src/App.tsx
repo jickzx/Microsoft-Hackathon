@@ -65,8 +65,14 @@ type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file";
 
 interface SignupProfile {
   name: string;
+  role: string;
+  workExperience: string;
   education: string;
   courseOrJobTitle: string;
+  careerInterest: string;
+  skills: string;
+  goals: string;
+  hobbies: string;
 }
 
 interface UserState {
@@ -92,9 +98,24 @@ interface ExtractMetaWithSource extends ExtractQuestMeta {
 
 const signupInitialProfile: SignupProfile = {
   name: "",
+  role: "Student",
+  workExperience: "",
   education: "",
-  courseOrJobTitle: ""
+  courseOrJobTitle: "",
+  careerInterest: "",
+  skills: "",
+  goals: "",
+  hobbies: ""
 };
+
+const roleOptions = ["Student", "Graduate", "Career switcher", "Founder", "Job seeker", "Researcher"];
+const workExperienceOptions = [
+  "No formal experience yet",
+  "0-1 years",
+  "1-3 years",
+  "3-5 years",
+  "5+ years"
+];
 
 const educationOptions = [
   "High school",

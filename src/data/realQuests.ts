@@ -167,7 +167,7 @@ function locationForQuest(quest: SeedQuest): QuestCard["location"] {
     mode: modeForQuest(quest),
     campus: quest.location.city ?? quest.location.country ?? undefined,
     building: quest.location.venue ?? undefined,
-    address: quest.location.address ?? (cityOrVenue || undefined),
+    address: quest.location.address ?? (cityOrVenue ? cityOrVenue : undefined),
     onlineUrl: modeForQuest(quest) === "remote" ? quest.source_url : undefined
   };
 }
@@ -180,6 +180,13 @@ function questStats(index: number, quest: SeedQuest): QuestCard["stats"] {
     views: statusBoost + 120 + index * 11,
     partyRequests: Math.max(2, Math.round((difficultyBase + statusBoost) / 5))
   };
+}
+
+function difficultyForQuest(quest: SeedQuest): QuestCard["difficulty"] {
+  if (quest.difficulty === "easy" || quest.difficulty === "medium" || quest.difficulty === "hard") {
+    return quest.difficulty;
+  }
+  return "medium";
 }
 
 function toQuestCard(quest: SeedQuest, index: number): QuestCard {
@@ -205,7 +212,7 @@ function toQuestCard(quest: SeedQuest, index: number): QuestCard {
     status: statusForQuest(quest),
     interests,
     skillsHelpful,
-    difficulty: quest.difficulty,
+    difficulty: difficultyForQuest(quest),
     estimatedHours: hoursForQuest(quest),
     reward: rewardForQuest(quest),
     location: locationForQuest(quest),
