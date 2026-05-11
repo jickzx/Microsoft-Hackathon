@@ -39,8 +39,11 @@ import { recommendParties, scoreQuestForStudent } from "./lib/matching";
 import type {
   AzureConnectionHealth,
   ExtractQuestResponse,
+  MatchRecommendationMeta,
+  MatchRecommendationResponse,
   PartyCandidateScore,
   QuestCard,
+  QuestMatchBreakdown,
   QuestSourceType,
   RewardType,
   SkillTag,
@@ -93,6 +96,14 @@ const questModeOptions: QuestCard["location"]["mode"][] = ["in_person", "hybrid"
 
 function labelSourceType(sourceType: QuestSourceType) {
   return sourceTypes.find((item) => item.value === sourceType)?.label ?? labelize(sourceType);
+}
+
+function inferSourceTypeFromFile(file: File): QuestSourceType {
+  if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) return "pdf";
+  if (file.type.startsWith("image/")) {
+    return file.name.toLowerCase().includes("screenshot") ? "screenshot" : "poster";
+  }
+  return "text";
 }
 
 function toDateTimeLocal(value?: string) {
@@ -159,6 +170,8 @@ function App() {
   const [postOpen, setPostOpen] = useState(false);
   const [partyOpen, setPartyOpen] = useState(false);
   const [azureHealth, setAzureHealth] = useState<AzureConnectionHealth | null>(null);
+  const [remoteMatches, setRemoteMatches] = useState<Record<string, QuestMatchBreakdown>>({});
+  const [matchMeta, setMatchMeta] = useState<MatchRecommendationMeta | null>(null);
 
   useEffect(() => {
     fetch("/api/quests")
@@ -178,13 +191,58 @@ function App() {
       .catch(() => setAzureHealth(null));
   }, []);
 
-  const questMatches = useMemo(
+  const localQuestMatches = useMemo(
     () =>
       Object.fromEntries(
         quests.map((quest) => [quest.id, scoreQuestForStudent(quest, currentStudent)])
-      ),
+      ) as Record<string, QuestMatchBreakdown>,
     [quests]
   );
+
+  const questMatches = useMemo(
+    () => ({
+      ...localQuestMatches,
+      ...remoteMatches
+    }),
+    [localQuestMatches, remoteMatches]
+  );
+
+  useEffect(() => {
+    if (!quests.length) return undefined;
+    let active = true;
+
+    fetch("/api/matches/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentId: currentStudent.id,
+        questIds: quests.map((quest) => quest.id)
+      })
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Match service unavailable");
+        return response.json() as Promise<MatchRecommendationResponse>;
+      })
+      .then((data) => {
+        if (!active) return;
+        setRemoteMatches(
+          Object.fromEntries(data.matches.map((match) => [match.questId, match])) as Record<
+            string,
+            QuestMatchBreakdown
+          >
+        );
+        setMatchMeta(data.meta);
+      })
+      .catch(() => {
+        if (!active) return;
+        setRemoteMatches({});
+        setMatchMeta(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [quests]);
 
   const filteredQuests = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -243,6 +301,15 @@ function App() {
     return quest ? recommendParties(quest, students, currentStudent.id) : [];
   }, [filteredQuests, selectedQuest]);
 
+  const averageMatch = useMemo(() => {
+    if (!filteredQuests.length) return 0;
+    const total = filteredQuests.reduce(
+      (sum, quest) => sum + (questMatches[quest.id]?.total ?? 0),
+      0
+    );
+    return Math.round(total / filteredQuests.length);
+  }, [filteredQuests, questMatches]);
+
   function toggleSaved(questId: string) {
     setSavedQuestIds((current) => {
       const next = new Set(current);
@@ -250,6 +317,16 @@ function App() {
       else next.add(questId);
       return next;
     });
+  }
+
+  function mergeQuests(nextQuests: QuestCard[]) {
+    if (!nextQuests.length) return;
+    const incomingIds = new Set(nextQuests.map((quest) => quest.id));
+    setQuests((current) => [
+      ...nextQuests,
+      ...current.filter((item) => !incomingIds.has(item.id))
+    ]);
+    setSelectedQuest(nextQuests[0]);
   }
 
   async function publishQuest(quest: QuestCard) {
@@ -275,11 +352,7 @@ function App() {
     }
 
     const savedQuest = data.quest ?? published;
-    setQuests((current) => [
-      savedQuest,
-      ...current.filter((item) => item.id !== savedQuest.id)
-    ]);
-    setSelectedQuest(savedQuest);
+    mergeQuests([savedQuest]);
   }
 
   return (
@@ -299,7 +372,11 @@ function App() {
           partyCount={topParties.length}
         />
         <main className="board">
-          <BoardHeader questCount={filteredQuests.length} />
+          <BoardHeader
+            questCount={filteredQuests.length}
+            averageMatch={averageMatch}
+            matchProvider={matchMeta?.provider ?? "local"}
+          />
           <QuestFilters
             category={category}
             onCategory={setCategory}
@@ -343,6 +420,7 @@ function App() {
           selectedQuest={selectedQuest}
           parties={topParties}
           matchScore={selectedQuest ? questMatches[selectedQuest.id]?.total : undefined}
+          matchMeta={matchMeta}
           onOpenParty={() => setPartyOpen(true)}
         />
       </div>
@@ -360,6 +438,10 @@ function App() {
         <PostQuestModal
           azureHealth={azureHealth}
           onClose={() => setPostOpen(false)}
+          onImport={(quests) => {
+            mergeQuests(quests);
+            setPostOpen(false);
+          }}
           onPublish={async (quest) => {
             await publishQuest(quest);
             setPostOpen(false);
@@ -487,13 +569,23 @@ function Sidebar({
   );
 }
 
-function BoardHeader({ questCount }: { questCount: number }) {
+function BoardHeader({
+  questCount,
+  averageMatch,
+  matchProvider
+}: {
+  questCount: number;
+  averageMatch: number;
+  matchProvider: MatchRecommendationMeta["provider"];
+}) {
+  const providerLabel = matchProvider === "azure" ? "Azure AI" : "Local";
+
   return (
     <section className="board-header">
       <div>
         <p className="eyebrow">Public campus board</p>
-        <h1>Explore Quests</h1>
-        <p>Find campus gigs, events, projects, and challenges worth your time.</p>
+        <h1>Find Side Quests</h1>
+        <p>Campus gigs, events, projects, and challenges matched to your interests.</p>
       </div>
       <div className="board-stats" aria-label="Board stats">
         <div>
@@ -501,12 +593,12 @@ function BoardHeader({ questCount }: { questCount: number }) {
           <span>visible</span>
         </div>
         <div>
-          <strong>86%</strong>
-          <span>matched</span>
+          <strong>{averageMatch}%</strong>
+          <span>avg fit</span>
         </div>
         <div>
-          <strong>24h</strong>
-          <span>avg reply</span>
+          <strong>{providerLabel}</strong>
+          <span>matcher</span>
         </div>
       </div>
     </section>
@@ -734,11 +826,13 @@ function RightRail({
   selectedQuest,
   parties,
   matchScore,
+  matchMeta,
   onOpenParty
 }: {
   selectedQuest: QuestCard | null;
   parties: PartyCandidateScore[];
   matchScore?: number;
+  matchMeta: MatchRecommendationMeta | null;
   onOpenParty: () => void;
 }) {
   const upcoming = seedQuests
@@ -750,6 +844,7 @@ function RightRail({
     )
     .slice(0, 3);
   const topParty = parties[0];
+  const providerLabel = matchMeta?.provider === "azure" ? "Azure AI" : "Local";
 
   return (
     <aside className="right-rail">
@@ -806,7 +901,7 @@ function RightRail({
         </div>
         <p className="muted">
           {selectedQuest
-            ? `${matchScore ?? 0}% fit for ${selectedQuest.skillsHelpful
+            ? `${providerLabel}: ${matchScore ?? 0}% fit for ${selectedQuest.skillsHelpful
                 .slice(0, 2)
                 .map(labelize)
                 .join(" and ")}`
@@ -941,10 +1036,12 @@ function QuestDetailPanel({
 function PostQuestModal({
   azureHealth,
   onClose,
+  onImport,
   onPublish
 }: {
   azureHealth: AzureConnectionHealth | null;
   onClose: () => void;
+  onImport: (quests: QuestCard[]) => void;
   onPublish: (quest: QuestCard) => Promise<void>;
 }) {
   const [sourceType, setSourceType] = useState<QuestSourceType>("text");
@@ -954,13 +1051,15 @@ function PostQuestModal({
   );
   const [file, setFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [response, setResponse] = useState<ExtractQuestResponse | null>(null);
   const [draftCard, setDraftCard] = useState<QuestCard | null>(null);
   const [extractError, setExtractError] = useState("");
 
-  async function extract() {
-    setExtracting(true);
+  async function runExtraction(importNow = false) {
+    if (importNow) setImporting(true);
+    else setExtracting(true);
     setResponse(null);
     setDraftCard(null);
     setExtractError("");
@@ -971,7 +1070,7 @@ function PostQuestModal({
     if (file) formData.append("file", file);
 
     try {
-      const result = await fetch("/api/extract", {
+      const result = await fetch(importNow ? "/api/quests/import" : "/api/extract", {
         method: "POST",
         body: formData
       });
@@ -984,11 +1083,23 @@ function PostQuestModal({
       }
       setResponse(data);
       setDraftCard(data.cards[0] ?? null);
+      if (importNow) onImport(data.cards);
     } catch (error) {
       setExtractError(error instanceof Error ? error.message : "Extraction failed");
     } finally {
-      setExtracting(false);
+      if (importNow) setImporting(false);
+      else setExtracting(false);
     }
+  }
+
+  function updateUrl(value: string) {
+    setUrl(value);
+    if (value.trim() && sourceType === "text") setSourceType("link");
+  }
+
+  function updateFile(nextFile: File | null) {
+    setFile(nextFile);
+    if (nextFile) setSourceType(inferSourceTypeFromFile(nextFile));
   }
 
   async function publishDraft() {
@@ -1053,7 +1164,7 @@ function PostQuestModal({
                 Link
                 <input
                   value={url}
-                  onChange={(event) => setUrl(event.target.value)}
+                  onChange={(event) => updateUrl(event.target.value)}
                   placeholder="https://..."
                 />
               </label>
@@ -1068,18 +1179,29 @@ function PostQuestModal({
               <input
                 type="file"
                 accept="image/*,.pdf,.txt,.md,.json"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                onChange={(event) => updateFile(event.target.files?.[0] ?? null)}
               />
             </label>
-            <button
-              className="primary-button wide"
-              type="button"
-              onClick={extract}
-              disabled={extracting}
-            >
-              {extracting ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
-              Extract Quest Card
-            </button>
+            <div className="intake-actions">
+              <button
+                className="primary-button wide"
+                type="button"
+                onClick={() => runExtraction(false)}
+                disabled={extracting || importing}
+              >
+                {extracting ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
+                Extract Quest Card
+              </button>
+              <button
+                className="secondary-button wide"
+                type="button"
+                onClick={() => runExtraction(true)}
+                disabled={extracting || importing}
+              >
+                {importing ? <Loader2 className="spin" size={17} /> : <CheckCircle2 size={17} />}
+                Extract & Add
+              </button>
+            </div>
             {extractError ? <p className="error-text">{extractError}</p> : null}
             {response?.meta.warnings.length ? (
               <p className="warning-text">{response.meta.warnings[0]}</p>
@@ -1412,17 +1534,30 @@ function formatStudentAvailability(student: StudentProfile) {
 }
 
 function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => void }) {
-  const [remoteParties, setRemoteParties] = useState<PartyCandidateScore[] | null>(null);
-  const [studentDirectory, setStudentDirectory] = useState<StudentProfile[]>(students);
-  const [selectedPartyIndex, setSelectedPartyIndex] = useState(0);
-  const [loadingParties, setLoadingParties] = useState(false);
-  const [partyError, setPartyError] = useState<string | null>(null);
+  const [remotePartyResult, setRemotePartyResult] = useState<{
+    questId: string;
+    parties: PartyCandidateScore[];
+    students: StudentProfile[];
+  } | null>(null);
+  const [selectedPartyChoice, setSelectedPartyChoice] = useState({ questId: "", index: 0 });
+  const [partyError, setPartyError] = useState<{ questId: string; message: string } | null>(null);
   const fallback = useMemo(
     () => (quest ? recommendParties(quest, students, currentStudent.id) : []),
     [quest]
   );
+  const currentRemotePartyResult =
+    remotePartyResult && remotePartyResult.questId === quest?.id ? remotePartyResult : null;
+  const remoteParties = currentRemotePartyResult?.parties ?? null;
+  const studentDirectory = currentRemotePartyResult?.students ?? students;
   const parties = remoteParties ?? fallback;
+  const requestedPartyIndex =
+    selectedPartyChoice.questId === quest?.id ? selectedPartyChoice.index : 0;
+  const selectedPartyIndex = parties.length
+    ? Math.min(requestedPartyIndex, parties.length - 1)
+    : 0;
   const selectedParty = parties[selectedPartyIndex] ?? parties[0];
+  const visiblePartyError =
+    partyError && partyError.questId === quest?.id ? partyError.message : null;
 
   function findStudent(memberId: string) {
     return (
@@ -1432,20 +1567,8 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
   }
 
   useEffect(() => {
-    setSelectedPartyIndex(0);
-  }, [quest?.id]);
-
-  useEffect(() => {
-    if (parties.length > 0 && selectedPartyIndex >= parties.length) {
-      setSelectedPartyIndex(parties.length - 1);
-    }
-  }, [parties.length, selectedPartyIndex]);
-
-  useEffect(() => {
     if (!quest) return undefined;
     let active = true;
-    setLoadingParties(true);
-    setPartyError(null);
 
     fetch("/api/parties/recommend", {
       method: "POST",
@@ -1461,16 +1584,20 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
       })
       .then((data) => {
         if (!active) return;
-        if (data.parties) setRemoteParties(data.parties);
-        if (data.students) setStudentDirectory(data.students);
+        setRemotePartyResult({
+          questId: quest.id,
+          parties: data.parties ?? [],
+          students: data.students ?? students
+        });
+        setPartyError(null);
       })
       .catch(() => {
         if (!active) return;
-        setRemoteParties(null);
-        setPartyError("Using local recommendations while the server warms up.");
-      })
-      .finally(() => {
-        if (active) setLoadingParties(false);
+        setRemotePartyResult(null);
+        setPartyError({
+          questId: quest.id,
+          message: "Using local recommendations while the server warms up."
+        });
       });
 
     return () => {
@@ -1492,13 +1619,7 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
             <X size={19} />
           </button>
         </div>
-        {loadingParties ? (
-          <div className="drawer-status">
-            <Loader2 className="spin" size={16} />
-            Refreshing recommendations
-          </div>
-        ) : null}
-        {partyError ? <p className="drawer-error">{partyError}</p> : null}
+        {visiblePartyError ? <p className="drawer-error">{visiblePartyError}</p> : null}
         {selectedParty ? (
           <>
             {parties.length > 1 ? (
@@ -1508,7 +1629,7 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
                     className={selectedPartyIndex === index ? "active" : ""}
                     key={`${party.questId}-${party.memberIds.join("-")}`}
                     type="button"
-                    onClick={() => setSelectedPartyIndex(index)}
+                    onClick={() => setSelectedPartyChoice({ questId: quest.id, index })}
                   >
                     <div>
                       <strong>Option {index + 1}</strong>

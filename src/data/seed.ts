@@ -335,7 +335,7 @@ export const seedQuests: QuestCard[] = [
     description:
       "Spend a focused Saturday interviewing scenario patients, mapping friction, and designing a prototype that clinicians can critique. Strong fit for UX, public health, and frontend students.",
     imageUrl:
-      "https://images.unsplash.com/photo-1581093458791-9d42e82044f3?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
     source: {
       id: "src-003",
       type: "pdf",
