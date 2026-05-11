@@ -5,3 +5,18 @@
 [    1000ms] [ERROR] Framing 'https://portal.azure.com/' violates the following Content Security Policy directive: "frame-ancestors 'self'". The request has been blocked.
  @ :0
 [    1009ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=c44b4083-3bb0-49c1-b47d-974e53cbdf3c&scope=https%3A%2F%2Fmanagement.core.windows.net%2F%2F.default%20openid%20profile%20offline_access&redirect_uri=https%3A%2F%2Fportal.azure.com%2Fauth%2Flogin%2F&client-request-id=019e16d9-37f2-706c-86bb-31b1099918be&response_mode=fragment&client_info=1&nonce=019e16d9-37f3-7b78-aff0-af14bc0864c7&state=eyJpZCI6IjAxOWUxNmQ5LTM3ZjMtNzdmNS05NWYwLTZjNzUyMzI4MWZkMiIsIm1ldGEiOnsiaW50ZXJhY3Rpb25UeXBlIjoicmVkaXJlY3QifX0%3D&x-client-SKU=msal.js.browser&x-client-VER=4.21.0&response_type=code&code_challenge=PTwshcUetXnfjrH-3y9ZJoeGddMP1JBgaFoMaTdphqY&code_challenge_method=S256&site_id=501430&instance_aware=true&sso_reload=true:0
+[   83983ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://management.azure.com/providers/Microsoft.PortalServices/settings/default?api-version=2024-09-01-preview:0
+[   84217ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'ambient-light-sensor'. @ :0
+[   84217ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'battery'. @ :0
+[   84604ms] [LOG] Version: 17.308.0.1
+Session: 31c4a93714d44c328fc90ba432aef622 @ https://portal.azure.com/Content/Dynamic/KF_Gn4MrvEBu.js:382
+[   84780ms] [LOG] Extension: HubsExtension @ blob:https://portal.azure.com/83c5c764-714f-410a-bee0-0b435e9a4d1c:0
+[   84802ms] [LOG] Extension: Microsoft_Azure_Copilot @ blob:https://portal.azure.com/83c5c764-714f-410a-bee0-0b435e9a4d1c:0
+[   84822ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'ambient-light-sensor'. @ :0
+[   84822ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'battery'. @ :0
+[   85326ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://graph.microsoft.com/v1.0/me/photo/$value:0
+[  158708ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'ambient-light-sensor'. @ :0
+[  158708ms] [WARNING] Error with Permissions-Policy header: Unrecognized feature: 'battery'. @ :0
+[  158914ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://hosting.portal.azure.net/copilotmetadata/Content/1.300.03400.405/generated/Loc/en/extensions/hubsextension_browseall_reactview_prompts.json:0
+[  159301ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://hosting.portal.azure.net/copilotmetadata/Content/1.300.03400.405/generated/Loc/en/extensions/hubsextension_defaultprompts.json:0
+[  159647ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://hosting.portal.azure.net/copilotmetadata/Content/1.300.03400.405/generated/Loc/en/resourceTypes/microsoft_resources_resources_prompts.json:0
