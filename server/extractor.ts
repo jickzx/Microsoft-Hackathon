@@ -13,9 +13,7 @@ import type {
   ExtractQuestResponse,
   QuestCard
 } from "../src/types";
-
-const defaultImageUrl =
-  "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80";
+import { azureConfig, azureHeaders, requireAzureConfig } from "./env";
 
 const scrapeMaxTextChars = Number(process.env.QUEST_SCRAPE_TEXT_CHARS ?? 9000);
 const scrapeTimeoutMs = Number(process.env.QUEST_SCRAPE_TIMEOUT_MS ?? 8000);
@@ -552,13 +550,6 @@ async function scrapeEventPage(url: string) {
 
 async function prepareExtractionInput(input: ExtractQuestRequest) {
   if (!input.url) return { input, warnings: [] as string[] };
-  if (input.sourceType === "link") {
-    return {
-      input,
-      warnings: ["Link saved as a source. Live page scraping is disabled for this MVP."]
-    };
-  }
-
   const scraped = await scrapeEventPage(input.url);
   return {
     input: scraped.page ? { ...input, scrapedPage: scraped.page } : input,
@@ -593,6 +584,19 @@ function finalizeCard(card: QuestCard, fallback?: QuestCard) {
   if (parsed.success) return parsed.data;
   if (fallback) return questCardSchema.parse(fallback);
   throw new Error("Quest card normalization failed.");
+}
+
+function fallbackImageUrl(input: ExtractQuestRequest) {
+  if (input.scrapedPage?.imageUrl) return input.scrapedPage.imageUrl;
+  if (input.url) {
+    try {
+      const domain = new URL(input.url).hostname;
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
+    } catch {
+      return "/favicon.svg";
+    }
+  }
+  return "/favicon.svg";
 }
 
 function fileWarnings(input: ExtractQuestRequest) {
@@ -677,7 +681,7 @@ function contentFromInput(input: ExtractQuestRequest) {
     .join("\n");
 }
 
-export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
+function baseCardFromInput(input: ExtractQuestRequest): QuestCard[] {
   const content = contentFromInput(input);
   const title = titleFrom(content, input.url);
   const summary = summaryFrom(content, title);
@@ -698,11 +702,11 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
         content.length > 80
           ? content
           : `${summary} Add organizer notes, eligibility, and application details before publishing.`,
-      imageUrl: input.scrapedPage?.imageUrl ?? defaultImageUrl,
+      imageUrl: fallbackImageUrl(input),
       source: {
         id: `src-${idFrom(content)}`,
         type: input.sourceType,
-        submittedByUserId: "student-you",
+        submittedByUserId: input.submittedByUserId ?? "system",
         rawUrl: input.url,
         fileName: input.file?.name,
         rawText: input.text ?? input.scrapedPage?.text,
@@ -725,12 +729,12 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
       contactEmail: detectContactEmail(content),
       party: { allowed: true, idealSize: 3, openSlots: 4 },
       aiExtraction: {
-        confidence: 0.67,
+        confidence: 0.1,
         missingFields: ["organizer"],
         extractedAt: now,
-        model: "local-quest-parser"
+        model: "azure-normalized"
       },
-      stats: { saves: 0, views: 1, partyRequests: 0 },
+      stats: { saves: 0, views: 0, partyRequests: 0 },
       createdAt: now,
       updatedAt: now
     })
@@ -942,49 +946,16 @@ function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestC
   else if (Array.isArray(nestedData?.cards)) cards = nestedData.cards;
   else if (Array.isArray(nestedData?.quests)) cards = nestedData.quests;
   else if (Array.isArray(nestedData?.data)) cards = nestedData.data;
-  const localBase = extractLocally(input)[0];
+  const localBase = baseCardFromInput(input)[0];
 
   return cards
     .filter(isRecord)
     .map((card, index) => mergeAzureCard(card, localBase, index));
 }
 
-function getAzureMode() {
-  return process.env.AZURE_AI_MODE ?? "auto";
-}
-
-function getAzureEndpoint() {
-  return process.env.AZURE_OPENAI_ENDPOINT ?? process.env.AZURE_AI_ENDPOINT;
-}
-
-function getAzureKey() {
-  return process.env.AZURE_OPENAI_API_KEY ?? process.env.AZURE_AI_KEY;
-}
-
-function getConfiguredRoute() {
-  return process.env.AZURE_AI_ROUTE || process.env.AZURE_OPENAI_ROUTE || "";
-}
-
 function joinUrl(base: string, route: string) {
   if (!route) return base;
   return `${base.replace(/\/+$/, "")}/${route.replace(/^\/+/, "")}`;
-}
-
-function commonAzureHeaders(key: string) {
-  const authHeader = process.env.AZURE_AI_AUTH_HEADER;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json"
-  };
-
-  if (authHeader && authHeader.toLowerCase() !== "auto") {
-    headers[authHeader] = authHeader.toLowerCase() === "authorization" ? `Bearer ${key}` : key;
-  } else {
-    headers["Ocp-Apim-Subscription-Key"] = key;
-    headers["api-key"] = key;
-    headers["x-functions-key"] = key;
-  }
-
-  return headers;
 }
 
 function buildPrompt(input: ExtractQuestRequest) {
@@ -1031,10 +1002,7 @@ function buildPrompt(input: ExtractQuestRequest) {
 
 async function fetchJsonWithTimeout(url: string, init: RequestInit) {
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    Number(process.env.AZURE_AI_TIMEOUT_MS ?? 12000)
-  );
+  const timeout = setTimeout(() => controller.abort(), azureConfig().timeoutMs);
 
   const response = await fetch(url, {
     ...init,
@@ -1060,19 +1028,19 @@ async function fetchJsonWithTimeout(url: string, init: RequestInit) {
 }
 
 async function extractWithAzureOpenAI(input: ExtractQuestRequest, endpoint: string, key: string) {
-  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT;
+  const deployment = azureConfig().deployment;
   if (!deployment) {
     throw new Error("Azure OpenAI deployment is not configured.");
   }
 
-  const apiVersion = process.env.AZURE_OPENAI_API_VERSION ?? process.env.AZURE_AI_API_VERSION ?? "2024-10-21";
+  const apiVersion = azureConfig().apiVersion;
   const url = joinUrl(
     endpoint,
     `/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`
   );
   const payload = await fetchJsonWithTimeout(url, {
     method: "POST",
-    headers: commonAzureHeaders(key),
+    headers: azureHeaders(key),
     body: JSON.stringify({
       messages: [
         {
@@ -1100,7 +1068,7 @@ async function extractWithAzureOpenAI(input: ExtractQuestRequest, endpoint: stri
 }
 
 async function extractWithCustomAzure(input: ExtractQuestRequest, endpoint: string, key: string) {
-  const configuredRoute = getConfiguredRoute();
+  const configuredRoute = azureConfig().route;
   const routeCandidates = configuredRoute
     ? [configuredRoute]
     : ["", "/api/extract", "/api/quest/extract", "/api/chat/completions", "/v1/chat/completions"];
@@ -1119,7 +1087,7 @@ async function extractWithCustomAzure(input: ExtractQuestRequest, endpoint: stri
     try {
       const payload = await fetchJsonWithTimeout(joinUrl(endpoint, route), {
         method: "POST",
-        headers: commonAzureHeaders(key),
+        headers: azureHeaders(key),
         body: JSON.stringify(body)
       });
       const cards = normalizeAzureCards(payload, input);
@@ -1134,19 +1102,12 @@ async function extractWithCustomAzure(input: ExtractQuestRequest, endpoint: stri
 }
 
 async function extractWithAzure(input: ExtractQuestRequest) {
+  const config = requireAzureConfig();
   const endpoint = process.env.AZURE_AI_ENDPOINT;
-  const resolvedEndpoint = getAzureEndpoint();
-  const key = getAzureKey();
-  const enabled = process.env.AZURE_AI_ENABLED !== "false";
+  const resolvedEndpoint = config.endpoint;
+  const key = config.key;
 
-  if (!resolvedEndpoint || !key || !enabled) return null;
-
-  const mode = getAzureMode();
-  if (
-    mode === "azure-openai" ||
-    process.env.AZURE_OPENAI_DEPLOYMENT ||
-    process.env.AZURE_AI_DEPLOYMENT
-  ) {
+  if (config.mode === "azure-openai" || config.deployment) {
     return extractWithAzureOpenAI(input, resolvedEndpoint, key);
   }
 
@@ -1160,43 +1121,28 @@ async function extractWithAzure(input: ExtractQuestRequest) {
 export async function extractQuestCards(
   input: ExtractQuestRequest
 ): Promise<ExtractQuestResponse> {
-  let azureWarning = "";
   const prepared = await prepareExtractionInput(input);
+  const azureCards = await extractWithAzure(prepared.input);
 
-  try {
-    const azureCards = await extractWithAzure(prepared.input);
-    if (azureCards?.length) {
-      return {
-        cards: azureCards,
-        meta: extractionMeta("azure", false, prepared.input, azureCards, prepared.warnings)
-      };
-    }
-  } catch (error) {
-    azureWarning = error instanceof Error ? error.message : "Azure extraction failed";
-    console.warn(azureWarning);
+  if (!azureCards?.length) {
+    throw new Error("Azure extraction returned no quest cards.");
   }
 
-  const localCards = extractLocally(prepared.input);
-
   return {
-    cards: localCards,
-    meta: extractionMeta("local", true, prepared.input, localCards, [
-      ...prepared.warnings,
-      azureWarning
-        ? `Azure extraction unavailable (${azureWarning}); used local parser.`
-        : "Azure extraction unavailable; used local parser."
-    ])
+    cards: azureCards,
+    meta: extractionMeta("azure", false, prepared.input, azureCards, prepared.warnings)
   };
 }
 
 export async function checkAzureConnection(): Promise<AzureConnectionHealth> {
+  const config = azureConfig();
   const cacheKey = [
-    getAzureEndpoint(),
-    getAzureKey() ? "key-set" : "no-key",
-    getAzureMode(),
-    process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT ?? "",
-    getConfiguredRoute(),
-    process.env.AZURE_AI_ENABLED ?? "true"
+    config.endpoint,
+    config.key ? "key-set" : "no-key",
+    config.mode,
+    config.deployment ?? "",
+    config.route,
+    String(config.enabled)
   ].join("|");
   const now = Date.now();
 
@@ -1214,16 +1160,15 @@ export async function checkAzureConnection(): Promise<AzureConnectionHealth> {
 }
 
 async function checkAzureConnectionUncached(): Promise<AzureConnectionHealth> {
-  const endpoint = getAzureEndpoint();
-  const key = getAzureKey();
-  const mode = getAzureMode();
+  const config = azureConfig();
+  const endpoint = config.endpoint;
+  const key = config.key;
+  const mode = config.mode;
   const checkedAt = new Date().toISOString();
-  const deploymentConfigured = Boolean(
-    process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT
-  );
-  const routeConfigured = Boolean(getConfiguredRoute());
+  const deploymentConfigured = Boolean(config.deployment);
+  const routeConfigured = Boolean(config.route);
 
-  if (!endpoint || !key || process.env.AZURE_AI_ENABLED === "false") {
+  if (!endpoint || !key || !config.enabled) {
     return {
       configured: false,
       reachable: false,

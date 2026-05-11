@@ -6,6 +6,7 @@ dist
 !.env.example
 .playwright-cli
 .playwright-mcp
+.codex-screenshots/
 .vite/
 .dev-server.*.log
 .prod-server.*.log
