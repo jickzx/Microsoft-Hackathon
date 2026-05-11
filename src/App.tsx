@@ -691,8 +691,15 @@ function AuthPage({
           email: email.trim(),
           password,
           name: cleanProfile.name,
+          role: cleanProfile.role,
+          workExperience: cleanProfile.workExperience,
+          highestEducation: cleanProfile.education,
           major: cleanProfile.courseOrJobTitle || "Undeclared",
-          year: deriveYearFromEducation(cleanProfile.education)
+          year: deriveYearFromEducation(cleanProfile.education),
+          careerInterest: cleanProfile.careerInterest,
+          skills: cleanProfile.skills,
+          goals: cleanProfile.goals,
+          hobbies: cleanProfile.hobbies
         })
       });
       onAuthenticated(data.user);
@@ -852,6 +859,35 @@ function AuthPage({
                   required
                 />
               </AuthField>
+              <AuthField icon={Users} label="Role">
+                <select
+                  value={profile.role}
+                  onChange={(event) => updateField("role", event.target.value)}
+                  required
+                >
+                  {roleOptions.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+              </AuthField>
+              <AuthField icon={Trophy} label="Work experience">
+                <select
+                  value={profile.workExperience}
+                  onChange={(event) => updateField("workExperience", event.target.value)}
+                  required
+                >
+                  <option value="" disabled>
+                    Select experience
+                  </option>
+                  {workExperienceOptions.map((experience) => (
+                    <option key={experience} value={experience}>
+                      {experience}
+                    </option>
+                  ))}
+                </select>
+              </AuthField>
               <AuthField icon={Award} label="Highest level of education">
                 <select
                   value={profile.education}
@@ -873,6 +909,38 @@ function AuthPage({
                   value={profile.courseOrJobTitle}
                   onChange={(event) => updateField("courseOrJobTitle", event.target.value)}
                   placeholder="Computer Science, UX intern..."
+                  required
+                />
+              </AuthField>
+              <AuthField icon={Compass} label="Career interest" wide>
+                <textarea
+                  value={profile.careerInterest}
+                  onChange={(event) => updateField("careerInterest", event.target.value)}
+                  placeholder="AI product, finance, climate tech..."
+                  required
+                />
+              </AuthField>
+              <AuthField icon={Zap} label="Skills" wide>
+                <textarea
+                  value={profile.skills}
+                  onChange={(event) => updateField("skills", event.target.value)}
+                  placeholder="Coding, design, data, public speaking..."
+                  required
+                />
+              </AuthField>
+              <AuthField icon={Star} label="Goals" wide>
+                <textarea
+                  value={profile.goals}
+                  onChange={(event) => updateField("goals", event.target.value)}
+                  placeholder="Find teammates, build ML skills, ship a portfolio project..."
+                  required
+                />
+              </AuthField>
+              <AuthField icon={Heart} label="Hobbies" wide>
+                <textarea
+                  value={profile.hobbies}
+                  onChange={(event) => updateField("hobbies", event.target.value)}
+                  placeholder="Gaming, writing, volunteering, photography..."
                   required
                 />
               </AuthField>

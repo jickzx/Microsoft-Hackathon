@@ -358,3 +358,15 @@ export interface AzureConnectionHealth {
   detail: string;
   checkedAt: string;
 }
+
+export interface DiscordIntegrationHealth {
+  configured: boolean;
+  botConfigured: boolean;
+  oauthConfigured: boolean;
+  reachable: boolean;
+  status: "ready" | "not_configured" | "auth_failed" | "unreachable" | "unknown";
+  detail: string;
+  applicationId?: string;
+  redirectUriConfigured: boolean;
+  checkedAt: string;
+}

@@ -101,3 +101,19 @@ export function azureHeaders(key: string) {
 
   return headers;
 }
+
+export function discordConfig() {
+  const botToken = envValue("DISCORD_BOT_TOKEN");
+  const clientId = envValue("DISCORD_CLIENT_ID");
+  const clientSecret = envValue("DISCORD_CLIENT_SECRET");
+  const redirectUri = envValue("DISCORD_REDIRECT_URI");
+
+  return {
+    botToken,
+    clientId,
+    clientSecret,
+    redirectUri,
+    botConfigured: Boolean(botToken),
+    oauthConfigured: Boolean(clientId && clientSecret && redirectUri)
+  };
+}
