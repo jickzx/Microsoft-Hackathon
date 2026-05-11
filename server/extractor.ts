@@ -11,7 +11,8 @@ import type {
   AzureConnectionHealth,
   ExtractQuestRequest,
   ExtractQuestResponse,
-  QuestCard
+  QuestCard,
+  ScrapedPage
 } from "../src/types";
 import { azureConfig, azureHeaders, requireAzureConfig } from "./env";
 
@@ -255,6 +256,29 @@ function detectContactEmail(text: string) {
 
 function unique(values: string[]) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function scrapedPagesFrom(input: ExtractQuestRequest): ScrapedPage[] {
+  return input.scrapedPages?.length
+    ? input.scrapedPages
+    : input.scrapedPage
+      ? [input.scrapedPage]
+      : [];
+}
+
+function sourceUrlFromInput(input: ExtractQuestRequest) {
+  return scrapedPagesFrom(input)[0]?.finalUrl ?? input.url;
+}
+
+function scrapedTextFromInput(input: ExtractQuestRequest) {
+  return scrapedPagesFrom(input)
+    .map((page) => page.text)
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function sourceTextFromInput(input: ExtractQuestRequest) {
+  return [input.text, scrapedTextFromInput(input)].filter(Boolean).join("\n\n") || undefined;
 }
 
 function compactWhitespace(value: string) {
@@ -678,6 +702,7 @@ async function inspectImageWithAzure(input: ExtractQuestRequest) {
 async function prepareExtractionInput(input: ExtractQuestRequest) {
   let prepared = input;
   const warnings: string[] = [];
+  const imageUrls: string[] = [];
 
   if (isInlineImageInput(input)) {
     try {
@@ -688,6 +713,7 @@ async function prepareExtractionInput(input: ExtractQuestRequest) {
           text: [prepared.text, imageInspection.text].filter(Boolean).join("\n\n")
         };
       }
+      if (imageInspection?.urls.length) imageUrls.push(...imageInspection.urls);
       if (!prepared.url && imageInspection?.urls[0]) {
         prepared = { ...prepared, url: imageInspection.urls[0] };
         warnings.push(`Azure image scan found an event link and queued it for scraping.`);
@@ -701,12 +727,30 @@ async function prepareExtractionInput(input: ExtractQuestRequest) {
     }
   }
 
-  if (!prepared.url) return { input: prepared, warnings };
+  const urls = new Set<string>();
+  for (const candidate of [
+    prepared.url,
+    ...(prepared.text ? extractUrlsFromText(prepared.text) : []),
+    ...imageUrls
+  ]) {
+    if (!candidate) continue;
+    const normalized = normalizeUrlCandidate(candidate);
+    if (normalized) urls.add(normalized);
+  }
 
-  const scraped = await scrapeEventPage(prepared.url);
+  if (urls.size === 0) return { input: prepared, warnings };
+
+  const results = await Promise.all(Array.from(urls).map((url) => scrapeEventPage(url)));
+  const scrapedPages = results.map((result) => result.page).filter((page): page is ScrapedPage => Boolean(page));
+  const scrapeWarnings = results.flatMap((result) => result.warnings);
+
   return {
-    input: scraped.page ? { ...prepared, scrapedPage: scraped.page } : prepared,
-    warnings: [...warnings, ...scraped.warnings]
+    input: {
+      ...prepared,
+      scrapedPages,
+      scrapedPage: scrapedPages[0]
+    },
+    warnings: [...warnings, ...scrapeWarnings]
   };
 }
 
@@ -739,10 +783,13 @@ function finalizeCard(card: QuestCard) {
 }
 
 function sourceImageUrl(input: ExtractQuestRequest) {
-  if (input.scrapedPage?.imageUrl) return input.scrapedPage.imageUrl;
-  if (input.url) {
+  const pageWithImage = scrapedPagesFrom(input).find((page) => page.imageUrl);
+  if (pageWithImage?.imageUrl) return pageWithImage.imageUrl;
+
+  const sourceUrl = sourceUrlFromInput(input);
+  if (sourceUrl) {
     try {
-      const domain = new URL(input.url).hostname;
+      const domain = new URL(sourceUrl).hostname;
       return `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
     } catch {
       return "/favicon.svg";
@@ -770,14 +817,21 @@ function extractionMeta(
     cards.length === 0
       ? 0
       : cards.reduce((total, card) => total + card.aiExtraction.confidence, 0) / cards.length;
+  const scrapedPages = scrapedPagesFrom(input);
 
   return {
     provider,
     fallbackUsed,
     sourceType: input.sourceType,
+    sourceUrl: sourceUrlFromInput(input),
+    scrapedPageCount: scrapedPages.length,
     confidence: Number(confidence.toFixed(2)),
     missingFields: unique(cards.flatMap((card) => card.aiExtraction.missingFields)),
-    warnings: unique([...fileWarnings(input), ...(input.scrapedPage?.warnings ?? []), ...warnings]),
+    warnings: unique([
+      ...fileWarnings(input),
+      ...scrapedPages.flatMap((page) => page.warnings),
+      ...warnings
+    ]),
     cardCount: cards.length
   };
 }
@@ -820,11 +874,15 @@ function summaryFrom(text: string, title: string) {
 }
 
 function contentFromInput(input: ExtractQuestRequest) {
+  const scrapedContent = scrapedPagesFrom(input).flatMap((page) => [
+    page.title ? `Page title: ${page.title}` : "",
+    page.description ? `Page description: ${page.description}` : "",
+    page.text
+  ]);
+
   return [
     input.text,
-    input.scrapedPage?.title ? `Page title: ${input.scrapedPage.title}` : "",
-    input.scrapedPage?.description ? `Page description: ${input.scrapedPage.description}` : "",
-    input.scrapedPage?.text,
+    ...scrapedContent,
     input.url,
     input.file?.text,
     input.file?.name
@@ -842,7 +900,7 @@ function baseCardFromInput(input: ExtractQuestRequest): QuestCard[] {
   const skills = detectSkills(content);
   const now = new Date().toISOString();
   const id = `quest-${idFrom(`${title}-${content}`)}`;
-  const applyUrl = detectApplyUrl(content, input.scrapedPage?.finalUrl ?? input.url);
+  const applyUrl = detectApplyUrl(content, sourceUrlFromInput(input));
 
   return [
     finalizeCard({
@@ -861,7 +919,7 @@ function baseCardFromInput(input: ExtractQuestRequest): QuestCard[] {
         submittedByUserId: input.submittedByUserId ?? "system",
         rawUrl: input.url,
         fileName: input.file?.name,
-        rawText: input.text ?? input.scrapedPage?.text,
+        rawText: sourceTextFromInput(input),
         submittedAt: now
       },
       status: "needs_review",
@@ -1017,8 +1075,8 @@ function azureCardFromRecord(card: Record<string, unknown>, input: ExtractQuestR
   const source = recordValue(card.source);
   const now = new Date().toISOString();
   const title = requiredString(card.title, "title");
-  const sourceText = input.text ?? input.scrapedPage?.text;
-  const sourceUrl = input.scrapedPage?.finalUrl ?? input.url;
+  const sourceText = sourceTextFromInput(input);
+  const sourceUrl = sourceUrlFromInput(input);
   const sourceId = stringValue(source.id, `src-${idFrom(`${sourceUrl ?? sourceText ?? title}-${index}`)}`);
   const rawModel = stringValue(aiExtraction.model, azureConfig().deployment ?? "azure-ai");
   const model = rawModel.toLowerCase().includes("local")
@@ -1140,9 +1198,9 @@ function buildPrompt(input: ExtractQuestRequest) {
     "",
     `Source type: ${input.sourceType}`,
     input.url ? `URL: ${input.url}` : "",
-    input.scrapedPage
-      ? `Scraped event page (${input.scrapedPage.finalUrl}):\n${input.scrapedPage.text}`
-      : "",
+    ...scrapedPagesFrom(input).map(
+      (page) => `Scraped event page (${page.finalUrl}):\n${page.text}`
+    ),
     input.file ? `File: ${input.file.name} (${input.file.type}, ${input.file.size} bytes)` : "",
     input.file?.dataUrl?.startsWith("data:image/")
       ? "Attached image: read all visible text, dates, locations, QR/link text, and organizer details from the screenshot or poster."
@@ -1244,6 +1302,8 @@ async function extractWithCustomAzure(input: ExtractQuestRequest, endpoint: stri
     sourceType: input.sourceType,
     text: input.text,
     url: input.url,
+    scrapedPage: input.scrapedPage,
+    scrapedPages: input.scrapedPages,
     file: input.file
   };
   const errors: string[] = [];

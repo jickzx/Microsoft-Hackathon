@@ -235,6 +235,15 @@ export interface MatchRecommendationResponse {
   meta: MatchRecommendationMeta;
 }
 
+export interface ScrapedPage {
+  finalUrl: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  text: string;
+  warnings: string[];
+}
+
 const textListSchema = z.preprocess(
   (value) =>
     typeof value === "string"
@@ -309,14 +318,8 @@ export interface ExtractQuestRequest {
     dataUrl?: string;
     truncated?: boolean;
   };
-  scrapedPage?: {
-    finalUrl: string;
-    title?: string;
-    description?: string;
-    imageUrl?: string;
-    text: string;
-    warnings: string[];
-  };
+  scrapedPage?: ScrapedPage;
+  scrapedPages?: ScrapedPage[];
 }
 
 export interface ExtractQuestMeta {
@@ -324,6 +327,8 @@ export interface ExtractQuestMeta {
   fallbackUsed: boolean;
   sourceType: QuestSourceType;
   sourceId?: string;
+  sourceUrl?: string;
+  scrapedPageCount?: number;
   confidence: number;
   missingFields: string[];
   warnings: string[];

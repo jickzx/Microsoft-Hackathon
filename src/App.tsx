@@ -17,7 +17,6 @@ import {
   Globe2,
   Grid3X3,
   Heart,
-  History,
   HomeIcon,
   Image as ImageIcon,
   Link2,
@@ -28,8 +27,6 @@ import {
   Search,
   Settings,
   Sparkles,
-  Star,
-  Trophy,
   Upload,
   UserRound,
   Users,
@@ -46,7 +43,6 @@ import {
 import { interestTags } from "./types";
 import type {
   AzureConnectionHealth,
-  ExtractQuestMeta,
   ExtractQuestResponse,
   MatchRecommendationMeta,
   MatchRecommendationResponse,
@@ -92,10 +88,6 @@ interface AuthResponse {
   user: StudentProfile | null;
 }
 
-interface ExtractMetaWithSource extends ExtractQuestMeta {
-  sourceId?: string;
-}
-
 const signupInitialProfile: SignupProfile = {
   name: "",
   role: "Student",
@@ -129,8 +121,14 @@ const educationOptions = [
 
 const requiredSignupFields: { key: keyof SignupProfile; label: string }[] = [
   { key: "name", label: "Name" },
+  { key: "role", label: "Role" },
+  { key: "workExperience", label: "Work experience" },
   { key: "education", label: "Highest level of education" },
-  { key: "courseOrJobTitle", label: "Course or job title" }
+  { key: "courseOrJobTitle", label: "Course or job title" },
+  { key: "careerInterest", label: "Career interest" },
+  { key: "skills", label: "Skills" },
+  { key: "goals", label: "Goals" },
+  { key: "hobbies", label: "Hobbies" }
 ];
 
 const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
@@ -155,27 +153,12 @@ const submitMethods: {
   id: SubmitMethodId;
   icon: typeof Globe2;
   label: string;
-  description: string;
 }[] = [
-  { id: "link", icon: Globe2, label: "Paste a Link", description: "Store URL as source" },
-  { id: "photo", icon: Camera, label: "Take a Photo", description: "Poster or noticeboard" },
-  { id: "screenshot", icon: ImageIcon, label: "Upload Image", description: "Screenshot or flyer" },
-  { id: "text", icon: MessageCircle, label: "Paste Text", description: "Email, chat, caption" },
-  { id: "file", icon: FileText, label: "Upload File", description: "PDF, doc, or note" }
-];
-
-const badgeItems = [
-  { icon: Star, label: "Early Adopter", className: "badge-gold" },
-  { icon: Users, label: "Team Player", className: "badge-blue" },
-  { icon: Flame, label: "Night Owl", className: "badge-violet" },
-  { icon: Trophy, label: "Hackathon Hero", className: "badge-green" }
-];
-
-const profileMenu = [
-  { icon: Bookmark, label: "Saved Quests" },
-  { icon: History, label: "Quest History" },
-  { icon: Users, label: "My Parties" },
-  { icon: Settings, label: "Settings" }
+  { id: "link", icon: Globe2, label: "Paste a Link" },
+  { id: "photo", icon: Camera, label: "Take a Photo" },
+  { id: "screenshot", icon: ImageIcon, label: "Upload Image" },
+  { id: "text", icon: MessageCircle, label: "Paste Text" },
+  { id: "file", icon: FileText, label: "Upload File" }
 ];
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -521,8 +504,6 @@ function App() {
       student={activeStudent}
       saved={savedQuestIds.has(selectedQuest.id)}
       joined={joinedQuestIds.has(selectedQuest.id)}
-      match={questMatches[selectedQuest.id]}
-      matchMeta={matchMeta}
       onBack={() => setSelectedQuest(null)}
       onSave={() => toggleSaved(selectedQuest.id)}
       onJoin={() => toggleJoined(selectedQuest.id)}
@@ -589,7 +570,6 @@ function App() {
       <TopNav
         activePage={activePage}
         user={activeStudent}
-        azureHealth={azureHealth}
         onNavigate={showPage}
         onLogout={logout}
       />
@@ -706,9 +686,7 @@ function AuthPage({
           <strong>QuestBoard</strong>
         </div>
         <div className="auth-visual-copy">
-          <span>Database account</span>
-          <h1>Your verified quest board starts here.</h1>
-          <p>Sign in to load saved quests, parties, and Azure-powered recommendations from the local database.</p>
+          <h1>QuestBoard</h1>
         </div>
         <div className="auth-profile-preview">
           <div>
@@ -890,19 +868,14 @@ function AuthField({
 function TopNav({
   activePage,
   user,
-  azureHealth,
   onNavigate,
   onLogout
 }: {
   activePage: Page;
   user: StudentProfile;
-  azureHealth: AzureConnectionHealth | null;
   onNavigate: (page: Page) => void;
   onLogout: () => void;
 }) {
-  const azureLabel =
-    azureHealth?.status === "ready" ? "Azure Ready" : azureHealth ? "Azure Unavailable" : "Azure Checking";
-
   return (
     <header className="topbar">
       <button className="brand" type="button" onClick={() => onNavigate("home")}>
@@ -928,10 +901,6 @@ function TopNav({
         })}
       </nav>
       <div className="profile-actions">
-        <span className="xp-pill">
-          {azureLabel}
-          <strong>{azureHealth?.status === "ready" ? "AI" : "DB"}</strong>
-        </span>
         <span className="student-select">{user.name}</span>
         <img src={user.avatarUrl} alt={`${user.name} avatar`} />
         <button className="secondary-button topbar-logout" type="button" onClick={onLogout}>
@@ -988,9 +957,7 @@ function HomePage({
       <div className="home-header">
         <div>
           <h1>Hey {student.name.split(" ")[0]}</h1>
-          <p>
-            {loading ? "Loading campus quests..." : `${quests.length} persistent quests live on campus`}
-          </p>
+          <p>{loading ? "Loading quests..." : `${quests.length} quests available`}</p>
         </div>
         <div className="home-actions">
           <button className="secondary-button" type="button" onClick={onImportSources} disabled={importingSources}>
@@ -1028,9 +995,9 @@ function HomePage({
         <StatCard
           icon={Sparkles}
           tone="violet"
-          label={matchReady ? "Azure Match" : "AI Match"}
+          label={matchReady ? "Matches" : "Recommendations"}
           value={recommendedCount}
-          detail="personalized quests"
+          detail="recommended"
         />
         <StatCard
           icon={Flame}
@@ -1039,7 +1006,7 @@ function HomePage({
           value={hotQuest ? shortTitle(hotQuest.title) : "Quest"}
           detail={`${hotQuest?.stats.views ?? 0} interested`}
         />
-        <StatCard icon={Clock3} tone="mint" label="Closing" value={closingCount} detail="deadlines this week" />
+        <StatCard icon={Clock3} tone="mint" label="Closing" value={closingCount} detail="this week" />
       </div>
 
       <FilterRail
@@ -1111,7 +1078,7 @@ function ExplorePage({
       <div className="section-header">
         <div>
           <h1>Explore Quests</h1>
-          <p>{filtered.length} database-backed quests available</p>
+          <p>{filtered.length} quests available</p>
         </div>
         <div className="home-actions">
           <button className="secondary-button" type="button" onClick={onImportSources} disabled={importingSources}>

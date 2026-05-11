@@ -387,6 +387,14 @@ export async function saveSourceFromExtraction(
   submittedByUserId: string
 ) {
   const now = new Date();
+  const scrapedPages = input.scrapedPages?.length
+    ? input.scrapedPages
+    : input.scrapedPage
+      ? [input.scrapedPage]
+      : [];
+  const rawText = [input.text, ...scrapedPages.map((page) => page.text)]
+    .filter(Boolean)
+    .join("\n\n") || null;
   await prisma.questSource.upsert({
     where: { id: sourceId },
     update: {
@@ -396,7 +404,7 @@ export async function saveSourceFromExtraction(
       fileName: input.file?.name ?? null,
       fileType: input.file?.type ?? null,
       fileSize: input.file?.size ? Math.round(input.file.size) : null,
-      rawText: input.text ?? input.scrapedPage?.text ?? null,
+      rawText,
       extractionMeta: json(meta),
       submittedAt: now
     },
@@ -408,7 +416,7 @@ export async function saveSourceFromExtraction(
       fileName: input.file?.name ?? null,
       fileType: input.file?.type ?? null,
       fileSize: input.file?.size ? Math.round(input.file.size) : null,
-      rawText: input.text ?? input.scrapedPage?.text ?? null,
+      rawText,
       extractionMeta: json(meta),
       submittedAt: now
     }
