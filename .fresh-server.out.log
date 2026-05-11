@@ -2,6 +2,5 @@
 > side-quest@0.1.0 dev
 > tsx server/index.ts
 
-◇ injected env (25) from .env.local // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (25) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
 Side Quest running on http://localhost:4173
-[2m3:50:44 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx[22m

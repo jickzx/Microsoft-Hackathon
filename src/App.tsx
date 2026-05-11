@@ -330,9 +330,6 @@ function App() {
     })
       .then((data) => {
         if (!active) return;
-        if (data.meta.provider !== "azure" || data.meta.fallbackUsed) {
-          throw new Error("Azure matching did not return a verified response.");
-        }
         setRemoteMatches(
           Object.fromEntries(data.matches.map((match) => [match.questId, match])) as Record<
             string,
@@ -340,12 +337,17 @@ function App() {
           >
         );
         setMatchMeta(data.meta);
+        setAppError((current) =>
+          current === "Azure matching is unavailable. Recommendations will appear once Azure responds."
+            ? ""
+            : current
+        );
       })
       .catch(() => {
         if (!active) return;
         setRemoteMatches({});
         setMatchMeta(null);
-        setAppError("Azure matching is unavailable. Recommendations will appear once Azure responds.");
+        setAppError("Recommendations are temporarily unavailable. Try again in a moment.");
       });
 
     return () => {
@@ -539,7 +541,7 @@ function App() {
           student={activeStudent}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
-          matchReady={matchMeta?.provider === "azure"}
+          matchReady={Boolean(matchMeta)}
           loading={loading}
           importingSources={importingSources}
           searchSeed={globalSearch}
@@ -1202,10 +1204,10 @@ function HomePage({
         <StatCard icon={Clock3} tone="mint" label="Closing" value={closingCount} detail="this week" />
         <RightRailBlock title="Picked for you" icon={Sparkles}>
           <button className="text-button" type="button" onClick={() => picked && onSelectQuest(picked)}>
-            {picked ? picked.title : "Azure recommendations pending"}
+            {picked ? picked.title : "Recommendations pending"}
             <ChevronRight size={16} />
           </button>
-          <small>{picked ? `${questMatches[picked.id]?.total ?? 0}% Azure match` : "Import events to unlock matches"}</small>
+          <small>{picked ? `${questMatches[picked.id]?.total ?? 0}% match` : "Import events to unlock matches"}</small>
         </RightRailBlock>
         <RightRailBlock title="Friends joining" icon={Users}>
           {friendsJoining.map((quest) => (
