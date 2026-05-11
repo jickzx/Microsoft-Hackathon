@@ -146,6 +146,78 @@ export const students: StudentProfile[] = [
     },
     questCount: 13,
     communicationStyle: "async"
+  },
+  {
+    id: "student-priya",
+    name: "Priya Nair",
+    year: "junior",
+    major: "Data Science",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=240&q=80",
+    interests: ["ai", "finance", "competitions", "research"],
+    skills: ["ml", "data", "backend", "coding"],
+    wantsToBuildSkills: ["pitching", "public-speaking"],
+    availability: {
+      weeklyHours: 9,
+      preferredDays: ["mon", "wed", "fri", "sat"],
+      preferredTimes: ["afternoon", "evening"]
+    },
+    preferences: {
+      maxDifficulty: "hard",
+      modes: ["remote", "hybrid", "in_person"],
+      rewardTypes: ["money", "experience", "networking"],
+      maxHoursPerQuest: 12
+    },
+    questCount: 8,
+    communicationStyle: "planner"
+  },
+  {
+    id: "student-jordan",
+    name: "Jordan Lee",
+    year: "sophomore",
+    major: "Communications",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?auto=format&fit=crop&w=240&q=80",
+    interests: ["events", "career", "clubs", "startups"],
+    skills: ["public-speaking", "marketing", "video", "writing"],
+    wantsToBuildSkills: ["design", "data"],
+    availability: {
+      weeklyHours: 6,
+      preferredDays: ["thu", "fri", "sat"],
+      preferredTimes: ["afternoon", "evening"]
+    },
+    preferences: {
+      maxDifficulty: "medium",
+      modes: ["in_person", "hybrid"],
+      rewardTypes: ["networking", "food", "experience"],
+      maxHoursPerQuest: 8
+    },
+    questCount: 6,
+    communicationStyle: "live-collab"
+  },
+  {
+    id: "student-camila",
+    name: "Camila Reyes",
+    year: "senior",
+    major: "Environmental Design",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=240&q=80",
+    interests: ["climate", "design", "volunteering", "social-impact"],
+    skills: ["design", "community", "photography", "writing"],
+    wantsToBuildSkills: ["frontend", "pitching"],
+    availability: {
+      weeklyHours: 5,
+      preferredDays: ["tue", "thu", "sun"],
+      preferredTimes: ["morning", "afternoon"]
+    },
+    preferences: {
+      maxDifficulty: "medium",
+      modes: ["hybrid", "in_person"],
+      rewardTypes: ["experience", "food", "networking"],
+      maxHoursPerQuest: 7
+    },
+    questCount: 10,
+    communicationStyle: "low-pressure"
   }
 ];
 
@@ -581,7 +653,8 @@ export const allInterests = [
   "health",
   "robotics",
   "social-impact",
-  "education"
+  "education",
+  "writing"
 ] as const;
 
 export const allSkills = [

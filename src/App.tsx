@@ -722,7 +722,7 @@ function RightRail({
           <img src={currentStudent.avatarUrl} alt="" />
           <div>
             <strong>{currentStudent.name}</strong>
-            <span>{currentStudent.year} · {currentStudent.questCount} quests</span>
+            <span>{currentStudent.year} | {currentStudent.questCount} quests</span>
           </div>
         </div>
         <div className="profile-tags">
@@ -1063,27 +1063,86 @@ function PostQuestModal({
   );
 }
 
+function joinPartyReasons(reasons: string[]) {
+  return reasons.map((reason) => (reason.endsWith(".") ? reason : `${reason}.`)).join(" ");
+}
+
+function formatStudentAvailability(student: StudentProfile) {
+  return `${student.availability.weeklyHours} hrs/wk | ${student.availability.preferredTimes
+    .map(labelize)
+    .join(", ")}`;
+}
+
 function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => void }) {
-  const [remoteParties, setRemoteParties] = useState<PartyCandidateScore[] | null>(null);
+  const [remotePartyResult, setRemotePartyResult] = useState<{
+    questId: string;
+    parties: PartyCandidateScore[];
+    students: StudentProfile[];
+  } | null>(null);
+  const [selectedPartyChoice, setSelectedPartyChoice] = useState({ questId: "", index: 0 });
+  const [partyError, setPartyError] = useState<{ questId: string; message: string } | null>(null);
   const fallback = useMemo(
     () => (quest ? recommendParties(quest, students, currentStudent.id) : []),
     [quest]
   );
+  const currentRemotePartyResult =
+    remotePartyResult && remotePartyResult.questId === quest?.id ? remotePartyResult : null;
+  const remoteParties = currentRemotePartyResult?.parties ?? null;
+  const studentDirectory = currentRemotePartyResult?.students ?? students;
   const parties = remoteParties ?? fallback;
-  const topParty = parties[0];
+  const requestedPartyIndex =
+    selectedPartyChoice.questId === quest?.id ? selectedPartyChoice.index : 0;
+  const selectedPartyIndex = parties.length
+    ? Math.min(requestedPartyIndex, parties.length - 1)
+    : 0;
+  const selectedParty = parties[selectedPartyIndex] ?? parties[0];
+  const visiblePartyError =
+    partyError && partyError.questId === quest?.id ? partyError.message : null;
+
+  function findStudent(memberId: string) {
+    return (
+      studentDirectory.find((student) => student.id === memberId) ??
+      students.find((student) => student.id === memberId)
+    );
+  }
 
   useEffect(() => {
-    if (!quest) return;
+    if (!quest) return undefined;
+    let active = true;
+
     fetch("/api/parties/recommend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questId: quest.id, studentId: currentStudent.id })
     })
-      .then((response) => response.json())
-      .then((data: { parties?: PartyCandidateScore[] }) => {
-        if (data.parties) setRemoteParties(data.parties);
+      .then((response) => {
+        if (!response.ok) throw new Error("Party service unavailable");
+        return response.json() as Promise<{
+          parties?: PartyCandidateScore[];
+          students?: StudentProfile[];
+        }>;
       })
-      .catch(() => setRemoteParties(null));
+      .then((data) => {
+        if (!active) return;
+        setRemotePartyResult({
+          questId: quest.id,
+          parties: data.parties ?? [],
+          students: data.students ?? students
+        });
+        setPartyError(null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setRemotePartyResult(null);
+        setPartyError({
+          questId: quest.id,
+          message: "Using local recommendations while the server warms up."
+        });
+      });
+
+    return () => {
+      active = false;
+    };
   }, [quest]);
 
   if (!quest) return null;
@@ -1100,17 +1159,44 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
             <X size={19} />
           </button>
         </div>
-        {topParty ? (
+        {visiblePartyError ? <p className="drawer-error">{visiblePartyError}</p> : null}
+        {selectedParty ? (
           <>
+            {parties.length > 1 ? (
+              <section className="party-options" aria-label="Recommended party options">
+                {parties.map((party, index) => (
+                  <button
+                    className={selectedPartyIndex === index ? "active" : ""}
+                    key={`${party.questId}-${party.memberIds.join("-")}`}
+                    type="button"
+                    onClick={() => setSelectedPartyChoice({ questId: quest.id, index })}
+                  >
+                    <div>
+                      <strong>Option {index + 1}</strong>
+                      <span>{party.total}% fit</span>
+                    </div>
+                    <div className="avatar-stack small">
+                      {party.memberIds.map((memberId) => {
+                        const student = findStudent(memberId);
+                        return student ? (
+                          <img src={student.avatarUrl} alt="" key={memberId} />
+                        ) : null;
+                      })}
+                    </div>
+                    <small>{party.reasons[0]}</small>
+                  </button>
+                ))}
+              </section>
+            ) : null}
             <section className="party-hero">
               <div>
-                <span className="status-badge green">{topParty.total}% fit</span>
+                <span className="status-badge green">{selectedParty.total}% fit</span>
                 <h3>Recommended Party</h3>
-                <p>{topParty.reasons.join(". ")}.</p>
+                <p>{joinPartyReasons(selectedParty.reasons)}</p>
               </div>
               <div className="avatar-stack large">
-                {topParty.memberIds.map((memberId) => {
-                  const student = students.find((item) => item.id === memberId);
+                {selectedParty.memberIds.map((memberId) => {
+                  const student = findStudent(memberId);
                   return student ? <img src={student.avatarUrl} alt="" key={memberId} /> : null;
                 })}
               </div>
@@ -1118,23 +1204,25 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
             <section>
               <h3>Students</h3>
               <div className="student-list">
-                {topParty.memberIds.map((memberId) => {
-                  const student = students.find((item) => item.id === memberId);
-                  return student ? <StudentMatchCard key={memberId} student={student} quest={quest} /> : null;
+                {selectedParty.memberIds.map((memberId) => {
+                  const student = findStudent(memberId);
+                  return student ? (
+                    <StudentMatchCard key={memberId} student={student} quest={quest} />
+                  ) : null;
                 })}
               </div>
             </section>
             <section>
               <h3>Prep Plan</h3>
               <div className="prep-list">
-                {topParty.prepPlan.map((item, index) => {
-                  const owner = students.find((student) => student.id === item.ownerUserId);
+                {selectedParty.prepPlan.map((item, index) => {
+                  const owner = item.ownerUserId ? findStudent(item.ownerUserId) : undefined;
                   return (
                     <div className="prep-item" key={item.id}>
                       <span>{index + 1}</span>
                       <div>
                         <strong>{item.title}</strong>
-                        <p>{owner ? owner.name : "Group"} · {labelize(item.type)}</p>
+                        <p>{owner ? owner.name : "Group"} | {labelize(item.type)}</p>
                       </div>
                     </div>
                   );
@@ -1162,6 +1250,7 @@ function PartyDrawer({ quest, onClose }: { quest?: QuestCard; onClose: () => voi
 function StudentMatchCard({ student, quest }: { student: StudentProfile; quest: QuestCard }) {
   const fit = scoreQuestForStudent(quest, student);
   const sharedSkills = student.skills.filter((skill) => quest.skillsHelpful.includes(skill));
+  const reasons = fit.reasons.length ? fit.reasons : ["Solid quest fit"];
 
   return (
     <article className="student-card">
@@ -1171,11 +1260,21 @@ function StudentMatchCard({ student, quest }: { student: StudentProfile; quest: 
           <strong>{student.name}</strong>
           <span>{fit.total}%</span>
         </div>
-        <p>{student.major} · {student.year}</p>
+        <p>
+          {student.major} | {student.year} | {formatStudentAvailability(student)}
+        </p>
         <div className="tag-row">
           {(sharedSkills.length ? sharedSkills : student.skills.slice(0, 2)).map((skill) => (
             <span className="skill-chip" key={skill}>
               {labelize(skill)}
+            </span>
+          ))}
+        </div>
+        <div className="student-reasons">
+          {reasons.slice(0, 2).map((reason) => (
+            <span key={reason}>
+              <CheckCircle2 size={13} />
+              {reason}
             </span>
           ))}
         </div>
