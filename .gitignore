@@ -6,8 +6,10 @@ dist
 !.env.example
 .playwright-cli
 .playwright-mcp
+.vite/
 .dev-server.*.log
 .prod-server.*.log
+.codex-status-server.*.log
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
