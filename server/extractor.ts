@@ -118,6 +118,27 @@ function detectSkills(text: string) {
     .slice(0, 6) as QuestCard["skillsHelpful"];
 }
 
+function fallbackSkillsForText(text: string): QuestCard["skillsHelpful"] {
+  const skills = detectSkills(text);
+  if (skills.length) return skills;
+
+  const interests = detectInterests(text);
+  if (interests.some((interest) => interest === "ai" || interest === "research")) {
+    return ["ml", "data"];
+  }
+  if (interests.some((interest) => interest === "startups" || interest === "competitions")) {
+    return ["pitching", "coding"];
+  }
+  if (interests.some((interest) => interest === "events" || interest === "clubs")) {
+    return ["community", "marketing"];
+  }
+  if (interests.includes("design")) {
+    return ["design", "frontend"];
+  }
+
+  return ["community", "writing"];
+}
+
 function detectReward(text: string): QuestCard["reward"] {
   const lower = text.toLowerCase();
   const rewardTypes: QuestCard["reward"]["type"] = [];
@@ -1037,27 +1058,88 @@ function stringArray(value: unknown, defaultValue: string[]) {
   return defaultValue;
 }
 
+function fieldValue(record: Record<string, unknown>, ...names: string[]) {
+  for (const name of names) {
+    if (record[name] !== undefined) return record[name];
+  }
+  return undefined;
+}
+
+const enumAliases: Record<string, string> = {
+  artificialintelligence: "ai",
+  machinelearning: "ml",
+  software: "coding",
+  softwaredevelopment: "coding",
+  programming: "coding",
+  engineering: "coding",
+  webdevelopment: "frontend",
+  ui: "frontend",
+  ux: "design",
+  userexperience: "design",
+  graphicdesign: "design",
+  communications: "public-speaking",
+  communication: "public-speaking",
+  presentation: "public-speaking",
+  networking: "community",
+  teamwork: "community",
+  collaboration: "community",
+  entrepreneurship: "startups",
+  startup: "startups",
+  sustainability: "climate",
+  environment: "climate",
+  volunteering: "community",
+  volunteer: "community",
+  analysis: "data",
+  analytics: "data",
+  videography: "video",
+  content: "writing",
+  copywriting: "writing",
+  onsite: "in_person",
+  inperson: "in_person",
+  offline: "in_person",
+  online: "remote",
+  virtual: "remote",
+  digital: "remote",
+  moderate: "medium",
+  competitive: "hard",
+  difficult: "hard",
+  advanced: "hard",
+  simple: "easy",
+  beginner: "easy"
+};
+
+function normalizeEnumToken(value: string) {
+  const compact = value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return enumAliases[compact] ?? value.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
 function enumValue<T extends readonly string[]>(value: unknown, allowed: T, fieldName: string) {
   if (typeof value !== "string") {
     throw new Error(`Azure extraction did not return ${fieldName}.`);
   }
-  const trimmed = value.trim();
+  const trimmed = normalizeEnumToken(value);
   if ((allowed as readonly string[]).includes(trimmed)) return trimmed as T[number];
   throw new Error(`Azure extraction returned unsupported ${fieldName}: ${trimmed}.`);
 }
 
-function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fieldName: string) {
+function enumArray<T extends readonly string[]>(
+  value: unknown,
+  allowed: T,
+  fieldName: string,
+  defaultValue: T[number][] = []
+) {
   const candidates = Array.isArray(value)
     ? value
     : typeof value === "string"
-      ? value.split(/[,|]/)
+      ? value.split(/[,|;\n]/)
       : [];
   const values = candidates
     .filter((item): item is string => typeof item === "string")
-    .map((item) => item.trim())
+    .map(normalizeEnumToken)
     .filter((item): item is T[number] => (allowed as readonly string[]).includes(item));
 
   if (values.length) return [...new Set(values)] as T[number][];
+  if (defaultValue.length) return [...new Set(defaultValue)] as T[number][];
   throw new Error(`Azure extraction did not return valid ${fieldName}.`);
 }
 
@@ -1066,24 +1148,36 @@ function recordValue(value: unknown) {
 }
 
 function azureCardFromRecord(card: Record<string, unknown>, input: ExtractQuestRequest, index: number) {
-  const reward = recordValue(card.reward);
-  const location = recordValue(card.location);
-  const estimatedHours = recordValue(card.estimatedHours);
-  const party = recordValue(card.party);
-  const aiExtraction = recordValue(card.aiExtraction);
+  const reward = recordValue(fieldValue(card, "reward", "rewards"));
+  const location = recordValue(fieldValue(card, "location", "venue"));
+  const estimatedHours = recordValue(fieldValue(card, "estimatedHours", "estimated_hours", "timeCommitment"));
+  const party = recordValue(fieldValue(card, "party", "group", "team"));
+  const aiExtraction = recordValue(fieldValue(card, "aiExtraction", "ai_extraction", "extraction"));
   const stats = recordValue(card.stats);
   const source = recordValue(card.source);
   const now = new Date().toISOString();
   const title = requiredString(card.title, "title");
   const sourceText = sourceTextFromInput(input);
   const sourceUrl = sourceUrlFromInput(input);
+  const cardText = [
+    title,
+    card.summary,
+    card.description,
+    sourceText,
+    sourceUrl
+  ]
+    .filter((item): item is string => typeof item === "string")
+    .join("\n");
   const sourceId = stringValue(source.id, `src-${idFrom(`${sourceUrl ?? sourceText ?? title}-${index}`)}`);
   const rawModel = stringValue(aiExtraction.model, azureConfig().deployment ?? "azure-ai");
   const model = rawModel.toLowerCase().includes("local")
     ? azureConfig().deployment ?? "azure-ai"
     : rawModel;
-  const minHours = Math.max(0, requiredNumber(estimatedHours.min, "estimatedHours.min"));
-  const maxHours = Math.max(minHours, requiredNumber(estimatedHours.max, "estimatedHours.max"));
+  const minHours = Math.max(0, numberValue(fieldValue(estimatedHours, "min", "minimum"), 1));
+  const maxHours = Math.max(
+    minHours,
+    numberValue(fieldValue(estimatedHours, "max", "maximum", "hours"), Math.max(minHours, 3))
+  );
 
   return finalizeCard({
     id: stringValue(card.id, `quest-azure-${idFrom(`${sourceUrl ?? ""}-${title}-${index}`)}`),
@@ -1091,7 +1185,7 @@ function azureCardFromRecord(card: Record<string, unknown>, input: ExtractQuestR
     organizer: requiredString(card.organizer, "organizer"),
     summary: requiredString(card.summary, "summary"),
     description: requiredString(card.description, "description"),
-    imageUrl: optionalString(card.imageUrl, sourceImageUrl(input))!,
+    imageUrl: optionalString(fieldValue(card, "imageUrl", "image_url", "image"), sourceImageUrl(input))!,
     source: {
       id: sourceId,
       type: input.sourceType,
@@ -1102,15 +1196,25 @@ function azureCardFromRecord(card: Record<string, unknown>, input: ExtractQuestR
       submittedAt: stringValue(source.submittedAt, now)
     },
     status: "needs_review",
-    interests: enumArray(card.interests, interestTags, "interests"),
-    skillsHelpful: enumArray(card.skillsHelpful, skillTags, "skillsHelpful"),
+    interests: enumArray(
+      fieldValue(card, "interests", "interestTags", "interest_tags", "categories"),
+      interestTags,
+      "interests",
+      detectInterests(cardText)
+    ),
+    skillsHelpful: enumArray(
+      fieldValue(card, "skillsHelpful", "skills_helpful", "skills", "requiredSkills", "required_skills"),
+      skillTags,
+      "skillsHelpful",
+      detectSkills(cardText).length ? detectSkills(cardText) : ["community", "writing"]
+    ),
     difficulty: enumValue(card.difficulty, questDifficulties, "difficulty"),
     estimatedHours: {
       min: minHours,
       max: maxHours
     },
     reward: {
-      type: enumArray(reward.type, rewardTypes, "reward.type"),
+      type: enumArray(reward.type, rewardTypes, "reward.type", detectReward(cardText).type),
       label: requiredString(reward.label, "reward.label"),
       estimatedValueUsd:
         reward.estimatedValueUsd === undefined
@@ -1118,20 +1222,20 @@ function azureCardFromRecord(card: Record<string, unknown>, input: ExtractQuestR
           : Math.max(0, numberValue(reward.estimatedValueUsd, 0))
     },
     location: {
-      mode: enumValue(location.mode, questModes, "location.mode"),
+      mode: enumValue(fieldValue(location, "mode", "type"), questModes, "location.mode"),
       campus: optionalString(location.campus),
       building: optionalString(location.building),
       room: optionalString(location.room),
       address: optionalString(location.address),
-      onlineUrl: optionalString(location.onlineUrl)
+      onlineUrl: optionalString(fieldValue(location, "onlineUrl", "online_url", "url"))
     },
-    deadline: dateStringValue(card.deadline),
-    eventStart: dateStringValue(card.eventStart),
-    eventEnd: dateStringValue(card.eventEnd),
-    bestFor: stringArray(card.bestFor, []),
+    deadline: dateStringValue(fieldValue(card, "deadline", "applicationDeadline", "application_deadline")),
+    eventStart: dateStringValue(fieldValue(card, "eventStart", "event_start", "startDate", "start_date")),
+    eventEnd: dateStringValue(fieldValue(card, "eventEnd", "event_end", "endDate", "end_date")),
+    bestFor: stringArray(fieldValue(card, "bestFor", "best_for", "audience"), []),
     eligibility: stringArray(card.eligibility, []),
-    applyUrl: optionalString(card.applyUrl, sourceUrl),
-    contactEmail: optionalString(card.contactEmail),
+    applyUrl: optionalString(fieldValue(card, "applyUrl", "apply_url", "registrationUrl", "registration_url"), sourceUrl),
+    contactEmail: optionalString(fieldValue(card, "contactEmail", "contact_email")),
     party: {
       allowed: booleanValue(party.allowed, true),
       idealSize: Math.max(1, Math.round(numberValue(party.idealSize, 3))),
@@ -1194,6 +1298,9 @@ function buildPrompt(input: ExtractQuestRequest) {
     "The user may provide a combination of an image, a link, and text. Synthesize all provided information to create the most accurate side quest card.",
     "If Azure image inspection found a link and the scraped page is present, prefer the scraped event page for dates, location, registration URL, and organizer details.",
     "If the scraped page and image conflict, keep the image text as supporting context but use the official page as the source of truth.",
+    `Use only these exact interests: ${interestTags.join(", ")}.`,
+    `Use only these exact skillsHelpful tags: ${skillTags.join(", ")}.`,
+    `Use only these exact reward.type values: ${rewardTypes.join(", ")}.`,
     questJsonInstruction,
     "",
     `Source type: ${input.sourceType}`,

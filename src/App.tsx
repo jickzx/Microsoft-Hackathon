@@ -2005,7 +2005,7 @@ function QuestDetailPage({
     <section className="quest-detail-page">
       <div className="detail-hero">
         <img src={quest.imageUrl} alt={quest.title} />
-        <button className="floating-button back-button" type="button" onClick={onBack}>
+        <button className="floating-button back-button" type="button" onClick={onBack} aria-label="Back">
           <ChevronRight size={21} />
         </button>
         <div className="detail-actions-top">
