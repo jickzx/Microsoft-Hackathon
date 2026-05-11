@@ -1,0 +1,26 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "UO OpenAI Portal" [ref=e6] [cursor=pointer]:
+      - /url: ""
+    - navigation [ref=e8]:
+      - link "Login" [ref=e12] [cursor=pointer]:
+        - /url: Account/Login
+        - text: Login
+  - main [ref=e14]:
+    - article [ref=e15]:
+      - heading "Log in" [active] [level=1] [ref=e16]
+      - generic [ref=e20]:
+        - heading "Use a local account to log in." [level=2] [ref=e21]
+        - separator [ref=e22]
+        - generic [ref=e23]:
+          - textbox "Username" [ref=e24]:
+            - /placeholder: username
+          - generic: Username
+        - generic [ref=e25]:
+          - textbox "Password" [ref=e26]:
+            - /placeholder: password
+          - generic: Password
+        - generic [ref=e28]:
+          - checkbox "Remember me" [ref=e29]
+          - text: Remember me
+        - button "Log in" [ref=e31] [cursor=pointer]
