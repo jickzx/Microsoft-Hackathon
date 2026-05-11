@@ -89,6 +89,28 @@ const sourceTypes: { value: QuestSourceType; label: string }[] = [
   { value: "screenshot", label: "Screenshot" }
 ];
 
+const questModeOptions: QuestCard["location"]["mode"][] = ["in_person", "hybrid", "remote"];
+
+function labelSourceType(sourceType: QuestSourceType) {
+  return sourceTypes.find((item) => item.value === sourceType)?.label ?? labelize(sourceType);
+}
+
+function toDateTimeLocal(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocal(value: string) {
+  return value ? new Date(value).toISOString() : undefined;
+}
+
+function numberFromInput(value: string, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function moneyValue(quest: QuestCard) {
   return quest.reward.estimatedValueUsd ?? (quest.reward.type.includes("money") ? 150 : 0);
 }
@@ -919,10 +941,14 @@ function PostQuestModal({
   const [file, setFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [response, setResponse] = useState<ExtractQuestResponse | null>(null);
+  const [draftCard, setDraftCard] = useState<QuestCard | null>(null);
+  const [extractError, setExtractError] = useState("");
 
   async function extract() {
     setExtracting(true);
     setResponse(null);
+    setDraftCard(null);
+    setExtractError("");
     const formData = new FormData();
     formData.append("sourceType", sourceType);
     if (text) formData.append("text", text);
@@ -934,14 +960,23 @@ function PostQuestModal({
         method: "POST",
         body: formData
       });
-      const data = (await result.json()) as ExtractQuestResponse;
+      const data = (await result.json()) as ExtractQuestResponse & {
+        error?: string;
+        details?: string[];
+      };
+      if (!result.ok) {
+        throw new Error(data.details?.join(", ") ?? data.error ?? "Extraction failed");
+      }
       setResponse(data);
+      setDraftCard(data.cards[0] ?? null);
+    } catch (error) {
+      setExtractError(error instanceof Error ? error.message : "Extraction failed");
     } finally {
       setExtracting(false);
     }
   }
 
-  const card = response?.cards[0];
+  const card = draftCard;
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -1007,17 +1042,24 @@ function PostQuestModal({
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               />
             </label>
-            <button className="primary-button wide" type="button" onClick={extract}>
+            <button
+              className="primary-button wide"
+              type="button"
+              onClick={extract}
+              disabled={extracting}
+            >
               {extracting ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
               Extract Quest Card
             </button>
+            {extractError ? <p className="error-text">{extractError}</p> : null}
             {response?.meta.warnings.length ? (
               <p className="warning-text">{response.meta.warnings[0]}</p>
             ) : null}
           </div>
           <div className="preview-panel">
-            {card ? (
+            {card && response ? (
               <>
+                <ExtractionDiagnostics response={response} />
                 <div className="quest-card compact-preview">
                   <img src={card.imageUrl} alt="" />
                   <div className="quest-card-body">
@@ -1045,9 +1087,24 @@ function PostQuestModal({
                     </div>
                   </div>
                 </div>
-                <button className="primary-button wide" type="button" onClick={() => onPublish(card)}>
-                  Publish Quest
-                </button>
+                <ReviewQuestForm quest={card} onChange={(quest) => setDraftCard(quest)} />
+                <div className="preview-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => setDraftCard(response.cards[0] ?? null)}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() => onPublish(card)}
+                    disabled={!card.title.trim() || !card.organizer.trim()}
+                  >
+                    Publish Quest
+                  </button>
+                </div>
               </>
             ) : (
               <div className="preview-empty">
@@ -1060,6 +1117,259 @@ function PostQuestModal({
         </div>
       </section>
     </div>
+  );
+}
+
+function ExtractionDiagnostics({ response }: { response: ExtractQuestResponse }) {
+  return (
+    <section className="diagnostics-panel" aria-label="Extraction diagnostics">
+      <div>
+        <span>Provider</span>
+        <strong>{response.meta.provider === "azure" ? "Azure AI" : "Local fallback"}</strong>
+      </div>
+      <div>
+        <span>Confidence</span>
+        <strong>{Math.round(response.meta.confidence * 100)}%</strong>
+      </div>
+      <div>
+        <span>Source</span>
+        <strong>{labelSourceType(response.meta.sourceType)}</strong>
+      </div>
+      <div>
+        <span>Missing</span>
+        <strong>
+          {response.meta.missingFields.length
+            ? response.meta.missingFields.map(labelize).join(", ")
+            : "None"}
+        </strong>
+      </div>
+      {response.meta.warnings.map((warning) => (
+        <p className="warning-text" key={warning}>
+          {warning}
+        </p>
+      ))}
+    </section>
+  );
+}
+
+function ReviewQuestForm({
+  quest,
+  onChange
+}: {
+  quest: QuestCard;
+  onChange: (quest: QuestCard) => void;
+}) {
+  return (
+    <section className="review-form" aria-label="Review extracted quest">
+      <div className="review-heading">
+        <div>
+          <p className="eyebrow">Review</p>
+          <h3>Edit Quest Card</h3>
+        </div>
+        <span className="status-badge blue">
+          {quest.status === "needs_review" ? "Needs Review" : labelize(quest.status)}
+        </span>
+      </div>
+      <label>
+        Title
+        <input
+          value={quest.title}
+          onChange={(event) => onChange({ ...quest, title: event.target.value })}
+        />
+      </label>
+      <label>
+        Organizer
+        <input
+          value={quest.organizer}
+          onChange={(event) => onChange({ ...quest, organizer: event.target.value })}
+        />
+      </label>
+      <label>
+        Summary
+        <textarea
+          value={quest.summary}
+          onChange={(event) => onChange({ ...quest, summary: event.target.value })}
+        />
+      </label>
+      <label>
+        Description
+        <textarea
+          value={quest.description}
+          onChange={(event) => onChange({ ...quest, description: event.target.value })}
+        />
+      </label>
+      <div className="review-field-row">
+        <label>
+          Deadline
+          <input
+            type="datetime-local"
+            value={toDateTimeLocal(quest.deadline)}
+            onChange={(event) =>
+              onChange({ ...quest, deadline: fromDateTimeLocal(event.target.value) })
+            }
+          />
+        </label>
+        <label>
+          Mode
+          <select
+            value={quest.location.mode}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                location: {
+                  ...quest.location,
+                  mode: event.target.value as QuestCard["location"]["mode"]
+                }
+              })
+            }
+          >
+            {questModeOptions.map((mode) => (
+              <option key={mode} value={mode}>
+                {labelMode(mode)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="review-field-row">
+        <label>
+          Campus
+          <input
+            value={quest.location.campus ?? ""}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                location: { ...quest.location, campus: event.target.value || undefined }
+              })
+            }
+          />
+        </label>
+        <label>
+          Building
+          <input
+            value={quest.location.building ?? ""}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                location: { ...quest.location, building: event.target.value || undefined }
+              })
+            }
+          />
+        </label>
+      </div>
+      <div className="review-field-row">
+        <label>
+          Min hrs
+          <input
+            min="0"
+            type="number"
+            value={quest.estimatedHours.min}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                estimatedHours: {
+                  ...quest.estimatedHours,
+                  min: numberFromInput(event.target.value, quest.estimatedHours.min)
+                }
+              })
+            }
+          />
+        </label>
+        <label>
+          Max hrs
+          <input
+            min="0"
+            type="number"
+            value={quest.estimatedHours.max}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                estimatedHours: {
+                  ...quest.estimatedHours,
+                  max: numberFromInput(event.target.value, quest.estimatedHours.max)
+                }
+              })
+            }
+          />
+        </label>
+      </div>
+      <label>
+        Reward
+        <input
+          value={quest.reward.label}
+          onChange={(event) =>
+            onChange({ ...quest, reward: { ...quest.reward, label: event.target.value } })
+          }
+        />
+      </label>
+      <div className="review-field-row">
+        <label>
+          Apply URL
+          <input
+            value={quest.applyUrl ?? ""}
+            onChange={(event) => onChange({ ...quest, applyUrl: event.target.value || undefined })}
+          />
+        </label>
+        <label>
+          Contact
+          <input
+            value={quest.contactEmail ?? ""}
+            onChange={(event) =>
+              onChange({ ...quest, contactEmail: event.target.value || undefined })
+            }
+          />
+        </label>
+      </div>
+      <div className="review-field-row party-review-row">
+        <label className="toggle-filter">
+          <input
+            type="checkbox"
+            checked={quest.party.allowed}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                party: { ...quest.party, allowed: event.target.checked }
+              })
+            }
+          />
+          <span>Party-friendly</span>
+        </label>
+        <label>
+          Ideal size
+          <input
+            min="1"
+            type="number"
+            value={quest.party.idealSize}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                party: {
+                  ...quest.party,
+                  idealSize: Math.max(1, numberFromInput(event.target.value, quest.party.idealSize))
+                }
+              })
+            }
+          />
+        </label>
+        <label>
+          Open slots
+          <input
+            min="0"
+            type="number"
+            value={quest.party.openSlots}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                party: {
+                  ...quest.party,
+                  openSlots: Math.max(0, numberFromInput(event.target.value, quest.party.openSlots))
+                }
+              })
+            }
+          />
+        </label>
+      </div>
+    </section>
   );
 }
 
