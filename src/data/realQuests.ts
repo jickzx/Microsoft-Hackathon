@@ -145,7 +145,7 @@ function descriptionForQuest(quest: SeedQuest) {
         ? "Watchlist item"
         : "Registration closed watchlist";
   const prepPlan = quest.quest_party?.prep_plan?.length
-    ? `\n\nQuest party prep: ${quest.quest_party.prep_plan.join(" ")}`
+    ? `\n\nSide quest party prep: ${quest.quest_party.prep_plan.join(" ")}`
     : "";
 
   return [

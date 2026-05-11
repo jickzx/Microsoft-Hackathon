@@ -779,7 +779,7 @@ function finalizeCard(card: QuestCard) {
   const parsed = questCardSchema.safeParse(audited);
 
   if (parsed.success) return parsed.data;
-  throw new Error("Quest card normalization failed.");
+  throw new Error("Side quest card normalization failed.");
 }
 
 function sourceImageUrl(input: ExtractQuestRequest) {
@@ -855,11 +855,11 @@ function titleFrom(text: string, url?: string) {
       const parsed = new URL(url);
       return parsed.hostname.replace(/^www\./, "");
     } catch {
-      return "New Campus Quest";
+      return "New Campus Side Quest";
     }
   }
 
-  return "New Campus Quest";
+  return "New Campus Side Quest";
 }
 
 function summaryFrom(text: string, title: string) {
@@ -1185,13 +1185,13 @@ function buildPrompt(input: ExtractQuestRequest) {
   return [
     "You are Side Quest's extraction engine.",
     "Extract campus opportunities from messy student-submitted material.",
-    "Clean the result into practical, social, student-facing quest cards.",
+    "Clean the result into practical, social, student-facing side quest cards.",
     "Only create cards for campus events, gigs, projects, challenges, volunteering, club activities, research opportunities, or student competitions.",
     "Ignore navigation, ads, generic website copy, and unrelated pages.",
     `Current date: ${now.toISOString()} (${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })} Europe/London).`,
     "Resolve relative dates like Friday, tomorrow, next week, or tonight against the current date above, and never invent past dates for upcoming opportunities.",
     "Use ISO dates. If a field is uncertain, infer a sensible future value and keep it conservative.",
-    "The user may provide a combination of an image, a link, and text. Synthesize all provided information to create the most accurate quest card.",
+    "The user may provide a combination of an image, a link, and text. Synthesize all provided information to create the most accurate side quest card.",
     "If Azure image inspection found a link and the scraped page is present, prefer the scraped event page for dates, location, registration URL, and organizer details.",
     "If the scraped page and image conflict, keep the image text as supporting context but use the official page as the source of truth.",
     questJsonInstruction,
@@ -1269,7 +1269,7 @@ async function extractWithAzureOpenAI(input: ExtractQuestRequest, endpoint: stri
         {
           role: "system",
           content:
-            "You extract campus opportunity details into Side Quest cards. Respond with valid JSON only."
+            "You extract campus opportunity details into Side Side quest cards. Respond with valid JSON only."
         },
         {
           role: "user",
@@ -1350,7 +1350,7 @@ export async function extractQuestCards(
   const azureCards = await extractWithAzure(prepared.input);
 
   if (!azureCards?.length) {
-    throw new Error("Azure extraction returned no quest cards.");
+    throw new Error("Azure extraction returned no side quest cards.");
   }
 
   return {

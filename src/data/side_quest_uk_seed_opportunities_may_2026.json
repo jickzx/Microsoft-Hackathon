@@ -5,7 +5,7 @@
     "generated_at": "2026-05-11T12:00:00+01:00",
     "focus_region": "United Kingdom",
     "created_for": "Side Quest seed import",
-    "description": "UK-focused real opportunities/events formatted as Quest Cards for a campus discovery app. Includes hackathons, networking events, insight programmes, internships, careers events, and deadline trackers.",
+    "description": "UK-focused real opportunities/events formatted as Side Quest cards for a campus discovery app. Includes hackathons, networking events, insight programmes, internships, careers events, and deadline trackers.",
     "record_count": 38,
     "status_legend": {
       "open": "Source appeared to be accepting registrations/applications or listing tickets at verification time.",
@@ -20,7 +20,7 @@
     "import_notes": [
       "Dates/times are stored in ISO 8601 using Europe/London offsets where available.",
       "Null deadline_datetime means no firm deadline was found from the source at verification time.",
-      "Quest Party plans are generated recommendations, not official organiser instructions.",
+      "Side Quest Party plans are generated recommendations, not official organiser instructions.",
       "Some Eventbrite-derived items are marked medium confidence because full page access may be rate-limited; source URLs are included for user confirmation.",
       "Closed/watchlist entries can power alerts for future recurring campus-event cycles and should not be shown as currently joinable unless your app supports watchlist states."
     ]
@@ -2695,7 +2695,7 @@
           "Follow HackLondon or university tech societies for the next cycle.",
           "Start a reusable hackathon idea bank.",
           "Build a mini-project before the next annual event.",
-          "Form a standing Quest Party for London university hackathons."
+          "Form a standing Side Quest Party for London university hackathons."
         ]
       }
     }

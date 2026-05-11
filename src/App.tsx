@@ -142,8 +142,8 @@ const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
   { page: "home", label: "Discover", icon: Compass },
   { page: "map", label: "Map", icon: MapPin },
   { page: "submit", label: "Submit", icon: PlusCircle },
-  { page: "parties", label: "Quest Parties", icon: Users },
-  { page: "quests", label: "My Quests", icon: Award },
+  { page: "parties", label: "Side Side Quest Parties", icon: Users },
+  { page: "quests", label: "My Side Quests", icon: Award },
   { page: "saved", label: "Saved", icon: Bookmark },
   { page: "profile", label: "Profile", icon: UserRound }
 ];
@@ -573,10 +573,10 @@ function App() {
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
           importingSources={importingSources}
-          title="My Quests"
+          title="My Side Quests"
           subtitle="Events you have joined or plan to attend."
           searchSeed={globalSearch}
-          emptyCopy="Join an event from Discover to build your quest list."
+          emptyCopy="Join an event from Discover to build your side quest list."
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
           onImportSources={importVerifiedSources}
@@ -1090,7 +1090,7 @@ function HomePage({
       <div className="wide-search" role="search">
         <Search size={17} />
         <input
-          aria-label="Search quests"
+          aria-label="Search side quests"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search events, internships, organisers, venues..."
@@ -1114,7 +1114,7 @@ function HomePage({
           icon={Flame}
           tone="coral"
           label="Hot"
-          value={hotQuest ? shortTitle(hotQuest.title) : "Quest"}
+          value={hotQuest ? shortTitle(hotQuest.title) : "Side Quest"}
           detail={`${hotQuest?.stats.views ?? 0} interested`}
         />
         <StatCard icon={Clock3} tone="mint" label="Closing" value={closingCount} detail="this week" />
@@ -1176,6 +1176,26 @@ function HomePage({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function RightRailBlock({
+  title,
+  icon: Icon,
+  children
+}: {
+  title: string;
+  icon: typeof Sparkles;
+  children: ReactNode;
+}) {
+  return (
+    <article className="right-rail-block">
+      <span>
+        <Icon size={16} />
+        {title}
+      </span>
+      {children}
+    </article>
   );
 }
 
@@ -1249,7 +1269,7 @@ function ExplorePage({
       <div className="wide-search explore-search" role="search">
         <Search size={17} />
         <input
-          aria-label="Search quests"
+          aria-label="Search side quests"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search by name, topic, or keyword..."
@@ -1340,7 +1360,7 @@ function SubmitQuestPage({
 
     try {
       const data = await fetchJson<ExtractQuestResponse>("/api/quests/import", { method: "POST", body });
-      if (!data.cards?.[0]) throw new Error("Extraction returned no quest cards");
+      if (!data.cards?.[0]) throw new Error("Extraction returned no side quest cards");
       setPublishedCards(data.cards);
       setExtracted(data.cards[0]);
       for (const card of data.cards) {
@@ -1380,7 +1400,7 @@ function SubmitQuestPage({
     <section className="submit-shell">
       <div className="section-header submit-heading">
         <div>
-          <h1>Submit a Quest</h1>
+          <h1>Submit a Side Quest</h1>
         </div>
       </div>
 
@@ -1450,7 +1470,7 @@ function SubmitQuestPage({
               className="large-textarea"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Paste the quest details..."
+              placeholder="Paste the side quest details..."
               rows={7}
             />
           ) : null}
@@ -1494,7 +1514,7 @@ function SubmitQuestPage({
             </span>
             <h2>Added to Marketplace</h2>
           </div>
-          {publishedCards.length > 1 ? <p className="helper-text">{publishedCards.length} quests were published from this source.</p> : null}
+          {publishedCards.length > 1 ? <p className="helper-text">{publishedCards.length} side quests were published from this source.</p> : null}
           <ReviewQuestForm quest={extracted} onChange={setExtracted} />
           {error ? <p className="form-error">{error}</p> : null}
           <div className="form-actions">
@@ -1642,7 +1662,7 @@ function PartiesPage({
     <section className="party-shell">
       <div className="section-header">
         <div>
-          <h1>Quest Parties</h1>
+          <h1>Side Quest Parties</h1>
         </div>
       </div>
       <div className="party-tabs">
@@ -1676,7 +1696,7 @@ function PartiesPage({
         </div>
       ) : (
         <div className="browse-party-panel">
-          <h3>Quests looking for parties</h3>
+          <h3>Side quests looking for parties</h3>
           {partyQuests.map((quest) => (
             <article className="party-listing-card" key={quest.id}>
               <button className="party-listing" type="button" onClick={() => onSelectQuest(quest)}>
@@ -1684,7 +1704,7 @@ function PartiesPage({
                 <span>
                   <strong>{quest.title}</strong>
                   <small>
-                    {quest.party.idealSize} members - {labelize(quest.interests[0] ?? "Quest")}
+                    {quest.party.idealSize} members - {labelize(quest.interests[0] ?? "Side Quest")}
                   </small>
                 </span>
                 <em>
@@ -1765,7 +1785,7 @@ function ProfilePage({
         </div>
       </ProfileSection>
 
-      <ProfileSection title="Active Quests" aside={`${Math.min(quests.length, 3)} active`}>
+      <ProfileSection title="Active Side Quests" aside={`${Math.min(quests.length, 3)} active`}>
         <div className="active-quest-list">
           {quests.slice(0, 3).map((quest) => (
             <button type="button" key={quest.id} onClick={() => onSelectQuest(quest)}>
@@ -1843,16 +1863,16 @@ function QuestDetailPage({
           <ChevronRight size={21} />
         </button>
         <div className="detail-actions-top">
-          <button className="floating-button" type="button" aria-label="Share quest">
+          <button className="floating-button" type="button" aria-label="Share side quest">
             <Upload size={18} />
           </button>
-          <button className="floating-button" type="button" onClick={onSave} aria-label="Save quest">
+          <button className="floating-button" type="button" onClick={onSave} aria-label="Save side quest">
             {saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
           </button>
         </div>
         <div className="hero-badge-row">
           <span className={difficultyClass(quest.difficulty)}>{difficultyLabel(quest.difficulty)}</span>
-          <span className="glass-pill">{labelize(quest.interests[0] ?? "Quest")}</span>
+          <span className="glass-pill">{labelize(quest.interests[0] ?? "Side Quest")}</span>
           <span className="xp-float">
             <Zap size={15} />
             {questXp(quest)} XP
@@ -1867,7 +1887,7 @@ function QuestDetailPage({
               <span>
                 <FileText size={18} />
               </span>
-              <h2>Edit published quest</h2>
+              <h2>Edit published side quest</h2>
             </div>
             <ReviewQuestForm quest={draft} onChange={setDraft} />
             <div className="form-actions">
@@ -1898,7 +1918,7 @@ function QuestDetailPage({
             </div>
 
             <section className="detail-section">
-              <h2>About this Quest</h2>
+              <h2>About this Side Quest</h2>
               <p>{quest.description}</p>
             </section>
 
@@ -1947,7 +1967,7 @@ function QuestDetailPage({
             <div className="detail-admin-actions">
               <button className="secondary-button" type="button" onClick={() => setEditing(true)}>
                 <FileText size={17} />
-                Edit Quest
+                Edit Side Quest
               </button>
               <button className="secondary-button danger-button" type="button" onClick={removeQuest} disabled={deleting}>
                 {deleting ? <Loader2 className="spin" size={17} /> : <X size={17} />}
@@ -1986,7 +2006,7 @@ function QuestGrid({
     return (
       <section className="empty-state">
         <Search size={32} />
-        <h2>No quests found</h2>
+        <h2>No side quests found</h2>
         <p>Try adjusting your filters.</p>
       </section>
     );
@@ -2029,13 +2049,13 @@ function QuestCardView({
             Party
           </span>
         ) : null}
-        <span className="category-label">{labelize(quest.interests[0] ?? "Quest")}</span>
+        <span className="category-label">{labelize(quest.interests[0] ?? "Side Quest")}</span>
         <span className="xp-chip">
           <Zap size={13} />
           {questXp(quest)} XP
         </span>
       </button>
-      <button className={saved ? "save-fab saved" : "save-fab"} type="button" onClick={onSave} aria-label="Save quest">
+      <button className={saved ? "save-fab saved" : "save-fab"} type="button" onClick={onSave} aria-label="Save side quest">
         {saved ? <BookmarkCheck size={17} /> : <Bookmark size={17} />}
       </button>
       <div className="quest-body">

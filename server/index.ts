@@ -355,7 +355,7 @@ app.post("/api/quests", requireAuth, async (request, response) => {
   const parsed = questCardSchema.safeParse(request.body);
   if (!parsed.success) {
     response.status(400).json({
-      error: "Invalid quest card",
+      error: "Invalid side quest card",
       details: parsed.error.issues.map((issue) => issue.message)
     });
     return;
@@ -526,7 +526,7 @@ app.post("/api/parties/recommend", requireAuth, async (request: AuthenticatedReq
   const [quest, studentList] = await Promise.all([getQuest(questId), listStudents()]);
 
   if (!quest) {
-    response.status(404).json({ error: "Quest not found" });
+    response.status(404).json({ error: "Side quest not found" });
     return;
   }
 
@@ -553,7 +553,7 @@ app.post("/api/parties", requireAuth, async (request: AuthenticatedRequest, resp
   }
   const [quest, studentList] = await Promise.all([getQuest(parsed.data.questId), listStudents()]);
   if (!quest) {
-    response.status(404).json({ error: "Quest not found" });
+    response.status(404).json({ error: "Side quest not found" });
     return;
   }
 
