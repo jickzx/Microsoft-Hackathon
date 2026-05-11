@@ -1,128 +1,150 @@
-export type QuestSourceType =
-  | "link"
-  | "screenshot"
-  | "poster"
-  | "email"
-  | "message"
-  | "pdf"
-  | "photo"
-  | "text";
+import { z } from "zod";
 
-export type QuestDifficulty = "easy" | "medium" | "hard";
-export type QuestMode = "in_person" | "remote" | "hybrid";
-export type QuestStatus = "draft" | "needs_review" | "published" | "expired";
+export const questSourceTypes = [
+  "link",
+  "screenshot",
+  "poster",
+  "email",
+  "message",
+  "pdf",
+  "photo",
+  "text"
+] as const;
 
-export type RewardType =
-  | "money"
-  | "credits"
-  | "swag"
-  | "food"
-  | "networking"
-  | "experience";
+export const questDifficulties = ["easy", "medium", "hard"] as const;
+export const questModes = ["in_person", "remote", "hybrid"] as const;
+export const questStatuses = ["draft", "needs_review", "published", "expired"] as const;
+export const rewardTypes = [
+  "money",
+  "credits",
+  "swag",
+  "food",
+  "networking",
+  "experience"
+] as const;
+export const interestTags = [
+  "ai",
+  "career",
+  "climate",
+  "clubs",
+  "competitions",
+  "design",
+  "education",
+  "events",
+  "finance",
+  "gaming",
+  "health",
+  "research",
+  "robotics",
+  "social-impact",
+  "startups",
+  "volunteering",
+  "writing"
+] as const;
+export const skillTags = [
+  "backend",
+  "community",
+  "coding",
+  "data",
+  "design",
+  "frontend",
+  "hardware",
+  "marketing",
+  "ml",
+  "photography",
+  "pitching",
+  "public-speaking",
+  "video",
+  "writing"
+] as const;
 
-export type InterestTag =
-  | "ai"
-  | "career"
-  | "climate"
-  | "clubs"
-  | "competitions"
-  | "design"
-  | "education"
-  | "events"
-  | "finance"
-  | "gaming"
-  | "health"
-  | "research"
-  | "robotics"
-  | "social-impact"
-  | "startups"
-  | "volunteering"
-  | "writing";
+export const questSourceTypeSchema = z.enum(questSourceTypes);
+export const questDifficultySchema = z.enum(questDifficulties);
+export const questModeSchema = z.enum(questModes);
+export const questStatusSchema = z.enum(questStatuses);
+export const rewardTypeSchema = z.enum(rewardTypes);
+export const interestTagSchema = z.enum(interestTags);
+export const skillTagSchema = z.enum(skillTags);
 
-export type SkillTag =
-  | "backend"
-  | "community"
-  | "coding"
-  | "data"
-  | "design"
-  | "frontend"
-  | "hardware"
-  | "marketing"
-  | "ml"
-  | "photography"
-  | "pitching"
-  | "public-speaking"
-  | "video"
-  | "writing";
+export type QuestSourceType = z.infer<typeof questSourceTypeSchema>;
+export type QuestDifficulty = z.infer<typeof questDifficultySchema>;
+export type QuestMode = z.infer<typeof questModeSchema>;
+export type QuestStatus = z.infer<typeof questStatusSchema>;
+export type RewardType = z.infer<typeof rewardTypeSchema>;
+export type InterestTag = z.infer<typeof interestTagSchema>;
+export type SkillTag = z.infer<typeof skillTagSchema>;
 
 export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 export type DayTime = "morning" | "afternoon" | "evening";
 
-export interface QuestSource {
-  id: string;
-  type: QuestSourceType;
-  submittedByUserId: string;
-  rawUrl?: string;
-  fileName?: string;
-  rawText?: string;
-  submittedAt: string;
-}
+export const questSourceSchema = z.object({
+  id: z.string(),
+  type: questSourceTypeSchema,
+  submittedByUserId: z.string(),
+  rawUrl: z.string().optional(),
+  fileName: z.string().optional(),
+  rawText: z.string().optional(),
+  submittedAt: z.string()
+});
 
-export interface QuestCard {
-  id: string;
-  title: string;
-  organizer: string;
-  summary: string;
-  description: string;
-  imageUrl: string;
-  source: QuestSource;
-  status: QuestStatus;
-  interests: InterestTag[];
-  skillsHelpful: SkillTag[];
-  difficulty: QuestDifficulty;
-  estimatedHours: {
-    min: number;
-    max: number;
-  };
-  reward: {
-    type: RewardType[];
-    label: string;
-    estimatedValueUsd?: number;
-  };
-  location: {
-    mode: QuestMode;
-    campus?: string;
-    building?: string;
-    room?: string;
-    address?: string;
-    onlineUrl?: string;
-  };
-  deadline?: string;
-  eventStart?: string;
-  eventEnd?: string;
-  bestFor: string[];
-  eligibility: string[];
-  applyUrl?: string;
-  contactEmail?: string;
-  party: {
-    allowed: boolean;
-    idealSize: number;
-    openSlots: number;
-  };
-  aiExtraction: {
-    confidence: number;
-    missingFields: string[];
-    extractedAt: string;
-    model: string;
-  };
-  stats: {
-    saves: number;
-    views: number;
-    partyRequests: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+export const questCardSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  organizer: z.string().min(1),
+  summary: z.string().min(1),
+  description: z.string().min(1),
+  imageUrl: z.string().min(1),
+  source: questSourceSchema,
+  status: questStatusSchema,
+  interests: z.array(interestTagSchema),
+  skillsHelpful: z.array(skillTagSchema),
+  difficulty: questDifficultySchema,
+  estimatedHours: z.object({
+    min: z.number().min(0),
+    max: z.number().min(0)
+  }),
+  reward: z.object({
+    type: z.array(rewardTypeSchema),
+    label: z.string().min(1),
+    estimatedValueUsd: z.number().optional()
+  }),
+  location: z.object({
+    mode: questModeSchema,
+    campus: z.string().optional(),
+    building: z.string().optional(),
+    room: z.string().optional(),
+    address: z.string().optional(),
+    onlineUrl: z.string().optional()
+  }),
+  deadline: z.string().optional(),
+  eventStart: z.string().optional(),
+  eventEnd: z.string().optional(),
+  bestFor: z.array(z.string()),
+  eligibility: z.array(z.string()),
+  applyUrl: z.string().optional(),
+  contactEmail: z.string().optional(),
+  party: z.object({
+    allowed: z.boolean(),
+    idealSize: z.number().int().min(1),
+    openSlots: z.number().int().min(0)
+  }),
+  aiExtraction: z.object({
+    confidence: z.number().min(0).max(1),
+    missingFields: z.array(z.string()),
+    extractedAt: z.string(),
+    model: z.string()
+  }),
+  stats: z.object({
+    saves: z.number().int().min(0),
+    views: z.number().int().min(0),
+    partyRequests: z.number().int().min(0)
+  }),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export type QuestSource = z.infer<typeof questSourceSchema>;
+export type QuestCard = z.infer<typeof questCardSchema>;
 
 export interface StudentProfile {
   id: string;
@@ -203,17 +225,26 @@ export interface ExtractQuestRequest {
     name: string;
     type: string;
     size: number;
+    text?: string;
+    base64?: string;
+    dataUrl?: string;
+    truncated?: boolean;
   };
+}
+
+export interface ExtractQuestMeta {
+  provider: "azure" | "local";
+  fallbackUsed: boolean;
+  sourceType: QuestSourceType;
+  confidence: number;
+  missingFields: string[];
+  warnings: string[];
+  cardCount: number;
 }
 
 export interface ExtractQuestResponse {
   cards: QuestCard[];
-  meta: {
-    provider: "azure" | "local";
-    fallbackUsed: boolean;
-    sourceType: QuestSourceType;
-    warnings: string[];
-  };
+  meta: ExtractQuestMeta;
 }
 
 export interface AzureConnectionHealth {
