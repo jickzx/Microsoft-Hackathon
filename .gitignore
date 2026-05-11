@@ -3,6 +3,8 @@ dist
 .env
 .env.local
 .playwright-cli
+.playwright-mcp
+.dev-server.*.log
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
