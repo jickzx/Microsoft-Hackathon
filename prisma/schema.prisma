@@ -9,6 +9,8 @@ datasource db {
 
 model Student {
   id                 String   @id
+  email              String?  @unique
+  passwordHash       String?
   name               String
   year               String
   major              String
@@ -20,6 +22,7 @@ model Student {
   preferences        Json
   questCount         Int
   communicationStyle String
+  lastLoginAt        DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -27,9 +30,23 @@ model Student {
   savedQuests  SavedQuest[]
   joinedQuests JoinedQuest[]
   matches      MatchRecommendation[]
+  authSessions AuthSession[]
   createdParties QuestParty[] @relation("PartyCreator")
   partyMembers PartyMember[]
   ownedPrepItems PrepPlanItem[]
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  studentId String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([expiresAt])
 }
 
 model QuestSource {

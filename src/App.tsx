@@ -60,8 +60,26 @@ import type {
 } from "./types";
 
 type Page = "home" | "explore" | "submit" | "parties" | "profile";
+type AuthMode = "signup" | "login";
 type QuickFilter = "Trending" | "New" | "Ending Soon" | "For You";
 type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file";
+
+interface SignupProfile {
+  name: string;
+  role: string;
+  workExperience: string;
+  education: string;
+  courseOrJobTitle: string;
+  careerInterest: string;
+  skills: string;
+  goals: string;
+  hobbies: string;
+}
+
+interface AuthState {
+  signedIn: boolean;
+  profile: SignupProfile | null;
+}
 
 interface UserState {
   savedQuestIds: string[];
@@ -78,6 +96,51 @@ interface PersistedParty extends QuestParty {
 interface ExtractMetaWithSource extends ExtractQuestMeta {
   sourceId?: string;
 }
+
+const authProfileStorageKey = "questboard.signupProfile";
+const authModeStorageKey = "questboard.authMode";
+
+const signupInitialProfile: SignupProfile = {
+  name: "",
+  role: "Student",
+  workExperience: "",
+  education: "",
+  courseOrJobTitle: "",
+  careerInterest: "",
+  skills: "",
+  goals: "",
+  hobbies: ""
+};
+
+const roleOptions = ["Student", "Graduate", "Career switcher", "Founder", "Job seeker", "Researcher"];
+const workExperienceOptions = [
+  "No formal experience yet",
+  "0-1 years",
+  "1-3 years",
+  "3-5 years",
+  "5+ years"
+];
+const educationOptions = [
+  "High school",
+  "Undergraduate",
+  "Bachelor's degree",
+  "Master's degree",
+  "PhD",
+  "Bootcamp or certificate",
+  "Self-taught"
+];
+
+const requiredSignupFields: { key: keyof SignupProfile; label: string }[] = [
+  { key: "name", label: "Name" },
+  { key: "role", label: "Role" },
+  { key: "workExperience", label: "Work experience" },
+  { key: "education", label: "Highest level of education" },
+  { key: "courseOrJobTitle", label: "Course or job title" },
+  { key: "careerInterest", label: "Career interest" },
+  { key: "skills", label: "Skills" },
+  { key: "goals", label: "Goals" },
+  { key: "hobbies", label: "Hobbies" }
+];
 
 const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
   { page: "home", label: "Home", icon: HomeIcon },
@@ -137,7 +200,37 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+function readStoredAuthState(): AuthState {
+  if (typeof window === "undefined") return { signedIn: false, profile: null };
+
+  const rawProfile = window.localStorage.getItem(authProfileStorageKey);
+  if (rawProfile) {
+    try {
+      return { signedIn: true, profile: JSON.parse(rawProfile) as SignupProfile };
+    } catch {
+      window.localStorage.removeItem(authProfileStorageKey);
+    }
+  }
+
+  return {
+    signedIn: window.localStorage.getItem(authModeStorageKey) === "demo",
+    profile: null
+  };
+}
+
+function saveAuthProfile(profile: SignupProfile) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(authProfileStorageKey, JSON.stringify(profile));
+  window.localStorage.setItem(authModeStorageKey, "profile");
+}
+
+function saveDemoLogin() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(authModeStorageKey, "demo");
+}
+
 function App() {
+  const [authState, setAuthState] = useState<AuthState>(() => readStoredAuthState());
   const [quests, setQuests] = useState<QuestCard[]>(seedQuests);
   const [users, setUsers] = useState<StudentProfile[]>(seedStudents);
   const [currentUserId, setCurrentUserId] = useState(currentStudent.id);
@@ -151,8 +244,23 @@ function App() {
   const [matchMeta, setMatchMeta] = useState<MatchRecommendationMeta | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const signupStudent = useMemo(
+    () => (authState.profile ? createStudentFromSignup(authState.profile, currentStudent) : null),
+    [authState.profile]
+  );
+
+  const displayUsers = useMemo(() => {
+    if (!signupStudent) return users;
+    const nextUsers = users.map((student) =>
+      student.id === signupStudent.id ? signupStudent : student
+    );
+    return nextUsers.some((student) => student.id === signupStudent.id)
+      ? nextUsers
+      : [signupStudent, ...nextUsers];
+  }, [signupStudent, users]);
+
   const activeStudent =
-    users.find((student) => student.id === currentUserId) ??
+    displayUsers.find((student) => student.id === currentUserId) ??
     seedStudents.find((student) => student.id === currentUserId) ??
     currentStudent;
 
@@ -347,6 +455,23 @@ function App() {
     setParties((current) => [data.party, ...current.filter((party) => party.id !== data.party.id)]);
     setJoinedQuestIds((current) => new Set([...current, questId]));
     setActivePage("parties");
+  }
+
+  function completeSignup(profile: SignupProfile) {
+    const cleanProfile = trimSignupProfile(profile);
+    saveAuthProfile(cleanProfile);
+    setAuthState({ signedIn: true, profile: cleanProfile });
+    setCurrentUserId(currentStudent.id);
+    setActivePage("home");
+    setSelectedQuest(null);
+  }
+
+  function continueWithDemoProfile() {
+    saveDemoLogin();
+    setAuthState({ signedIn: true, profile: null });
+    setCurrentUserId(currentStudent.id);
+    setActivePage("home");
+    setSelectedQuest(null);
   }
 
   async function togglePrepItem(partyId: string, item: PrepPlanItem) {

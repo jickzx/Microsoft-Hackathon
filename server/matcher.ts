@@ -1,4 +1,3 @@
-import { scoreQuestForStudent } from "../src/lib/matching";
 import type {
   MatchRecommendationMeta,
   MatchRecommendationResponse,
@@ -6,6 +5,7 @@ import type {
   QuestMatchBreakdown,
   StudentProfile
 } from "../src/types";
+import { azureConfig, azureHeaders, requireAzureConfig } from "./env";
 
 const matchJsonInstruction = `Return JSON only with this shape:
 {
@@ -125,42 +125,9 @@ function compactQuest(quest: QuestCard) {
   };
 }
 
-function getAzureMode() {
-  return process.env.AZURE_AI_MODE ?? "auto";
-}
-
-function getAzureEndpoint() {
-  return process.env.AZURE_OPENAI_ENDPOINT ?? process.env.AZURE_AI_ENDPOINT;
-}
-
-function getAzureKey() {
-  return process.env.AZURE_OPENAI_API_KEY ?? process.env.AZURE_AI_KEY;
-}
-
-function getConfiguredMatchRoute() {
-  return process.env.AZURE_MATCH_ROUTE || "";
-}
-
 function joinUrl(base: string, route: string) {
   if (!route) return base;
   return `${base.replace(/\/+$/, "")}/${route.replace(/^\/+/, "")}`;
-}
-
-function commonAzureHeaders(key: string) {
-  const authHeader = process.env.AZURE_AI_AUTH_HEADER;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json"
-  };
-
-  if (authHeader && authHeader.toLowerCase() !== "auto") {
-    headers[authHeader] = authHeader.toLowerCase() === "authorization" ? `Bearer ${key}` : key;
-  } else {
-    headers["Ocp-Apim-Subscription-Key"] = key;
-    headers["api-key"] = key;
-    headers["x-functions-key"] = key;
-  }
-
-  return headers;
 }
 
 function buildPrompt(quests: QuestCard[], student: StudentProfile) {
@@ -181,10 +148,7 @@ function buildPrompt(quests: QuestCard[], student: StudentProfile) {
 
 async function fetchJsonWithTimeout(url: string, init: RequestInit) {
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    Number(process.env.AZURE_AI_TIMEOUT_MS ?? 12000)
-  );
+  const timeout = setTimeout(() => controller.abort(), azureConfig().timeoutMs);
 
   const response = await fetch(url, {
     ...init,
@@ -219,53 +183,68 @@ function normalizeAzureMatches(
   const possibleMatches = payload.matches ?? payload.recommendations ?? payload.quests ?? payload.data;
   if (!Array.isArray(possibleMatches)) return [];
 
-  const localByQuest = new Map(
-    quests.map((quest) => [quest.id, scoreQuestForStudent(quest, student)])
-  );
+  const questById = new Map(quests.map((quest) => [quest.id, quest]));
   const azureByQuest = new Map<string, QuestMatchBreakdown>();
 
   for (const item of possibleMatches) {
     const raw = asRecord(item);
     const questId = String(raw?.questId ?? raw?.quest_id ?? raw?.id ?? "");
-    const local = localByQuest.get(questId);
-    if (!raw || !local) continue;
+    const quest = questById.get(questId);
+    if (!raw || !quest) continue;
+    const total = normalizeTotal(raw.total ?? raw.score ?? raw.matchScore, 0);
+    const componentFallback = round2(total / 100);
 
     azureByQuest.set(questId, {
       questId,
       studentId: student.id,
-      total: normalizeTotal(raw.total ?? raw.score ?? raw.matchScore, local.total),
+      total,
       interestScore: normalizeComponent(
         raw.interestScore ?? raw.interestsScore ?? raw.interests,
-        local.interestScore
+        componentFallback
       ),
-      skillScore: normalizeComponent(raw.skillScore ?? raw.skillsScore ?? raw.skills, local.skillScore),
+      skillScore: normalizeComponent(raw.skillScore ?? raw.skillsScore ?? raw.skills, componentFallback),
       availabilityScore: normalizeComponent(
         raw.availabilityScore ?? raw.availability,
-        local.availabilityScore
+        componentFallback
       ),
       difficultyScore: normalizeComponent(
         raw.difficultyScore ?? raw.difficulty,
-        local.difficultyScore
+        componentFallback
       ),
-      rewardScore: normalizeComponent(raw.rewardScore ?? raw.reward, local.rewardScore),
-      locationScore: normalizeComponent(raw.locationScore ?? raw.location, local.locationScore),
-      urgencyScore: normalizeComponent(raw.urgencyScore ?? raw.urgency, local.urgencyScore),
-      reasons: normalizeReasons(raw, local.reasons)
+      rewardScore: normalizeComponent(raw.rewardScore ?? raw.reward, componentFallback),
+      locationScore: normalizeComponent(raw.locationScore ?? raw.location, componentFallback),
+      urgencyScore: normalizeComponent(raw.urgencyScore ?? raw.urgency, componentFallback),
+      reasons: normalizeReasons(raw, [`Azure ranked ${quest.title} for this profile`])
     });
   }
 
   if (azureByQuest.size === 0) return [];
-  return quests.map((quest) => azureByQuest.get(quest.id) ?? localByQuest.get(quest.id)!);
+  return quests.map(
+    (quest) =>
+      azureByQuest.get(quest.id) ?? {
+        questId: quest.id,
+        studentId: student.id,
+        total: 0,
+        interestScore: 0,
+        skillScore: 0,
+        availabilityScore: 0,
+        difficultyScore: 0,
+        rewardScore: 0,
+        locationScore: 0,
+        urgencyScore: 0,
+        reasons: ["Azure did not return a score for this opportunity"]
+      }
+  );
 }
 
 async function matchWithAzureOpenAI(quests: QuestCard[], student: StudentProfile) {
-  const endpoint = getAzureEndpoint();
-  const key = getAzureKey();
-  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT ?? process.env.AZURE_AI_DEPLOYMENT;
-  if (!endpoint || !key || !deployment) return null;
+  const config = requireAzureConfig();
+  const endpoint = config.endpoint;
+  const key = config.key;
+  const deployment = config.deployment;
+  if (!deployment) throw new Error("Azure OpenAI deployment is not configured.");
 
-  const apiVersion =
-    process.env.AZURE_OPENAI_API_VERSION ?? process.env.AZURE_AI_API_VERSION ?? "2024-10-21";
+  const apiVersion = config.apiVersion;
   const payload = await fetchJsonWithTimeout(
     joinUrl(
       endpoint,
@@ -273,7 +252,7 @@ async function matchWithAzureOpenAI(quests: QuestCard[], student: StudentProfile
     ),
     {
       method: "POST",
-      headers: commonAzureHeaders(key),
+      headers: azureHeaders(key),
       body: JSON.stringify({
         messages: [
           {
@@ -297,11 +276,11 @@ async function matchWithAzureOpenAI(quests: QuestCard[], student: StudentProfile
 }
 
 async function matchWithCustomAzure(quests: QuestCard[], student: StudentProfile) {
-  const endpoint = process.env.AZURE_AI_ENDPOINT;
-  const key = getAzureKey();
-  if (!endpoint || !key) return null;
+  const config = requireAzureConfig();
+  const endpoint = config.endpoint;
+  const key = config.key;
 
-  const configuredRoute = getConfiguredMatchRoute();
+  const configuredRoute = config.matchRoute;
   const routeCandidates = configuredRoute
     ? [configuredRoute]
     : [
@@ -324,7 +303,7 @@ async function matchWithCustomAzure(quests: QuestCard[], student: StudentProfile
     try {
       const payload = await fetchJsonWithTimeout(joinUrl(endpoint, route), {
         method: "POST",
-        headers: commonAzureHeaders(key),
+        headers: azureHeaders(key),
         body: JSON.stringify(body)
       });
       const matches = normalizeAzureMatches(payload, quests, student);
@@ -339,16 +318,12 @@ async function matchWithCustomAzure(quests: QuestCard[], student: StudentProfile
 }
 
 async function matchWithAzure(quests: QuestCard[], student: StudentProfile) {
-  if (process.env.AZURE_MATCH_ENABLED === "false" || process.env.AZURE_AI_ENABLED === "false") {
-    return null;
+  const config = requireAzureConfig();
+  if (process.env.AZURE_MATCH_ENABLED === "false") {
+    throw new Error("Azure matching is disabled.");
   }
 
-  const mode = getAzureMode();
-  if (
-    mode === "azure-openai" ||
-    process.env.AZURE_OPENAI_DEPLOYMENT ||
-    process.env.AZURE_AI_DEPLOYMENT
-  ) {
+  if (config.mode === "azure-openai" || config.deployment) {
     return matchWithAzureOpenAI(quests, student);
   }
 
@@ -360,60 +335,26 @@ function confidenceFor(matches: QuestMatchBreakdown[]) {
   return round2(matches.reduce((sum, match) => sum + match.total / 100, 0) / matches.length);
 }
 
-function localResponse(
-  quests: QuestCard[],
-  student: StudentProfile,
-  warning?: string
-): MatchRecommendationResponse {
-  const matches = quests.map((quest) => scoreQuestForStudent(quest, student));
-  const meta: MatchRecommendationMeta = {
-    provider: "local",
-    fallbackUsed: true,
-    studentId: student.id,
-    questCount: matches.length,
-    confidence: confidenceFor(matches),
-    warnings: [
-      warning
-        ? `Azure matching unavailable (${warning}); used local side quest scoring.`
-        : "Azure matching unavailable; used local side quest scoring."
-    ],
-    model: "local-side-quest-matcher",
-    matchedAt: new Date().toISOString()
-  };
-
-  return { matches, meta };
-}
-
 export async function recommendQuestMatches(
   quests: QuestCard[],
   student: StudentProfile
 ): Promise<MatchRecommendationResponse> {
-  let azureWarning = "";
-
-  try {
-    const azureMatches = await matchWithAzure(quests, student);
-    if (azureMatches?.length) {
-      return {
-        matches: azureMatches,
-        meta: {
-          provider: "azure",
-          fallbackUsed: false,
-          studentId: student.id,
-          questCount: azureMatches.length,
-          confidence: confidenceFor(azureMatches),
-          warnings: [],
-          model:
-            process.env.AZURE_OPENAI_DEPLOYMENT ??
-            process.env.AZURE_AI_DEPLOYMENT ??
-            "azure-side-quest-matcher",
-          matchedAt: new Date().toISOString()
-        }
-      };
-    }
-  } catch (error) {
-    azureWarning = error instanceof Error ? error.message : "Azure matching failed";
-    console.warn(azureWarning);
+  const azureMatches = await matchWithAzure(quests, student);
+  if (!azureMatches?.length) {
+    throw new Error("Azure matching returned no recommendations.");
   }
 
-  return localResponse(quests, student, azureWarning);
+  return {
+    matches: azureMatches,
+    meta: {
+      provider: "azure",
+      fallbackUsed: false,
+      studentId: student.id,
+      questCount: azureMatches.length,
+      confidence: confidenceFor(azureMatches),
+      warnings: [],
+      model: azureConfig().deployment ?? "azure-side-quest-matcher",
+      matchedAt: new Date().toISOString()
+    }
+  };
 }
