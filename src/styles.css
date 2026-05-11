@@ -1179,6 +1179,100 @@ p {
   opacity: 0;
 }
 
+.source-preview {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d8e8e1;
+  color: #1a5c4a;
+  background: #f1fbf6;
+  border-radius: 8px;
+}
+
+.source-preview span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.source-preview strong,
+.source-preview small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-preview small {
+  color: #60766e;
+  font-size: 12px;
+}
+
+.extract-pipeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.pipeline-step {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: white;
+  border-radius: 8px;
+}
+
+.pipeline-step span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: #6d7288;
+  background: #f1efed;
+  border-radius: 8px;
+}
+
+.pipeline-step strong,
+.pipeline-step small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pipeline-step strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.pipeline-step small {
+  font-size: 12px;
+}
+
+.pipeline-step.complete {
+  border-color: #cceee4;
+  background: #f4fbf7;
+}
+
+.pipeline-step.complete span {
+  color: #0b7a5e;
+  background: #dff9ef;
+}
+
+.pipeline-step.active {
+  border-color: #d8ccff;
+  background: #f6f1ff;
+}
+
+.pipeline-step.active span {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
 .form-actions {
   display: flex;
   gap: 12px;
@@ -1272,6 +1366,11 @@ p {
   gap: 14px;
 }
 
+.extraction-audit {
+  display: grid;
+  gap: 10px;
+}
+
 .diagnostics-grid,
 .ai-detail-card {
   display: grid;
@@ -1281,6 +1380,38 @@ p {
   border: 1px solid #d8ccff;
   background: #f6f1ff;
   border-radius: 8px;
+}
+
+.source-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #d8e8e1;
+  color: #1a5c4a;
+  background: #f1fbf6;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.extract-warnings {
+  display: grid;
+  gap: 6px;
+}
+
+.extract-warnings span {
+  padding: 9px 11px;
+  border: 1px solid #f6d1a8;
+  color: #7a4a10;
+  background: #fff8eb;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .review-grid label {
@@ -2328,6 +2459,8 @@ p {
   .stat-grid,
   .quest-grid,
   .method-grid,
+  .extract-pipeline,
+  .diagnostics-grid,
   .review-field-row,
   .detail-info-grid,
   .badge-grid {

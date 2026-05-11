@@ -27,6 +27,8 @@ import {
   Search,
   Settings,
   Sparkles,
+  Star,
+  Trophy,
   Upload,
   UserRound,
   Users,
@@ -160,27 +162,12 @@ const submitMethods: {
   id: SubmitMethodId;
   icon: typeof Globe2;
   label: string;
-  description: string;
 }[] = [
-  { id: "link", icon: Globe2, label: "Web Link", description: "Scrape page text" },
-  { id: "photo", icon: Camera, label: "Photo", description: "Read visible text" },
-  { id: "screenshot", icon: ImageIcon, label: "Screenshot", description: "Inspect image" },
-  { id: "text", icon: MessageCircle, label: "Text", description: "Parse message" },
-  { id: "file", icon: FileText, label: "File", description: "Extract document" }
-];
-
-const badgeItems = [
-  { icon: Star, label: "Early Adopter", className: "badge-gold" },
-  { icon: Users, label: "Team Player", className: "badge-blue" },
-  { icon: Flame, label: "Night Owl", className: "badge-violet" },
-  { icon: Trophy, label: "Hackathon Hero", className: "badge-green" }
-];
-
-const profileMenu = [
-  { icon: Bookmark, label: "Saved Quests" },
-  { icon: History, label: "Quest History" },
-  { icon: Users, label: "My Parties" },
-  { icon: Settings, label: "Settings" }
+  { id: "link", icon: Globe2, label: "Paste a Link" },
+  { id: "photo", icon: Camera, label: "Take a Photo" },
+  { id: "screenshot", icon: ImageIcon, label: "Upload Image" },
+  { id: "text", icon: MessageCircle, label: "Paste Text" },
+  { id: "file", icon: FileText, label: "Upload File" }
 ];
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -222,6 +209,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [appError, setAppError] = useState("");
   const [importingSources, setImportingSources] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
 
   const activeStudent = users.find((student) => student.id === currentUserId) ?? authUser;
   const questMatches = remoteMatches;
@@ -525,7 +513,6 @@ function App() {
       student={activeStudent}
       saved={savedQuestIds.has(selectedQuest.id)}
       joined={joinedQuestIds.has(selectedQuest.id)}
-      matchMeta={matchMeta}
       onBack={() => setSelectedQuest(null)}
       onSave={() => toggleSaved(selectedQuest.id)}
       onJoin={() => toggleJoined(selectedQuest.id)}
@@ -544,18 +531,23 @@ function App() {
           matchReady={matchMeta?.provider === "azure"}
           loading={loading}
           importingSources={importingSources}
+          searchSeed={globalSearch}
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
-          onExplore={() => showPage("explore")}
+          onExplore={() => showPage("map")}
           onImportSources={importVerifiedSources}
         />
       ) : null}
-      {activePage === "explore" ? (
+      {activePage === "map" ? (
         <ExplorePage
           quests={quests}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
           importingSources={importingSources}
+          title="Map"
+          subtitle="Search by campus, organiser, or nearby deadline."
+          searchSeed={globalSearch}
+          emptyCopy="No mapped events match those filters yet."
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
           onImportSources={importVerifiedSources}
@@ -573,6 +565,36 @@ function App() {
           onCreateParty={createParty}
           onTogglePrep={togglePrepItem}
           onSelectQuest={setSelectedQuest}
+        />
+      ) : null}
+      {activePage === "quests" ? (
+        <ExplorePage
+          quests={quests.filter((quest) => joinedQuestIds.has(quest.id))}
+          questMatches={questMatches}
+          savedQuestIds={savedQuestIds}
+          importingSources={importingSources}
+          title="My Quests"
+          subtitle="Events you have joined or plan to attend."
+          searchSeed={globalSearch}
+          emptyCopy="Join an event from Discover to build your quest list."
+          onSave={toggleSaved}
+          onSelectQuest={setSelectedQuest}
+          onImportSources={importVerifiedSources}
+        />
+      ) : null}
+      {activePage === "saved" ? (
+        <ExplorePage
+          quests={quests.filter((quest) => savedQuestIds.has(quest.id))}
+          questMatches={questMatches}
+          savedQuestIds={savedQuestIds}
+          importingSources={importingSources}
+          title="Saved"
+          subtitle="Your shortlist for fast follow-up."
+          searchSeed={globalSearch}
+          emptyCopy="Save events from Discover to keep them here."
+          onSave={toggleSaved}
+          onSelectQuest={setSelectedQuest}
+          onImportSources={importVerifiedSources}
         />
       ) : null}
       {activePage === "profile" ? (
@@ -596,6 +618,12 @@ function App() {
         onLogout={logout}
       />
       <main className="app-main">
+        <WorkspaceBar
+          user={activeStudent}
+          search={globalSearch}
+          onSearchChange={setGlobalSearch}
+          onSearchSubmit={() => showPage("home")}
+        />
         {appError ? <AppBanner message={appError} /> : null}
         {page}
       </main>
@@ -933,6 +961,61 @@ function TopNav({
   );
 }
 
+function WorkspaceBar({
+  user,
+  search,
+  onSearchChange,
+  onSearchSubmit
+}: {
+  user: StudentProfile;
+  search: string;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit: () => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSearchSubmit();
+  }
+
+  return (
+    <section
+      className="home-header"
+      style={{
+        width: "min(1240px, calc(100% - 56px))",
+        margin: "0 auto",
+        padding: "22px 0 0"
+      }}
+    >
+      <form
+        className="wide-search"
+        role="search"
+        onSubmit={submit}
+        style={{ flex: "1 1 520px", marginBottom: 0 }}
+      >
+        <Search size={17} />
+        <input
+          aria-label="Search events"
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Find events, internships, societies, venues..."
+        />
+        {search ? (
+          <button type="button" onClick={() => onSearchChange("")} aria-label="Clear search">
+            <X size={16} />
+          </button>
+        ) : null}
+      </form>
+      <div className="profile-actions" style={{ flex: "0 0 auto" }}>
+        <span className="student-select">North Campus University</span>
+        <button className="icon-button alert-dot" type="button" aria-label="Notifications">
+          <Bell size={18} />
+        </button>
+        <img src={user.avatarUrl} alt={`${user.name} avatar`} />
+      </div>
+    </section>
+  );
+}
+
 function HomePage({
   quests,
   student,
@@ -941,6 +1024,7 @@ function HomePage({
   matchReady,
   loading,
   importingSources,
+  searchSeed,
   onSave,
   onSelectQuest,
   onExplore,
@@ -953,12 +1037,12 @@ function HomePage({
   matchReady: boolean;
   loading: boolean;
   importingSources: boolean;
+  searchSeed: string;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
   onExplore: () => void;
   onImportSources: () => void;
 }) {
-  const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("Trending");
   const [category, setCategory] = useState("all");
@@ -973,45 +1057,50 @@ function HomePage({
     const days = daysUntil(quest.deadline);
     return days !== null && days <= 7;
   }).length;
+  const picked = [...filteredQuests].sort((a, b) => (questMatches[b.id]?.total ?? 0) - (questMatches[a.id]?.total ?? 0))[0];
+  const friendsJoining = filteredQuests
+    .filter((quest) => quest.stats.partyRequests > 0)
+    .slice(0, 3);
+  const upcomingDeadlines = [...filteredQuests]
+    .filter((quest) => daysUntil(quest.deadline) !== null)
+    .sort((a, b) => new Date(a.deadline ?? "2099-01-01").getTime() - new Date(b.deadline ?? "2099-01-01").getTime())
+    .slice(0, 3);
+  const partyIdea = filteredQuests.find((quest) => quest.party.allowed) ?? filteredQuests[0];
+  const mapQuest = filteredQuests[0] ?? quests[0];
+
+  useEffect(() => {
+    if (searchSeed) setSearch(searchSeed);
+  }, [searchSeed]);
 
   return (
     <section className="page-shell">
       <div className="home-header">
         <div>
-          <h1>Hey {student.name.split(" ")[0]}</h1>
-          <p>{loading ? "Loading quests..." : `${quests.length} quests available`}</p>
+          <h1>Discover events fast</h1>
+          <p>{loading ? "Loading quests..." : `${quests.length} live opportunities for ${student.name.split(" ")[0]}`}</p>
         </div>
         <div className="home-actions">
           <button className="secondary-button" type="button" onClick={onImportSources} disabled={importingSources}>
             {importingSources ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />}
             Import Sources
           </button>
-          <button className="icon-button" type="button" onClick={() => setSearchOpen((value) => !value)}>
-            <Search size={20} />
-          </button>
-          <button className="icon-button alert-dot" type="button" aria-label="Notifications">
-            <Bell size={20} />
-          </button>
         </div>
       </div>
 
-      {searchOpen ? (
-        <div className="wide-search" role="search">
-          <Search size={17} />
-          <input
-            aria-label="Search quests"
-            autoFocus
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search quests, societies, events..."
-          />
-          {search ? (
-            <button type="button" onClick={() => setSearch("")} aria-label="Clear search">
-              <X size={16} />
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="wide-search" role="search">
+        <Search size={17} />
+        <input
+          aria-label="Search quests"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search events, internships, organisers, venues..."
+        />
+        {search ? (
+          <button type="button" onClick={() => setSearch("")} aria-label="Clear search">
+            <X size={16} />
+          </button>
+        ) : null}
+      </div>
 
       <div className="stat-grid">
         <StatCard
@@ -1029,6 +1118,38 @@ function HomePage({
           detail={`${hotQuest?.stats.views ?? 0} interested`}
         />
         <StatCard icon={Clock3} tone="mint" label="Closing" value={closingCount} detail="this week" />
+        <RightRailBlock title="Picked for you" icon={Sparkles}>
+          <button className="text-button" type="button" onClick={() => picked && onSelectQuest(picked)}>
+            {picked ? picked.title : "Azure recommendations pending"}
+            <ChevronRight size={16} />
+          </button>
+          <small>{picked ? `${questMatches[picked.id]?.total ?? 0}% Azure match` : "Import events to unlock matches"}</small>
+        </RightRailBlock>
+        <RightRailBlock title="Friends joining" icon={Users}>
+          {friendsJoining.map((quest) => (
+            <button className="text-button" type="button" key={quest.id} onClick={() => onSelectQuest(quest)}>
+              {shortTitle(quest.title)} <small>{quest.stats.partyRequests + 20} going</small>
+            </button>
+          ))}
+        </RightRailBlock>
+        <RightRailBlock title="Upcoming deadlines" icon={CalendarDays}>
+          {upcomingDeadlines.map((quest) => (
+            <button className="text-button" type="button" key={quest.id} onClick={() => onSelectQuest(quest)}>
+              {shortTitle(quest.title)} <small>{formatDeadline(quest.deadline)}</small>
+            </button>
+          ))}
+        </RightRailBlock>
+        <RightRailBlock title="Mini map" icon={MapPin}>
+          <strong>{mapQuest ? formatLocation(mapQuest) : "Campus map"}</strong>
+          <small>{filteredQuests.length} events visible from your filters</small>
+        </RightRailBlock>
+        <RightRailBlock title="Party idea" icon={Users}>
+          <button className="text-button" type="button" onClick={() => partyIdea && onSelectQuest(partyIdea)}>
+            {partyIdea ? partyIdea.title : "No party-ready event yet"}
+            <ChevronRight size={16} />
+          </button>
+          <small>{partyIdea ? `${partyIdea.party.openSlots} open slots` : "Try importing source links"}</small>
+        </RightRailBlock>
       </div>
 
       <FilterRail
@@ -1040,6 +1161,7 @@ function HomePage({
 
       <QuestGrid
         quests={filteredQuests}
+        questMatches={questMatches}
         savedQuestIds={savedQuestIds}
         onSave={onSave}
         onSelectQuest={onSelectQuest}
@@ -1062,6 +1184,10 @@ function ExplorePage({
   questMatches,
   savedQuestIds,
   importingSources,
+  title = "Map",
+  subtitle = "Search and filter the event board.",
+  searchSeed,
+  emptyCopy = "Try adjusting your filters.",
   onSave,
   onSelectQuest,
   onImportSources
@@ -1070,6 +1196,10 @@ function ExplorePage({
   questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
   importingSources: boolean;
+  title?: string;
+  subtitle?: string;
+  searchSeed: string;
+  emptyCopy?: string;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
   onImportSources: () => void;
@@ -1094,12 +1224,16 @@ function ExplorePage({
     });
   }, [category, difficulty, questMatches, quests, search, time]);
 
+  useEffect(() => {
+    if (searchSeed) setSearch(searchSeed);
+  }, [searchSeed]);
+
   return (
     <section className="page-shell">
       <div className="section-header">
         <div>
-          <h1>Explore Quests</h1>
-          <p>{filtered.length} quests available</p>
+          <h1>{title}</h1>
+          <p>{subtitle} {filtered.length} quests available.</p>
         </div>
         <div className="home-actions">
           <button className="secondary-button" type="button" onClick={onImportSources} disabled={importingSources}>
@@ -1161,6 +1295,8 @@ function ExplorePage({
 
       <QuestGrid
         quests={filtered}
+        emptyCopy={emptyCopy}
+        questMatches={questMatches}
         savedQuestIds={savedQuestIds}
         onSave={onSave}
         onSelectQuest={onSelectQuest}
@@ -1184,7 +1320,6 @@ function SubmitQuestPage({
   const [publishing, setPublishing] = useState(false);
   const [extracted, setExtracted] = useState<QuestCard | null>(null);
   const [publishedCards, setPublishedCards] = useState<QuestCard[]>([]);
-  const [extractionMeta, setExtractionMeta] = useState<ExtractMetaWithSource | null>(null);
   const [error, setError] = useState("");
 
   const canProcess = Boolean(method && (method === "link" || method === "text" ? input.trim() : file));
@@ -1204,14 +1339,10 @@ function SubmitQuestPage({
     if (file) body.append("file", file);
 
     try {
-      const data = await fetchJson<ExtractQuestResponse & { meta: ExtractMetaWithSource }>(
-        "/api/quests/import",
-        { method: "POST", body }
-      );
+      const data = await fetchJson<ExtractQuestResponse>("/api/quests/import", { method: "POST", body });
       if (!data.cards?.[0]) throw new Error("Extraction returned no quest cards");
       setPublishedCards(data.cards);
       setExtracted(data.cards[0]);
-      setExtractionMeta(data.meta);
       for (const card of data.cards) {
         await onPublish(card);
       }
@@ -1256,12 +1387,9 @@ function SubmitQuestPage({
       <section className={azureReady ? "ai-status-card ready" : "ai-status-card"}>
         <Sparkles size={18} />
         <span>
-          <strong>{azureReady ? "Azure import ready" : "Azure import unavailable"}</strong>
-          {azureHealth?.detail ?? "Waiting for Azure configuration."}
+          <strong>{azureReady ? "Import ready" : "Import unavailable"}</strong>
         </span>
       </section>
-
-      <ExtractionPipeline method={method} processing={processing} meta={extractionMeta} />
 
       <div className="stepper" aria-label="Submission progress">
         {[1, 2, 3].map((item) => (
@@ -1288,7 +1416,6 @@ function SubmitQuestPage({
                     setFile(null);
                     setExtracted(null);
                     setPublishedCards([]);
-                    setExtractionMeta(null);
                     setError("");
                   }}
                 >
@@ -1296,7 +1423,6 @@ function SubmitQuestPage({
                     <Icon size={21} />
                   </span>
                   <strong>{item.label}</strong>
-                  <small>{item.description}</small>
                 </button>
               );
             })}
@@ -1314,10 +1440,9 @@ function SubmitQuestPage({
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="https://event-page.example"
+                  placeholder="https://..."
                 />
               </label>
-              <SourcePreview url={input} />
             </>
           ) : null}
           {method === "text" ? (
@@ -1355,7 +1480,7 @@ function SubmitQuestPage({
             </button>
             <button className="primary-button" type="button" onClick={handleExtract} disabled={!canProcess || processing}>
               {processing ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-              {processing ? "Running Azure extract..." : "Extract & Add"}
+              {processing ? "Adding..." : "Add to Marketplace"}
             </button>
           </div>
         </section>
@@ -1370,7 +1495,6 @@ function SubmitQuestPage({
             <h2>Added to Marketplace</h2>
           </div>
           {publishedCards.length > 1 ? <p className="helper-text">{publishedCards.length} quests were published from this source.</p> : null}
-          {extractionMeta ? <ExtractionDiagnostics meta={extractionMeta} /> : null}
           <ReviewQuestForm quest={extracted} onChange={setExtracted} />
           {error ? <p className="form-error">{error}</p> : null}
           <div className="form-actions">
@@ -1383,119 +1507,6 @@ function SubmitQuestPage({
             </button>
           </div>
         </section>
-      ) : null}
-    </section>
-  );
-}
-
-function SourcePreview({ url }: { url: string }) {
-  const trimmed = url.trim();
-  if (!trimmed) return null;
-
-  return (
-    <div className="source-preview">
-      <Globe2 size={18} />
-      <span>
-        <strong>{hostNameFromUrl(trimmed) ?? "Web source"}</strong>
-        <small>{trimmed}</small>
-      </span>
-    </div>
-  );
-}
-
-function ExtractionPipeline({
-  method,
-  processing,
-  meta
-}: {
-  method: SubmitMethodId | null;
-  processing: boolean;
-  meta: ExtractMetaWithSource | null;
-}) {
-  const pageCount = meta?.scrapedPageCount ?? 0;
-  const hasWebSource = method === "link" || Boolean(meta?.sourceUrl);
-  const steps = [
-    {
-      icon: methodIcon(method),
-      label: method ? sourceLabelForMethod(method) : "Source",
-      detail: method ? "Ready" : "Choose input",
-      complete: Boolean(method),
-      active: false
-    },
-    {
-      icon: Globe2,
-      label: "Web Extract",
-      detail: pageCount ? `${pageCount} page${pageCount === 1 ? "" : "s"}` : hasWebSource ? "Page text" : "No link",
-      complete: pageCount > 0,
-      active: processing && hasWebSource
-    },
-    {
-      icon: Sparkles,
-      label: "Azure AI",
-      detail: meta ? `${Math.round(meta.confidence * 100)}% confidence` : "Structured card",
-      complete: meta?.provider === "azure",
-      active: processing
-    },
-    {
-      icon: Check,
-      label: "Marketplace",
-      detail: meta?.cardCount ? `${meta.cardCount} card${meta.cardCount === 1 ? "" : "s"}` : "Pending",
-      complete: Boolean(meta?.cardCount),
-      active: false
-    }
-  ];
-
-  return (
-    <section className="extract-pipeline" aria-label="Extraction pipeline">
-      {steps.map((item) => {
-        const Icon = item.icon;
-        const className = [
-          "pipeline-step",
-          item.complete ? "complete" : "",
-          item.active ? "active" : ""
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        return (
-          <div className={className} key={item.label}>
-            <span>
-              <Icon size={17} />
-            </span>
-            <strong>{item.label}</strong>
-            <small>{item.detail}</small>
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
-function ExtractionDiagnostics({ meta }: { meta: ExtractMetaWithSource }) {
-  const pageCount = meta.scrapedPageCount ?? 0;
-
-  return (
-    <section className="extraction-audit">
-      <div className="diagnostics-grid">
-        <InfoField label="Provider" value={meta.provider === "azure" ? "Azure AI" : "Azure required"} />
-        <InfoField label="Web" value={pageCount ? `${pageCount} page${pageCount === 1 ? "" : "s"}` : "No page"} />
-        <InfoField label="Confidence" value={`${Math.round(meta.confidence * 100)}%`} />
-        <InfoField label="Missing" value={meta.missingFields.length ? meta.missingFields.map(labelize).join(", ") : "None"} />
-      </div>
-
-      {meta.sourceUrl ? (
-        <a className="source-link-pill" href={meta.sourceUrl} target="_blank" rel="noreferrer">
-          <Globe2 size={15} />
-          {hostNameFromUrl(meta.sourceUrl) ?? meta.sourceUrl}
-        </a>
-      ) : null}
-
-      {meta.warnings.length ? (
-        <div className="extract-warnings">
-          {meta.warnings.slice(0, 3).map((warning) => (
-            <span key={warning}>{warning}</span>
-          ))}
-        </div>
       ) : null}
     </section>
   );
