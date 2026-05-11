@@ -40,6 +40,19 @@ function intersect<T>(a: T[], b: T[]) {
   return a.filter((item) => b.includes(item));
 }
 
+function humanize(value: string) {
+  return value
+    .split("-")
+    .join(" ")
+    .split("_")
+    .join(" ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function readableList(values: string[]) {
+  return values.slice(0, 2).map(humanize).join(" and ");
+}
+
 function scoreUrgency(deadline?: string, now = new Date("2026-05-11T12:00:00Z")) {
   if (!deadline) return 0.45;
   const days = Math.ceil(
@@ -97,13 +110,13 @@ export function scoreQuestForStudent(
 
   const reasons: string[] = [];
   if (sharedInterests.length > 0) {
-    reasons.push(`Matches ${sharedInterests.slice(0, 2).join(" and ")} interests`);
+    reasons.push(`Matches ${readableList(sharedInterests)} interests`);
   }
   if (usefulSkills.length > 0) {
-    reasons.push(`Uses your ${usefulSkills.slice(0, 2).join(" and ")} skills`);
+    reasons.push(`Uses ${readableList(usefulSkills)} skills`);
   }
   if (learningSkills.length > 0) {
-    reasons.push(`Good way to build ${learningSkills[0]}`);
+    reasons.push(`Good way to build ${humanize(learningSkills[0])}`);
   }
   if (quest.estimatedHours.max <= student.preferences.maxHoursPerQuest) {
     reasons.push("Fits your weekly time limit");
@@ -264,7 +277,7 @@ export function recommendParties(
       const reasons = [
         `${members.length}-person party with ${Math.round(averageQuestFit * 100)} average quest fit`,
         coveredSkills.length
-          ? `Covers ${coveredSkills.slice(0, 3).join(", ")}`
+          ? `Covers ${coveredSkills.slice(0, 3).map(humanize).join(", ")}`
           : "Strong shared motivation",
         availabilityOverlapScore > 0.5
           ? "Overlapping availability this week"
