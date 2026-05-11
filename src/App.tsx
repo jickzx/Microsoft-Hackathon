@@ -43,6 +43,7 @@ import {
 import { interestTags } from "./types";
 import type {
   AzureConnectionHealth,
+  ExtractQuestMeta,
   ExtractQuestResponse,
   MatchRecommendationMeta,
   MatchRecommendationResponse,
@@ -54,7 +55,7 @@ import type {
   StudentProfile
 } from "./types";
 
-type Page = "home" | "explore" | "submit" | "parties" | "profile";
+type Page = "home" | "map" | "submit" | "parties" | "quests" | "saved" | "profile";
 type AuthMode = "signup" | "login";
 type QuickFilter = "Trending" | "New" | "Ending Soon" | "For You";
 type SubmitMethodId = "link" | "photo" | "screenshot" | "text" | "file";
@@ -86,6 +87,10 @@ interface PersistedParty extends QuestParty {
 interface AuthResponse {
   authenticated?: boolean;
   user: StudentProfile | null;
+}
+
+interface ExtractMetaWithSource extends ExtractQuestMeta {
+  sourceId?: string;
 }
 
 const signupInitialProfile: SignupProfile = {
@@ -132,10 +137,12 @@ const requiredSignupFields: { key: keyof SignupProfile; label: string }[] = [
 ];
 
 const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
-  { page: "home", label: "Home", icon: HomeIcon },
-  { page: "explore", label: "Explore", icon: Compass },
+  { page: "home", label: "Discover", icon: Compass },
+  { page: "map", label: "Map", icon: MapPin },
   { page: "submit", label: "Submit", icon: PlusCircle },
-  { page: "parties", label: "Parties", icon: Users },
+  { page: "parties", label: "Quest Parties", icon: Users },
+  { page: "quests", label: "My Quests", icon: Award },
+  { page: "saved", label: "Saved", icon: Bookmark },
   { page: "profile", label: "Profile", icon: UserRound }
 ];
 
@@ -153,12 +160,27 @@ const submitMethods: {
   id: SubmitMethodId;
   icon: typeof Globe2;
   label: string;
+  description: string;
 }[] = [
-  { id: "link", icon: Globe2, label: "Paste a Link" },
-  { id: "photo", icon: Camera, label: "Take a Photo" },
-  { id: "screenshot", icon: ImageIcon, label: "Upload Image" },
-  { id: "text", icon: MessageCircle, label: "Paste Text" },
-  { id: "file", icon: FileText, label: "Upload File" }
+  { id: "link", icon: Globe2, label: "Web Link", description: "Scrape page text" },
+  { id: "photo", icon: Camera, label: "Photo", description: "Read visible text" },
+  { id: "screenshot", icon: ImageIcon, label: "Screenshot", description: "Inspect image" },
+  { id: "text", icon: MessageCircle, label: "Text", description: "Parse message" },
+  { id: "file", icon: FileText, label: "File", description: "Extract document" }
+];
+
+const badgeItems = [
+  { icon: Star, label: "Early Adopter", className: "badge-gold" },
+  { icon: Users, label: "Team Player", className: "badge-blue" },
+  { icon: Flame, label: "Night Owl", className: "badge-violet" },
+  { icon: Trophy, label: "Hackathon Hero", className: "badge-green" }
+];
+
+const profileMenu = [
+  { icon: Bookmark, label: "Saved Quests" },
+  { icon: History, label: "Quest History" },
+  { icon: Users, label: "My Parties" },
+  { icon: Settings, label: "Settings" }
 ];
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -406,7 +428,6 @@ function App() {
     setQuests((current) => [quest, ...current.filter((item) => item.id !== quest.id)]);
     await refreshQuests();
     setSelectedQuest(null);
-    setActivePage("explore");
   }
 
   async function updateQuestCard(quest: QuestCard) {
@@ -504,6 +525,7 @@ function App() {
       student={activeStudent}
       saved={savedQuestIds.has(selectedQuest.id)}
       joined={joinedQuestIds.has(selectedQuest.id)}
+      matchMeta={matchMeta}
       onBack={() => setSelectedQuest(null)}
       onSave={() => toggleSaved(selectedQuest.id)}
       onJoin={() => toggleJoined(selectedQuest.id)}
@@ -1018,7 +1040,6 @@ function HomePage({
 
       <QuestGrid
         quests={filteredQuests}
-        questMatches={questMatches}
         savedQuestIds={savedQuestIds}
         onSave={onSave}
         onSelectQuest={onSelectQuest}
@@ -1140,7 +1161,6 @@ function ExplorePage({
 
       <QuestGrid
         quests={filtered}
-        questMatches={questMatches}
         savedQuestIds={savedQuestIds}
         onSave={onSave}
         onSelectQuest={onSelectQuest}
@@ -1230,17 +1250,18 @@ function SubmitQuestPage({
       <div className="section-header submit-heading">
         <div>
           <h1>Submit a Quest</h1>
-          <p>Azure reads the source, scrapes event links, and adds the result to the marketplace.</p>
         </div>
       </div>
 
       <section className={azureReady ? "ai-status-card ready" : "ai-status-card"}>
         <Sparkles size={18} />
         <span>
-          <strong>{azureReady ? "Azure extraction ready" : "Azure extraction unavailable"}</strong>
-          {azureHealth?.detail ?? "Configure Azure before importing quests from submitted sources."}
+          <strong>{azureReady ? "Azure import ready" : "Azure import unavailable"}</strong>
+          {azureHealth?.detail ?? "Waiting for Azure configuration."}
         </span>
       </section>
+
+      <ExtractionPipeline method={method} processing={processing} meta={extractionMeta} />
 
       <div className="stepper" aria-label="Submission progress">
         {[1, 2, 3].map((item) => (
@@ -1290,9 +1311,13 @@ function SubmitQuestPage({
             <>
               <label className="large-input">
                 <Link2 size={18} />
-                <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="https://..." />
+                <input
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder="https://event-page.example"
+                />
               </label>
-              <p className="helper-text">Azure will scrape the page and publish the extracted event.</p>
+              <SourcePreview url={input} />
             </>
           ) : null}
           {method === "text" ? (
@@ -1300,7 +1325,7 @@ function SubmitQuestPage({
               className="large-textarea"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Paste the WhatsApp message, email, Instagram caption, or any text..."
+              placeholder="Paste the quest details..."
               rows={7}
             />
           ) : null}
@@ -1330,7 +1355,7 @@ function SubmitQuestPage({
             </button>
             <button className="primary-button" type="button" onClick={handleExtract} disabled={!canProcess || processing}>
               {processing ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-              {processing ? "Adding to marketplace..." : "Add to Marketplace"}
+              {processing ? "Running Azure extract..." : "Extract & Add"}
             </button>
           </div>
         </section>
@@ -1363,13 +1388,115 @@ function SubmitQuestPage({
   );
 }
 
-function ExtractionDiagnostics({ meta }: { meta: ExtractMetaWithSource }) {
+function SourcePreview({ url }: { url: string }) {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
   return (
-    <section className="diagnostics-grid">
-      <InfoField label="Provider" value={meta.provider === "azure" ? "Azure AI" : "Azure required"} />
-      <InfoField label="Confidence" value={`${Math.round(meta.confidence * 100)}%`} />
-      <InfoField label="Source" value={labelize(meta.sourceType)} />
-      <InfoField label="Missing" value={meta.missingFields.length ? meta.missingFields.map(labelize).join(", ") : "None"} />
+    <div className="source-preview">
+      <Globe2 size={18} />
+      <span>
+        <strong>{hostNameFromUrl(trimmed) ?? "Web source"}</strong>
+        <small>{trimmed}</small>
+      </span>
+    </div>
+  );
+}
+
+function ExtractionPipeline({
+  method,
+  processing,
+  meta
+}: {
+  method: SubmitMethodId | null;
+  processing: boolean;
+  meta: ExtractMetaWithSource | null;
+}) {
+  const pageCount = meta?.scrapedPageCount ?? 0;
+  const hasWebSource = method === "link" || Boolean(meta?.sourceUrl);
+  const steps = [
+    {
+      icon: methodIcon(method),
+      label: method ? sourceLabelForMethod(method) : "Source",
+      detail: method ? "Ready" : "Choose input",
+      complete: Boolean(method),
+      active: false
+    },
+    {
+      icon: Globe2,
+      label: "Web Extract",
+      detail: pageCount ? `${pageCount} page${pageCount === 1 ? "" : "s"}` : hasWebSource ? "Page text" : "No link",
+      complete: pageCount > 0,
+      active: processing && hasWebSource
+    },
+    {
+      icon: Sparkles,
+      label: "Azure AI",
+      detail: meta ? `${Math.round(meta.confidence * 100)}% confidence` : "Structured card",
+      complete: meta?.provider === "azure",
+      active: processing
+    },
+    {
+      icon: Check,
+      label: "Marketplace",
+      detail: meta?.cardCount ? `${meta.cardCount} card${meta.cardCount === 1 ? "" : "s"}` : "Pending",
+      complete: Boolean(meta?.cardCount),
+      active: false
+    }
+  ];
+
+  return (
+    <section className="extract-pipeline" aria-label="Extraction pipeline">
+      {steps.map((item) => {
+        const Icon = item.icon;
+        const className = [
+          "pipeline-step",
+          item.complete ? "complete" : "",
+          item.active ? "active" : ""
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        return (
+          <div className={className} key={item.label}>
+            <span>
+              <Icon size={17} />
+            </span>
+            <strong>{item.label}</strong>
+            <small>{item.detail}</small>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function ExtractionDiagnostics({ meta }: { meta: ExtractMetaWithSource }) {
+  const pageCount = meta.scrapedPageCount ?? 0;
+
+  return (
+    <section className="extraction-audit">
+      <div className="diagnostics-grid">
+        <InfoField label="Provider" value={meta.provider === "azure" ? "Azure AI" : "Azure required"} />
+        <InfoField label="Web" value={pageCount ? `${pageCount} page${pageCount === 1 ? "" : "s"}` : "No page"} />
+        <InfoField label="Confidence" value={`${Math.round(meta.confidence * 100)}%`} />
+        <InfoField label="Missing" value={meta.missingFields.length ? meta.missingFields.map(labelize).join(", ") : "None"} />
+      </div>
+
+      {meta.sourceUrl ? (
+        <a className="source-link-pill" href={meta.sourceUrl} target="_blank" rel="noreferrer">
+          <Globe2 size={15} />
+          {hostNameFromUrl(meta.sourceUrl) ?? meta.sourceUrl}
+        </a>
+      ) : null}
+
+      {meta.warnings.length ? (
+        <div className="extract-warnings">
+          {meta.warnings.slice(0, 3).map((warning) => (
+            <span key={warning}>{warning}</span>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1505,7 +1632,6 @@ function PartiesPage({
       <div className="section-header">
         <div>
           <h1>Quest Parties</h1>
-          <p>Persisted teams with matched students, reasons, and prep plans.</p>
         </div>
       </div>
       <div className="party-tabs">
@@ -1539,13 +1665,6 @@ function PartiesPage({
         </div>
       ) : (
         <div className="browse-party-panel">
-          <section className="smart-match-card">
-            <div className="smart-icon">
-              <Users size={30} />
-            </div>
-            <h2>Smart Party Matching</h2>
-            <p>QuestBoard matches students by interests, availability, and complementary skills.</p>
-          </section>
           <h3>Quests looking for parties</h3>
           {partyQuests.map((quest) => (
             <article className="party-listing-card" key={quest.id}>
@@ -1588,45 +1707,18 @@ function ProfilePage({
   partyCount: number;
   onSelectQuest: (quest: QuestCard) => void;
 }) {
-  const totalXp = 1240 + partyCount * 80 + savedCount * 12;
-  const level = 7;
-  const nextLevelXp = 200;
-  const currentLevelXp = totalXp % nextLevelXp;
-  const progress = Math.round((currentLevelXp / nextLevelXp) * 100);
-
   return (
     <section className="profile-shell">
       <div className="profile-hero">
         <div className="profile-avatar">
           <img src={student.avatarUrl} alt="" />
-          <span>{level}</span>
         </div>
         <h1>{student.name}</h1>
         <p>{student.major}</p>
-        <small>
-          <MapPin size={13} />
-          North Campus University
-        </small>
       </div>
 
-      <section className="xp-card">
-        <div className="xp-heading">
-          <span>
-            <Zap size={20} />
-            Level {level}
-          </span>
-          <small>
-            {currentLevelXp}/{nextLevelXp} XP to next level
-          </small>
-        </div>
-        <div className="progress-track">
-          <span style={{ width: `${progress}%` }} />
-        </div>
+      <section className="profile-summary-card">
         <div className="profile-stats">
-          <div>
-            <strong>{totalXp}</strong>
-            <span>Total XP</span>
-          </div>
           <div>
             <strong>{savedCount}</strong>
             <span>Saved</span>
@@ -1634,6 +1726,10 @@ function ProfilePage({
           <div>
             <strong>{partyCount}</strong>
             <span>Parties</span>
+          </div>
+          <div>
+            <strong>{Math.min(quests.length, 3)}</strong>
+            <span>Active</span>
           </div>
         </div>
       </section>
@@ -1658,22 +1754,6 @@ function ProfilePage({
         </div>
       </ProfileSection>
 
-      <ProfileSection title="Badges">
-        <div className="badge-grid">
-          {badgeItems.map((badge) => {
-            const Icon = badge.icon;
-            return (
-              <div key={badge.label}>
-                <span className={badge.className}>
-                  <Icon size={25} />
-                </span>
-                <strong>{badge.label}</strong>
-              </div>
-            );
-          })}
-        </div>
-      </ProfileSection>
-
       <ProfileSection title="Active Quests" aside={`${Math.min(quests.length, 3)} active`}>
         <div className="active-quest-list">
           {quests.slice(0, 3).map((quest) => (
@@ -1693,20 +1773,6 @@ function ProfilePage({
         </div>
       </ProfileSection>
 
-      <section className="profile-menu">
-        {profileMenu.map((item) => {
-          const Icon = item.icon;
-          const count = item.label === "Saved Quests" ? savedCount : item.label === "My Parties" ? partyCount : undefined;
-          return (
-            <button type="button" key={item.label}>
-              <Icon size={20} />
-              <span>{item.label}</span>
-              {count !== undefined ? <em>{count}</em> : null}
-              <ChevronRight size={17} />
-            </button>
-          );
-        })}
-      </section>
     </section>
   );
 }
@@ -1716,8 +1782,6 @@ function QuestDetailPage({
   student,
   saved,
   joined,
-  match,
-  matchMeta,
   onBack,
   onSave,
   onJoin,
@@ -1729,8 +1793,6 @@ function QuestDetailPage({
   student: StudentProfile;
   saved: boolean;
   joined: boolean;
-  match?: QuestMatchBreakdown;
-  matchMeta: MatchRecommendationMeta | null;
   onBack: () => void;
   onSave: () => void;
   onJoin: () => void;
@@ -1742,8 +1804,6 @@ function QuestDetailPage({
   const [draft, setDraft] = useState(quest);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const matchScore = match?.total ?? 0;
-  const providerLabel = matchMeta?.provider === "azure" ? "Azure AI" : "Azure pending";
 
   async function saveEdit() {
     setSaving(true);
@@ -1816,7 +1876,6 @@ function QuestDetailPage({
               <img src={student.avatarUrl} alt="" />
               <span>
                 <strong>{quest.organizer}</strong>
-                Posted from {labelize(quest.source.type)}
               </span>
             </div>
 
@@ -1830,13 +1889,6 @@ function QuestDetailPage({
             <section className="detail-section">
               <h2>About this Quest</h2>
               <p>{quest.description}</p>
-            </section>
-
-            <section className="ai-detail-card">
-              <InfoField label="Matcher" value={`${providerLabel}: ${matchScore}% fit`} />
-              <InfoField label="Extraction" value={`${Math.round(quest.aiExtraction.confidence * 100)}% confidence`} />
-              <InfoField label="Source" value={quest.source.fileName ?? quest.source.rawUrl ?? labelize(quest.source.type)} />
-              <InfoField label="Missing" value={quest.aiExtraction.missingFields.length ? quest.aiExtraction.missingFields.map(labelize).join(", ") : "None"} />
             </section>
 
             <section className="best-for">
@@ -1868,7 +1920,6 @@ function QuestDetailPage({
                 <Bookmark size={17} />
                 {quest.stats.saves}
               </span>
-              <strong>{matchScore}% match</strong>
             </div>
 
             {quest.party.allowed ? (
@@ -1876,8 +1927,8 @@ function QuestDetailPage({
                 <span>
                   <Users size={22} />
                 </span>
-                <strong>Create a Quest Party</strong>
-                <small>Get matched with {quest.party.idealSize} students and a prep plan</small>
+                <strong>Create Party</strong>
+                <small>{quest.party.idealSize} members</small>
                 <ChevronRight size={20} />
               </button>
             ) : null}
@@ -1911,13 +1962,11 @@ function QuestDetailPage({
 
 function QuestGrid({
   quests,
-  questMatches,
   savedQuestIds,
   onSave,
   onSelectQuest
 }: {
   quests: QuestCard[];
-  questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
   onSave: (questId: string) => void;
   onSelectQuest: (quest: QuestCard) => void;
@@ -1934,12 +1983,10 @@ function QuestGrid({
 
   return (
     <div className="quest-grid">
-      {quests.map((quest, index) => (
+      {quests.map((quest) => (
         <QuestCardView
           key={quest.id}
           quest={quest}
-          index={index}
-          matchScore={questMatches[quest.id]?.total ?? 0}
           saved={savedQuestIds.has(quest.id)}
           onSave={() => onSave(quest.id)}
           onSelect={() => onSelectQuest(quest)}
@@ -1951,21 +1998,15 @@ function QuestGrid({
 
 function QuestCardView({
   quest,
-  index,
-  matchScore,
   saved,
   onSave,
   onSelect
 }: {
   quest: QuestCard;
-  index: number;
-  matchScore: number;
   saved: boolean;
   onSave: () => void;
   onSelect: () => void;
 }) {
-  const friendNames = ["Alex M.", "Priya S.", "Jordan L.", "Chris T.", "Zara N."];
-
   return (
     <article className="quest-card">
       <button className="quest-media" type="button" onClick={onSelect}>
@@ -2001,17 +2042,10 @@ function QuestCardView({
           </span>
         </div>
         <div className="card-footer">
-          <span className="avatar-cluster">
-            <i />
-            <i />
-            <i />
-          </span>
-          <small>
-            {quest.stats.partyRequests + 20} going - {friendNames[index % friendNames.length]} +{Math.max(0, Math.round(matchScore / 30) - 1)}
-          </small>
+          <small>{quest.stats.partyRequests} going</small>
           <em>
             <Heart size={14} />
-            {quest.stats.saves + quest.stats.views}
+            {quest.stats.saves}
           </em>
         </div>
       </div>
