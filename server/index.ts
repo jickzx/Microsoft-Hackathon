@@ -1,4 +1,3 @@
-import "dotenv/config";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,7 +18,9 @@ import { recommendQuestMatches } from "./matcher";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 
-dotenv.config({ path: path.join(projectRoot, ".env.local"), override: true });
+dotenv.config({
+  path: [path.join(projectRoot, ".env.local"), path.join(projectRoot, ".env")]
+});
 
 const app = express();
 const upload = multer({
