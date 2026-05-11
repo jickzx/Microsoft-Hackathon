@@ -8,6 +8,7 @@ import { z } from "zod";
 import { createServer as createViteServer } from "vite";
 import { seedQuests, students } from "../src/data/seed";
 import { recommendParties } from "../src/lib/matching";
+import { questCardSchema, questSourceTypeSchema } from "../src/types";
 import type { ExtractQuestRequest, QuestCard } from "../src/types";
 import { checkAzureConnection, extractQuestCards } from "./extractor";
 
@@ -22,25 +23,21 @@ const upload = multer({
 });
 
 const quests: QuestCard[] = [...seedQuests];
+const maxInlineFileBytes = Number(process.env.EXTRACT_INLINE_FILE_BYTES ?? 4 * 1024 * 1024);
 
 const extractSchema = z.object({
-  sourceType: z.enum([
-    "link",
-    "screenshot",
-    "poster",
-    "email",
-    "message",
-    "pdf",
-    "photo",
-    "text"
-  ]),
+  sourceType: questSourceTypeSchema,
   text: z.string().optional(),
   url: z.string().url().optional().or(z.literal("")),
   file: z
     .object({
       name: z.string(),
       type: z.string(),
-      size: z.number()
+      size: z.number(),
+      text: z.string().optional(),
+      base64: z.string().optional(),
+      dataUrl: z.string().optional(),
+      truncated: z.boolean().optional()
     })
     .optional()
 });
@@ -64,7 +61,16 @@ app.get("/api/quests", (_request, response) => {
 });
 
 app.post("/api/quests", (request, response) => {
-  const quest = request.body as QuestCard;
+  const parsed = questCardSchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({
+      error: "Invalid quest card",
+      details: parsed.error.issues.map((issue) => issue.message)
+    });
+    return;
+  }
+
+  const quest = parsed.data;
   quests.unshift({
     ...quest,
     status: "published",
@@ -76,16 +82,27 @@ app.post("/api/quests", (request, response) => {
 app.post("/api/extract", upload.single("file"), async (request, response) => {
   const maybeTextFile =
     request.file?.mimetype.startsWith("text/") || request.file?.mimetype === "application/json";
+  const inlineFile =
+    request.file && request.file.size <= maxInlineFileBytes
+      ? request.file.buffer.toString("base64")
+      : undefined;
   const fileText = maybeTextFile ? request.file?.buffer.toString("utf8") : undefined;
   const body = {
     sourceType: request.body.sourceType,
-    text: [request.body.text, fileText].filter(Boolean).join("\n"),
+    text: [request.body.text, fileText].filter(Boolean).join("\n") || undefined,
     url: request.body.url,
     file: request.file
       ? {
           name: request.file.originalname,
           type: request.file.mimetype,
-          size: request.file.size
+          size: request.file.size,
+          text: fileText,
+          base64: inlineFile,
+          dataUrl:
+            inlineFile && request.file.mimetype.startsWith("image/")
+              ? `data:${request.file.mimetype};base64,${inlineFile}`
+              : undefined,
+          truncated: request.file.size > maxInlineFileBytes
         }
       : undefined
   };

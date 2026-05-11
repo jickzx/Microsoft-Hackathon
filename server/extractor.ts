@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { questCardSchema } from "../src/types";
 import type {
   AzureConnectionHealth,
   ExtractQuestRequest,
@@ -95,7 +96,7 @@ function detectSkills(text: string) {
 function detectReward(text: string): QuestCard["reward"] {
   const lower = text.toLowerCase();
   const rewardTypes: QuestCard["reward"]["type"] = [];
-  const moneyMatch = text.match(/(?:\$|£|usd\s*)(\d{2,5})/i);
+  const moneyMatch = text.match(/(?:\$|\u00a3|usd\s*)(\d{2,5})/i);
 
   if (moneyMatch || lower.includes("paid") || lower.includes("prize")) {
     rewardTypes.push("money");
@@ -204,6 +205,68 @@ function detectLocation(text: string): QuestCard["location"] {
   };
 }
 
+function unique(values: string[]) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function missingFieldsFor(card: QuestCard) {
+  return unique([
+    ...card.aiExtraction.missingFields,
+    !card.organizer || card.organizer === "Campus submitter" ? "organizer" : "",
+    !card.deadline ? "deadline" : "",
+    !card.applyUrl && !card.contactEmail ? "applyUrl or contactEmail" : "",
+    card.location.mode !== "remote" && !card.location.building && !card.location.address
+      ? "location detail"
+      : "",
+    card.reward.label ? "" : "reward"
+  ]);
+}
+
+function finalizeCard(card: QuestCard) {
+  const audited = {
+    ...card,
+    aiExtraction: {
+      ...card.aiExtraction,
+      confidence: Math.max(0, Math.min(1, card.aiExtraction.confidence)),
+      missingFields: missingFieldsFor(card)
+    }
+  };
+  const parsed = questCardSchema.safeParse(audited);
+
+  return parsed.success ? parsed.data : audited;
+}
+
+function fileWarnings(input: ExtractQuestRequest) {
+  return input.file?.truncated
+    ? [
+        `${input.file.name} exceeded the inline extraction limit, so Azure received file metadata but not the full file payload.`
+      ]
+    : [];
+}
+
+function extractionMeta(
+  provider: ExtractQuestResponse["meta"]["provider"],
+  fallbackUsed: boolean,
+  input: ExtractQuestRequest,
+  cards: QuestCard[],
+  warnings: string[]
+): ExtractQuestResponse["meta"] {
+  const confidence =
+    cards.length === 0
+      ? 0
+      : cards.reduce((total, card) => total + card.aiExtraction.confidence, 0) / cards.length;
+
+  return {
+    provider,
+    fallbackUsed,
+    sourceType: input.sourceType,
+    confidence: Number(confidence.toFixed(2)),
+    missingFields: unique(cards.flatMap((card) => card.aiExtraction.missingFields)),
+    warnings: unique([...fileWarnings(input), ...warnings]),
+    cardCount: cards.length
+  };
+}
+
 function titleFrom(text: string, url?: string) {
   const lines = text
     .split(/\r?\n/)
@@ -242,7 +305,9 @@ function summaryFrom(text: string, title: string) {
 }
 
 export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
-  const content = [input.text, input.url, input.file?.name].filter(Boolean).join("\n");
+  const content = [input.text, input.url, input.file?.text, input.file?.name]
+    .filter(Boolean)
+    .join("\n");
   const title = titleFrom(content, input.url);
   const summary = summaryFrom(content, title);
   const hours = detectHours(content);
@@ -252,7 +317,7 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
   const id = `quest-${idFrom(`${title}-${content}`)}`;
 
   return [
-    {
+    finalizeCard({
       id,
       title,
       organizer: "Campus submitter",
@@ -294,7 +359,7 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
       stats: { saves: 0, views: 1, partyRequests: 0 },
       createdAt: now,
       updatedAt: now
-    }
+    })
   ];
 }
 
@@ -343,22 +408,24 @@ function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestC
 
   return cards
     .filter((card): card is Partial<QuestCard> => Boolean(card) && typeof card === "object")
-    .map((card, index) => ({
-      ...localBase,
-      ...card,
-      id: card.id ?? `quest-azure-${index}-${Date.now()}`,
-      source: {
-        ...localBase.source,
-        ...card.source
-      },
-      status: "needs_review",
-      aiExtraction: {
-        confidence: card.aiExtraction?.confidence ?? 0.86,
-        missingFields: card.aiExtraction?.missingFields ?? [],
-        extractedAt: new Date().toISOString(),
-        model: card.aiExtraction?.model ?? "azure-ai"
-      }
-    }));
+    .map((card, index) =>
+      finalizeCard({
+        ...localBase,
+        ...card,
+        id: card.id ?? `quest-azure-${index}-${Date.now()}`,
+        source: {
+          ...localBase.source,
+          ...card.source
+        },
+        status: "needs_review",
+        aiExtraction: {
+          confidence: card.aiExtraction?.confidence ?? 0.86,
+          missingFields: card.aiExtraction?.missingFields ?? [],
+          extractedAt: new Date().toISOString(),
+          model: card.aiExtraction?.model ?? "azure-ai"
+        }
+      })
+    );
 }
 
 function getAzureMode() {
@@ -468,7 +535,15 @@ async function extractWithAzureOpenAI(input: ExtractQuestRequest, endpoint: stri
           content:
             "You extract campus opportunity details into QuestBoard cards. Respond with valid JSON only."
         },
-        { role: "user", content: buildPrompt(input) }
+        {
+          role: "user",
+          content: input.file?.dataUrl?.startsWith("data:image/")
+            ? [
+                { type: "text", text: buildPrompt(input) },
+                { type: "image_url", image_url: { url: input.file.dataUrl } }
+              ]
+            : buildPrompt(input)
+        }
       ],
       temperature: 0.2,
       max_tokens: 1800,
@@ -540,31 +615,30 @@ async function extractWithAzure(input: ExtractQuestRequest) {
 export async function extractQuestCards(
   input: ExtractQuestRequest
 ): Promise<ExtractQuestResponse> {
+  let azureWarning = "";
+
   try {
     const azureCards = await extractWithAzure(input);
     if (azureCards?.length) {
       return {
         cards: azureCards,
-        meta: {
-          provider: "azure",
-          fallbackUsed: false,
-          sourceType: input.sourceType,
-          warnings: []
-        }
+        meta: extractionMeta("azure", false, input, azureCards, [])
       };
     }
   } catch (error) {
-    console.warn(error instanceof Error ? error.message : "Azure extraction failed");
+    azureWarning = error instanceof Error ? error.message : "Azure extraction failed";
+    console.warn(azureWarning);
   }
 
+  const localCards = extractLocally(input);
+
   return {
-    cards: extractLocally(input),
-    meta: {
-      provider: "local",
-      fallbackUsed: true,
-      sourceType: input.sourceType,
-      warnings: ["Azure extraction unavailable; used local parser."]
-    }
+    cards: localCards,
+    meta: extractionMeta("local", true, input, localCards, [
+      azureWarning
+        ? `Azure extraction unavailable (${azureWarning}); used local parser.`
+        : "Azure extraction unavailable; used local parser."
+    ])
   };
 }
 
