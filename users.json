@@ -1,0 +1,2541 @@
+[
+  {
+    "id": "u001",
+    "name": "Aisha Rahman",
+    "role": "Student",
+    "university": "Imperial College London",
+    "location": "London",
+    "year_of_study": 2,
+    "course": "Computer Science BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "Software Engineering",
+      "AI/ML",
+      "FinTech"
+    ],
+    "skills": [
+      "Python",
+      "JavaScript",
+      "React",
+      "Machine Learning",
+      "Git"
+    ],
+    "goals": [
+      "Find a summer internship",
+      "Network with ML engineers",
+      "Build a portfolio project"
+    ],
+    "hobbies": [
+      "Chess",
+      "Hackathons",
+      "Reading sci-fi"
+    ],
+    "work_experience": [
+      {
+        "company": "Imperial College IT Services",
+        "role": "Student Tech Assistant",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": "github.com/aisharahman",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u001",
+    "joined_at": "2025-09-15T10:30:00Z",
+    "discord_handle": "aisharahman#4412"
+  },
+  {
+    "id": "u002",
+    "name": "Ben Cartwright",
+    "role": "Student",
+    "university": "University of Manchester",
+    "location": "Manchester",
+    "year_of_study": 3,
+    "course": "Mechanical Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Aerospace",
+      "Automotive",
+      "Manufacturing"
+    ],
+    "skills": [
+      "MATLAB",
+      "SolidWorks",
+      "AutoCAD",
+      "FEA",
+      "Python"
+    ],
+    "goals": [
+      "Secure a graduate role at Rolls-Royce",
+      "Complete my final year project",
+      "Get chartership advice"
+    ],
+    "hobbies": [
+      "Formula 1",
+      "3D printing",
+      "Cycling"
+    ],
+    "work_experience": [
+      {
+        "company": "Siemens",
+        "role": "Engineering Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 6,
+    "looking_for": [
+      "Graduate role",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u002",
+    "joined_at": "2025-09-20T08:00:00Z",
+    "discord_handle": "bcartwright#7723"
+  },
+  {
+    "id": "u003",
+    "name": "Chloe Davies",
+    "role": "Student",
+    "university": "University of Edinburgh",
+    "location": "Edinburgh",
+    "year_of_study": 1,
+    "course": "Mathematics BSc",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Actuarial Science",
+      "Data Science",
+      "Finance"
+    ],
+    "skills": [
+      "R",
+      "Python",
+      "LaTeX",
+      "Statistics",
+      "Excel"
+    ],
+    "goals": [
+      "Join a maths society",
+      "Find a summer placement",
+      "Improve programming skills"
+    ],
+    "hobbies": [
+      "Piano",
+      "Hiking",
+      "Puzzle solving"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Hack the Burgh 8"
+    ],
+    "confidence_level": 4,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u003",
+    "joined_at": "2025-10-01T11:15:00Z",
+    "discord_handle": "chloe_d#0091"
+  },
+  {
+    "id": "u004",
+    "name": "Daniel Osei",
+    "role": "Student",
+    "university": "UCL",
+    "location": "London",
+    "year_of_study": 4,
+    "course": "Electronic Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Embedded Systems",
+      "Robotics",
+      "Defence"
+    ],
+    "skills": [
+      "C",
+      "C++",
+      "VHDL",
+      "MATLAB",
+      "Altium Designer"
+    ],
+    "goals": [
+      "Graduate with first class honours",
+      "Find a defence sector grad scheme",
+      "Publish final year project"
+    ],
+    "hobbies": [
+      "Robotics club",
+      "Basketball",
+      "Amateur radio"
+    ],
+    "work_experience": [
+      {
+        "company": "BAE Systems",
+        "role": "Engineering Placement",
+        "duration": "12 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Imperial College Careers Fair 2026",
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Graduate role",
+      "Mentorship"
+    ],
+    "github": "github.com/danielosei",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u004",
+    "joined_at": "2025-09-10T09:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u005",
+    "name": "Emily Zhao",
+    "role": "Student",
+    "university": "University of Bristol",
+    "location": "Bristol",
+    "year_of_study": 2,
+    "course": "Physics BSc",
+    "subject_group": "Physics",
+    "career_interests": [
+      "Quantum Computing",
+      "Research",
+      "Photonics"
+    ],
+    "skills": [
+      "Python",
+      "MATLAB",
+      "LaTeX",
+      "NumPy",
+      "Data Analysis"
+    ],
+    "goals": [
+      "Apply for a research internship",
+      "Understand quantum hardware",
+      "Present at a physics conference"
+    ],
+    "hobbies": [
+      "Astronomy",
+      "Running",
+      "Volunteering"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 5,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u005",
+    "joined_at": "2025-09-25T14:00:00Z",
+    "discord_handle": "emilyz_phys#3318"
+  },
+  {
+    "id": "u006",
+    "name": "Finn O'Sullivan",
+    "role": "Student",
+    "university": "University of Nottingham",
+    "location": "Nottingham",
+    "year_of_study": 3,
+    "course": "Computer Science BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "Cybersecurity",
+      "Backend Engineering",
+      "Open Source"
+    ],
+    "skills": [
+      "Python",
+      "Java",
+      "Linux",
+      "Docker",
+      "SQL"
+    ],
+    "goals": [
+      "Land a cybersecurity internship",
+      "Contribute to open source projects",
+      "Get AWS certified"
+    ],
+    "hobbies": [
+      "CTF competitions",
+      "Gaming",
+      "Coffee tasting"
+    ],
+    "work_experience": [
+      {
+        "company": "Boots",
+        "role": "IT Support Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Hack the Burgh 8",
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": "github.com/finnosullivan",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u006",
+    "joined_at": "2025-09-18T10:00:00Z",
+    "discord_handle": "finn_sec#5501"
+  },
+  {
+    "id": "u007",
+    "name": "Grace Adeyemi",
+    "role": "Student",
+    "university": "University of Birmingham",
+    "location": "Birmingham",
+    "year_of_study": 1,
+    "course": "Biochemistry BSc",
+    "subject_group": "Biology",
+    "career_interests": [
+      "Biomedical Research",
+      "Pharmaceuticals",
+      "Science Communication"
+    ],
+    "skills": [
+      "PCR",
+      "Cell Culture",
+      "Microscopy",
+      "R",
+      "Data Analysis"
+    ],
+    "goals": [
+      "Join a research lab",
+      "Attend a biotech careers fair",
+      "Learn bioinformatics"
+    ],
+    "hobbies": [
+      "Netball",
+      "Journaling",
+      "Cooking"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 3,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u007",
+    "joined_at": "2025-10-05T13:30:00Z",
+    "discord_handle": "graceadeyemi#8812"
+  },
+  {
+    "id": "u008",
+    "name": "Harry Lewis",
+    "role": "Student",
+    "university": "University of Southampton",
+    "location": "Southampton",
+    "year_of_study": 4,
+    "course": "Aerospace Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Aerospace",
+      "Defence",
+      "Systems Engineering"
+    ],
+    "skills": [
+      "MATLAB",
+      "Python",
+      "SolidWorks",
+      "CFD",
+      "ANSYS"
+    ],
+    "goals": [
+      "Apply to Airbus graduate scheme",
+      "Finish dissertation on drone aerodynamics",
+      "Network with aerospace engineers"
+    ],
+    "hobbies": [
+      "Gliding club",
+      "Photography",
+      "Squash"
+    ],
+    "work_experience": [
+      {
+        "company": "Airbus",
+        "role": "Summer Intern",
+        "duration": "3 months"
+      },
+      {
+        "company": "QinetiQ",
+        "role": "Engineering Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Graduate role"
+    ],
+    "github": "github.com/harrylewis-eng",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u008",
+    "joined_at": "2025-09-08T09:30:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u009",
+    "name": "Imogen Clarke",
+    "role": "Student",
+    "university": "University of Leeds",
+    "location": "Leeds",
+    "year_of_study": 2,
+    "course": "Chemistry BSc",
+    "subject_group": "Chemistry",
+    "career_interests": [
+      "Pharmaceutical Chemistry",
+      "Green Chemistry",
+      "Formulation Science"
+    ],
+    "skills": [
+      "NMR Spectroscopy",
+      "HPLC",
+      "Python",
+      "ChemDraw",
+      "Lab Safety"
+    ],
+    "goals": [
+      "Get a summer industrial placement",
+      "Develop computational chemistry skills",
+      "Network with pharma companies"
+    ],
+    "hobbies": [
+      "Pottery",
+      "Yoga",
+      "Book club"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 5,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u009",
+    "joined_at": "2025-09-22T11:00:00Z",
+    "discord_handle": "imogenclarke#2234"
+  },
+  {
+    "id": "u010",
+    "name": "James Patel",
+    "role": "Student",
+    "university": "University of Sheffield",
+    "location": "Sheffield",
+    "year_of_study": 3,
+    "course": "Data Science BSc",
+    "subject_group": "Data Science",
+    "career_interests": [
+      "Data Engineering",
+      "Machine Learning",
+      "Consulting"
+    ],
+    "skills": [
+      "Python",
+      "SQL",
+      "Tableau",
+      "Spark",
+      "scikit-learn"
+    ],
+    "goals": [
+      "Build an end-to-end ML pipeline project",
+      "Get a data internship",
+      "Earn a Tableau certification"
+    ],
+    "hobbies": [
+      "Football",
+      "Podcasts",
+      "Gym"
+    ],
+    "work_experience": [
+      {
+        "company": "HSBC",
+        "role": "Data Analyst Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Internship",
+      "Graduate role"
+    ],
+    "github": "github.com/jamespatel-ds",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u010",
+    "joined_at": "2025-09-14T16:00:00Z",
+    "discord_handle": "jamespatel#3390"
+  },
+  {
+    "id": "u011",
+    "name": "Katie Nguyen",
+    "role": "Student",
+    "university": "King's College London",
+    "location": "London",
+    "year_of_study": 1,
+    "course": "Biomedical Science BSc",
+    "subject_group": "Medicine",
+    "career_interests": [
+      "Clinical Research",
+      "Diagnostics",
+      "Healthcare Tech"
+    ],
+    "skills": [
+      "Data Analysis",
+      "R",
+      "Microsoft Office",
+      "Lab Techniques",
+      "Statistics"
+    ],
+    "goals": [
+      "Shadow a clinical researcher",
+      "Improve statistics skills",
+      "Find a healthcare-tech placement"
+    ],
+    "hobbies": [
+      "Dance",
+      "Volunteering at NHS",
+      "Baking"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 3,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u011",
+    "joined_at": "2025-10-03T12:00:00Z",
+    "discord_handle": "katie_nguyen#6671"
+  },
+  {
+    "id": "u012",
+    "name": "Liam Foster",
+    "role": "Student",
+    "university": "University of Warwick",
+    "location": "Coventry",
+    "year_of_study": 4,
+    "course": "Computer Science MEng",
+    "subject_group": "CS",
+    "career_interests": [
+      "Software Engineering",
+      "Cloud Computing",
+      "DevOps"
+    ],
+    "skills": [
+      "Python",
+      "Go",
+      "Kubernetes",
+      "Terraform",
+      "AWS"
+    ],
+    "goals": [
+      "Join a cloud engineering team",
+      "Finish final year project on microservices",
+      "Get AWS Solutions Architect cert"
+    ],
+    "hobbies": [
+      "Hiking",
+      "Board games",
+      "Homelab tinkering"
+    ],
+    "work_experience": [
+      {
+        "company": "Amazon",
+        "role": "SDE Intern",
+        "duration": "12 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Graduate role"
+    ],
+    "github": "github.com/liamfoster",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u012",
+    "joined_at": "2025-09-05T08:30:00Z",
+    "discord_handle": "liamfoster#1122"
+  },
+  {
+    "id": "u013",
+    "name": "Maya Singh",
+    "role": "Student",
+    "university": "University of Cambridge",
+    "location": "Cambridge",
+    "year_of_study": 2,
+    "course": "Natural Sciences (Physics) BA",
+    "subject_group": "Physics",
+    "career_interests": [
+      "Research",
+      "Quantum Computing",
+      "Science Policy"
+    ],
+    "skills": [
+      "Python",
+      "MATLAB",
+      "LaTeX",
+      "Statistical Mechanics",
+      "Linux"
+    ],
+    "goals": [
+      "Apply for a Part III offer",
+      "Present research at a conference",
+      "Network with quantum computing startups"
+    ],
+    "hobbies": [
+      "Rowing",
+      "Classical music",
+      "Debating"
+    ],
+    "work_experience": [
+      {
+        "company": "Cavendish Laboratory",
+        "role": "Undergraduate Research Assistant",
+        "duration": "8 weeks"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Research placement",
+      "Networking"
+    ],
+    "github": "github.com/mayasingh-phys",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u013",
+    "joined_at": "2025-09-12T10:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u014",
+    "name": "Nathan Brooks",
+    "role": "Student",
+    "university": "University of Oxford",
+    "location": "Oxford",
+    "year_of_study": 3,
+    "course": "Mathematics BA",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Quantitative Finance",
+      "Data Science",
+      "Machine Learning"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "C++",
+      "LaTeX",
+      "Statistics"
+    ],
+    "goals": [
+      "Apply to top quant firms",
+      "Improve C++ speed-coding skills",
+      "Attend a quant finance event"
+    ],
+    "hobbies": [
+      "Chess",
+      "Cycling",
+      "Philosophy reading"
+    ],
+    "work_experience": [
+      {
+        "company": "Jane Street",
+        "role": "Trading Intern",
+        "duration": "6 weeks"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Graduate role",
+      "Networking"
+    ],
+    "github": "github.com/nbrooks-quant",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u014",
+    "joined_at": "2025-09-09T07:45:00Z",
+    "discord_handle": "nbrooks#9900"
+  },
+  {
+    "id": "u015",
+    "name": "Olivia Turner",
+    "role": "Student",
+    "university": "UCL",
+    "location": "London",
+    "year_of_study": 1,
+    "course": "Computer Science BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "Frontend Engineering",
+      "UX/UI Design",
+      "FinTech"
+    ],
+    "skills": [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "Figma",
+      "React"
+    ],
+    "goals": [
+      "Build my first full-stack app",
+      "Join the UCL Tech Society",
+      "Find a summer internship"
+    ],
+    "hobbies": [
+      "Digital art",
+      "Swimming",
+      "Podcasts"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 4,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": "github.com/oliviaturner",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u015",
+    "joined_at": "2025-10-01T09:30:00Z",
+    "discord_handle": "oliviaturner#2255"
+  },
+  {
+    "id": "u016",
+    "name": "Patrick Mensah",
+    "role": "Student",
+    "university": "University of Bristol",
+    "location": "Bristol",
+    "year_of_study": 3,
+    "course": "Chemical Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Process Engineering",
+      "Sustainability",
+      "Oil & Gas"
+    ],
+    "skills": [
+      "Aspen Plus",
+      "Python",
+      "MATLAB",
+      "Mass/Energy Balances",
+      "AutoCAD"
+    ],
+    "goals": [
+      "Complete industrial project placement",
+      "Network with sustainability engineers",
+      "Learn about carbon capture tech"
+    ],
+    "hobbies": [
+      "Football",
+      "DIY electronics",
+      "Sustainability blogging"
+    ],
+    "work_experience": [
+      {
+        "company": "bp",
+        "role": "Process Engineering Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day"
+    ],
+    "confidence_level": 6,
+    "looking_for": [
+      "Graduate role",
+      "Internship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u016",
+    "joined_at": "2025-09-17T14:30:00Z",
+    "discord_handle": "patrickmensah#6634"
+  },
+  {
+    "id": "u017",
+    "name": "Rachel Kim",
+    "role": "Student",
+    "university": "University of Edinburgh",
+    "location": "Edinburgh",
+    "year_of_study": 2,
+    "course": "Artificial Intelligence BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "AI/ML",
+      "Natural Language Processing",
+      "Research"
+    ],
+    "skills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow",
+      "NLP",
+      "Git"
+    ],
+    "goals": [
+      "Publish a research paper",
+      "Attend NeurIPS",
+      "Find an AI research internship"
+    ],
+    "hobbies": [
+      "Hackathons",
+      "Language learning",
+      "Hiking"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Hack the Burgh 8",
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 6,
+    "looking_for": [
+      "Internship",
+      "Research placement"
+    ],
+    "github": "github.com/rachelkim-ai",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u017",
+    "joined_at": "2025-09-21T15:00:00Z",
+    "discord_handle": "rachelkim#4477"
+  },
+  {
+    "id": "u018",
+    "name": "Sam Elliot",
+    "role": "Student",
+    "university": "University of Manchester",
+    "location": "Manchester",
+    "year_of_study": 1,
+    "course": "Mathematics and Statistics BSc",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Statistics",
+      "Biostatistics",
+      "Data Science"
+    ],
+    "skills": [
+      "R",
+      "Python",
+      "Excel",
+      "Statistics",
+      "LaTeX"
+    ],
+    "goals": [
+      "Find a statistics society",
+      "Learn SQL",
+      "Get a placement year"
+    ],
+    "hobbies": [
+      "Badminton",
+      "Blogging",
+      "Cooking"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 3,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u018",
+    "joined_at": "2025-10-02T10:00:00Z",
+    "discord_handle": "sam_elliot#8812"
+  },
+  {
+    "id": "u019",
+    "name": "Tanya Moreau",
+    "role": "Student",
+    "university": "University of Nottingham",
+    "location": "Nottingham",
+    "year_of_study": 4,
+    "course": "Biomedical Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Medical Devices",
+      "Tissue Engineering",
+      "Clinical Engineering"
+    ],
+    "skills": [
+      "MATLAB",
+      "SolidWorks",
+      "Python",
+      "Biomechanics",
+      "3D Printing"
+    ],
+    "goals": [
+      "Apply for NHS clinical engineering scheme",
+      "Finish MEng thesis",
+      "Exhibit at a medtech conference"
+    ],
+    "hobbies": [
+      "Running",
+      "Photography",
+      "Volunteering"
+    ],
+    "work_experience": [
+      {
+        "company": "Medtronic",
+        "role": "R&D Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Graduate role"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u019",
+    "joined_at": "2025-09-11T11:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u020",
+    "name": "Usman Tariq",
+    "role": "Student",
+    "university": "University of Leeds",
+    "location": "Leeds",
+    "year_of_study": 2,
+    "course": "Data Science and Artificial Intelligence BSc",
+    "subject_group": "Data Science",
+    "career_interests": [
+      "Data Science",
+      "AI/ML",
+      "FinTech"
+    ],
+    "skills": [
+      "Python",
+      "SQL",
+      "scikit-learn",
+      "Pandas",
+      "Data Visualisation"
+    ],
+    "goals": [
+      "Complete a Kaggle competition",
+      "Build a recommendation system",
+      "Find a data science placement"
+    ],
+    "hobbies": [
+      "Gym",
+      "Chess",
+      "Video games"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 5,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": "github.com/usmantariq",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u020",
+    "joined_at": "2025-09-23T09:00:00Z",
+    "discord_handle": "usmantariq#3301"
+  },
+  {
+    "id": "u021",
+    "name": "Victoria Hughes",
+    "role": "Student",
+    "university": "University of Birmingham",
+    "location": "Birmingham",
+    "year_of_study": 1,
+    "course": "Physics BSc",
+    "subject_group": "Physics",
+    "career_interests": [
+      "Nuclear Energy",
+      "Instrumentation",
+      "Research"
+    ],
+    "skills": [
+      "Python",
+      "LaTeX",
+      "MATLAB",
+      "Data Analysis",
+      "Statistics"
+    ],
+    "goals": [
+      "Get involved in a nuclear society",
+      "Apply for UKAEA placement",
+      "Improve coding skills"
+    ],
+    "hobbies": [
+      "Rock climbing",
+      "Astronomy",
+      "Creative writing"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 4,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u021",
+    "joined_at": "2025-10-04T13:00:00Z",
+    "discord_handle": "victoriahughes#5521"
+  },
+  {
+    "id": "u022",
+    "name": "Will Donovan",
+    "role": "Student",
+    "university": "University of Warwick",
+    "location": "Coventry",
+    "year_of_study": 3,
+    "course": "Computer and Data Science BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "Data Engineering",
+      "Software Engineering",
+      "Cloud Computing"
+    ],
+    "skills": [
+      "Python",
+      "SQL",
+      "Apache Spark",
+      "AWS",
+      "Docker"
+    ],
+    "goals": [
+      "Land a data engineering internship",
+      "Contribute to an open source project",
+      "Learn Rust"
+    ],
+    "hobbies": [
+      "Gaming",
+      "Gym",
+      "Reading tech blogs"
+    ],
+    "work_experience": [
+      {
+        "company": "Jaguar Land Rover",
+        "role": "Data Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon",
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Internship",
+      "Graduate role"
+    ],
+    "github": "github.com/willdonovan",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u022",
+    "joined_at": "2025-09-16T10:30:00Z",
+    "discord_handle": "willdonovan#9987"
+  },
+  {
+    "id": "u023",
+    "name": "Xin Li",
+    "role": "Student",
+    "university": "University of Sheffield",
+    "location": "Sheffield",
+    "year_of_study": 4,
+    "course": "Civil Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Structural Engineering",
+      "Infrastructure",
+      "Sustainability"
+    ],
+    "skills": [
+      "AutoCAD",
+      "Revit",
+      "MATLAB",
+      "Python",
+      "Structural Analysis"
+    ],
+    "goals": [
+      "Apply for Arup graduate scheme",
+      "Complete dissertation on sustainable bridges",
+      "Get IStructE membership"
+    ],
+    "hobbies": [
+      "Architecture tours",
+      "Badminton",
+      "Cooking"
+    ],
+    "work_experience": [
+      {
+        "company": "Arup",
+        "role": "Civil Engineering Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Graduate role"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u023",
+    "joined_at": "2025-09-13T08:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u024",
+    "name": "Yasmine El-Amin",
+    "role": "Student",
+    "university": "King's College London",
+    "location": "London",
+    "year_of_study": 3,
+    "course": "Pharmaceutical Chemistry BSc",
+    "subject_group": "Chemistry",
+    "career_interests": [
+      "Drug Discovery",
+      "Medicinal Chemistry",
+      "Biotechnology"
+    ],
+    "skills": [
+      "Organic Synthesis",
+      "NMR",
+      "Mass Spectrometry",
+      "Python",
+      "ChemDraw"
+    ],
+    "goals": [
+      "Apply for pharma R&D internship",
+      "Learn computational drug design",
+      "Network with AstraZeneca researchers"
+    ],
+    "hobbies": [
+      "Painting",
+      "Tennis",
+      "Science podcasts"
+    ],
+    "work_experience": [
+      {
+        "company": "GSK",
+        "role": "Lab Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 6,
+    "looking_for": [
+      "Internship",
+      "Graduate role"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u024",
+    "joined_at": "2025-09-19T11:30:00Z",
+    "discord_handle": "yasmine_ea#1143"
+  },
+  {
+    "id": "u025",
+    "name": "Zach Brennan",
+    "role": "Student",
+    "university": "Imperial College London",
+    "location": "London",
+    "year_of_study": 2,
+    "course": "Mathematics BSc",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Machine Learning",
+      "Finance",
+      "Actuarial Science"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "LaTeX",
+      "Probability Theory",
+      "Optimisation"
+    ],
+    "goals": [
+      "Apply for summer research programme",
+      "Learn deep learning fundamentals",
+      "Join the Imperial Maths Society"
+    ],
+    "hobbies": [
+      "Rock climbing",
+      "Chess",
+      "Gaming"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 6,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u025",
+    "joined_at": "2025-09-24T15:00:00Z",
+    "discord_handle": "zachbrennan#4408"
+  },
+  {
+    "id": "u026",
+    "name": "Amara Diallo",
+    "role": "Student",
+    "university": "University of Bristol",
+    "location": "Bristol",
+    "year_of_study": 1,
+    "course": "Computer Science BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "Software Engineering",
+      "FinTech",
+      "Entrepreneurship"
+    ],
+    "skills": [
+      "Python",
+      "JavaScript",
+      "HTML/CSS",
+      "Git",
+      "Node.js"
+    ],
+    "goals": [
+      "Build a startup idea",
+      "Find a tech society",
+      "Learn mobile development"
+    ],
+    "hobbies": [
+      "Entrepreneurship podcasts",
+      "Tennis",
+      "Photography"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 5,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": "github.com/amaradiallo",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u026",
+    "joined_at": "2025-10-06T09:00:00Z",
+    "discord_handle": "amaradiallo#7753"
+  },
+  {
+    "id": "u027",
+    "name": "Brendan Walsh",
+    "role": "Student",
+    "university": "University of Edinburgh",
+    "location": "Edinburgh",
+    "year_of_study": 2,
+    "course": "Chemistry BSc",
+    "subject_group": "Chemistry",
+    "career_interests": [
+      "Environmental Chemistry",
+      "Green Chemistry",
+      "Research"
+    ],
+    "skills": [
+      "GC-MS",
+      "Python",
+      "Lab Safety",
+      "ChemDraw",
+      "Data Analysis"
+    ],
+    "goals": [
+      "Find an environmental chemistry placement",
+      "Learn computational chemistry",
+      "Join a green chemistry society"
+    ],
+    "hobbies": [
+      "Hillwalking",
+      "Guitar",
+      "Cycling"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Hack the Burgh 8"
+    ],
+    "confidence_level": 4,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u027",
+    "joined_at": "2025-09-26T12:00:00Z",
+    "discord_handle": "brendanwalsh#2291"
+  },
+  {
+    "id": "u028",
+    "name": "Clara Steenson",
+    "role": "Student",
+    "university": "UCL",
+    "location": "London",
+    "year_of_study": 3,
+    "course": "Statistics BSc",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Biostatistics",
+      "Data Science",
+      "Actuarial Science"
+    ],
+    "skills": [
+      "R",
+      "Python",
+      "SQL",
+      "Statistical Modelling",
+      "Excel"
+    ],
+    "goals": [
+      "Apply for a biostatistics placement",
+      "Earn actuarial CT exam",
+      "Network with insurance industry professionals"
+    ],
+    "hobbies": [
+      "Rowing",
+      "Baking",
+      "Cinema"
+    ],
+    "work_experience": [
+      {
+        "company": "Aviva",
+        "role": "Actuarial Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Graduate role",
+      "Networking"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u028",
+    "joined_at": "2025-09-15T14:00:00Z",
+    "discord_handle": "clarasteenson#6612"
+  },
+  {
+    "id": "u029",
+    "name": "Dev Kapoor",
+    "role": "Student",
+    "university": "University of Cambridge",
+    "location": "Cambridge",
+    "year_of_study": 4,
+    "course": "Computer Science BA/MEng",
+    "subject_group": "CS",
+    "career_interests": [
+      "Systems Programming",
+      "Compilers",
+      "Research"
+    ],
+    "skills": [
+      "C++",
+      "Rust",
+      "OCaml",
+      "Python",
+      "Linux"
+    ],
+    "goals": [
+      "Apply for PhD",
+      "Publish compiler research paper",
+      "Intern at a systems-focused company"
+    ],
+    "hobbies": [
+      "Open source projects",
+      "Rock climbing",
+      "Chess"
+    ],
+    "work_experience": [
+      {
+        "company": "Jane Street",
+        "role": "Software Engineering Intern",
+        "duration": "12 weeks"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Research placement",
+      "Graduate role"
+    ],
+    "github": "github.com/devkapoor",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u029",
+    "joined_at": "2025-09-07T08:00:00Z",
+    "discord_handle": "devkapoor#0011"
+  },
+  {
+    "id": "u030",
+    "name": "Elena Vasquez",
+    "role": "Student",
+    "university": "University of Southampton",
+    "location": "Southampton",
+    "year_of_study": 1,
+    "course": "Biology BSc",
+    "subject_group": "Biology",
+    "career_interests": [
+      "Marine Biology",
+      "Conservation",
+      "Environmental Science"
+    ],
+    "skills": [
+      "Field Sampling",
+      "R",
+      "Microscopy",
+      "Data Analysis",
+      "GIS Basics"
+    ],
+    "goals": [
+      "Join a marine conservation project",
+      "Learn bioinformatics",
+      "Find a field research placement"
+    ],
+    "hobbies": [
+      "Scuba diving",
+      "Photography",
+      "Environmental activism"
+    ],
+    "work_experience": [],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 4,
+    "looking_for": [
+      "Internship",
+      "Mentorship"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u030",
+    "joined_at": "2025-10-07T10:00:00Z",
+    "discord_handle": "elenavasquez#8823"
+  },
+  {
+    "id": "u031",
+    "name": "Femi Adebayo",
+    "role": "Student",
+    "university": "University of Manchester",
+    "location": "Manchester",
+    "year_of_study": "Masters",
+    "course": "MSc Advanced Computer Science",
+    "subject_group": "CS",
+    "career_interests": [
+      "AI/ML",
+      "Software Engineering",
+      "FinTech"
+    ],
+    "skills": [
+      "Python",
+      "PyTorch",
+      "TensorFlow",
+      "SQL",
+      "Git",
+      "REST APIs"
+    ],
+    "goals": [
+      "Complete MSc dissertation on LLMs",
+      "Land an AI engineer role",
+      "Network with ML researchers"
+    ],
+    "hobbies": [
+      "Hackathons",
+      "Football",
+      "Afrobeats music"
+    ],
+    "work_experience": [
+      {
+        "company": "Andela",
+        "role": "Software Engineer",
+        "duration": "2 years"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour",
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Graduate role",
+      "Networking"
+    ],
+    "github": "github.com/femiadebayo",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u031",
+    "joined_at": "2025-09-03T09:00:00Z",
+    "discord_handle": "femiadebayo#3345"
+  },
+  {
+    "id": "u032",
+    "name": "Georgia Atkinson",
+    "role": "Student",
+    "university": "University of Oxford",
+    "location": "Oxford",
+    "year_of_study": "Masters",
+    "course": "MSc Statistical Science",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Quantitative Research",
+      "Data Science",
+      "Finance"
+    ],
+    "skills": [
+      "R",
+      "Python",
+      "Stan",
+      "Bayesian Statistics",
+      "Machine Learning"
+    ],
+    "goals": [
+      "Apply for PhD in statistics",
+      "Publish thesis research",
+      "Attend a Bayesian statistics workshop"
+    ],
+    "hobbies": [
+      "Running",
+      "Wine tasting",
+      "Knitting"
+    ],
+    "work_experience": [
+      {
+        "company": "Office for National Statistics",
+        "role": "Statistician Graduate",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Research placement",
+      "Networking"
+    ],
+    "github": "github.com/georgiaatkinson",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u032",
+    "joined_at": "2025-09-04T10:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u033",
+    "name": "Hamish MacGregor",
+    "role": "Student",
+    "university": "University of Edinburgh",
+    "location": "Edinburgh",
+    "year_of_study": "Masters",
+    "course": "MSc Robotics and Autonomous Systems",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Robotics",
+      "Autonomous Vehicles",
+      "AI/ML"
+    ],
+    "skills": [
+      "ROS",
+      "Python",
+      "C++",
+      "Computer Vision",
+      "SLAM"
+    ],
+    "goals": [
+      "Complete robotics dissertation",
+      "Land a role in AV industry",
+      "Contribute to open-source robotics"
+    ],
+    "hobbies": [
+      "Mountain biking",
+      "Homelab",
+      "Scottish history"
+    ],
+    "work_experience": [
+      {
+        "company": "FiveAI",
+        "role": "Robotics Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Hack the Burgh 8",
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Graduate role"
+    ],
+    "github": "github.com/hamishmacgregor",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u033",
+    "joined_at": "2025-09-02T11:00:00Z",
+    "discord_handle": "hamishmac#7712"
+  },
+  {
+    "id": "u034",
+    "name": "Indira Venkat",
+    "role": "Student",
+    "university": "Imperial College London",
+    "location": "London",
+    "year_of_study": "Masters",
+    "course": "MSc Bioinformatics",
+    "subject_group": "Biology",
+    "career_interests": [
+      "Bioinformatics",
+      "Genomics",
+      "Pharmaceutical Research"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "Biopython",
+      "NGS Analysis",
+      "Unix/Linux"
+    ],
+    "goals": [
+      "Apply for PhD in computational biology",
+      "Publish bioinformatics pipeline",
+      "Network with biotech companies"
+    ],
+    "hobbies": [
+      "Classical dance (Bharatanatyam)",
+      "Reading",
+      "Volunteering"
+    ],
+    "work_experience": [
+      {
+        "company": "Wellcome Sanger Institute",
+        "role": "Bioinformatics Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Research placement",
+      "Networking"
+    ],
+    "github": "github.com/indiravenkat",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u034",
+    "joined_at": "2025-09-06T10:30:00Z",
+    "discord_handle": "indiravenkat#5500"
+  },
+  {
+    "id": "u035",
+    "name": "Jordan West",
+    "role": "Student",
+    "university": "University of Bristol",
+    "location": "Bristol",
+    "year_of_study": "Masters",
+    "course": "MSc Data Science",
+    "subject_group": "Data Science",
+    "career_interests": [
+      "Machine Learning Engineering",
+      "Data Engineering",
+      "Consulting"
+    ],
+    "skills": [
+      "Python",
+      "SQL",
+      "dbt",
+      "Airflow",
+      "Spark",
+      "Machine Learning"
+    ],
+    "goals": [
+      "Finish dissertation on time-series forecasting",
+      "Get a data engineering job offer",
+      "Build a personal data project"
+    ],
+    "hobbies": [
+      "Surfing",
+      "Competitive coding",
+      "Cooking"
+    ],
+    "work_experience": [
+      {
+        "company": "Deloitte",
+        "role": "Data Analyst",
+        "duration": "1 year"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Graduate role",
+      "Networking"
+    ],
+    "github": "github.com/jordanwest-ds",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u035",
+    "joined_at": "2025-09-01T09:00:00Z",
+    "discord_handle": "jordanwest#1190"
+  },
+  {
+    "id": "u036",
+    "name": "Kai Yamamoto",
+    "role": "Student",
+    "university": "University of Manchester",
+    "location": "Manchester",
+    "year_of_study": "Masters",
+    "course": "MSc Physics",
+    "subject_group": "Physics",
+    "career_interests": [
+      "Particle Physics",
+      "Research",
+      "Quantum Computing"
+    ],
+    "skills": [
+      "Python",
+      "ROOT (CERN)",
+      "MATLAB",
+      "LaTeX",
+      "C++"
+    ],
+    "goals": [
+      "Apply for CERN studentship",
+      "Present at a physics symposium",
+      "Network with quantum tech startups"
+    ],
+    "hobbies": [
+      "Astronomy",
+      "Go (board game)",
+      "Cycling"
+    ],
+    "work_experience": [
+      {
+        "company": "CERN",
+        "role": "Summer Studentship",
+        "duration": "2 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Research placement",
+      "PhD"
+    ],
+    "github": "github.com/kaiyamamoto",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u036",
+    "joined_at": "2025-09-10T14:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u037",
+    "name": "Laura Bennett",
+    "role": "Student",
+    "university": "University of Leeds",
+    "location": "Leeds",
+    "year_of_study": "Masters",
+    "course": "MSc Medicinal Chemistry",
+    "subject_group": "Chemistry",
+    "career_interests": [
+      "Drug Discovery",
+      "Formulation Science",
+      "Patent Law"
+    ],
+    "skills": [
+      "Organic Synthesis",
+      "Mass Spectrometry",
+      "NMR",
+      "ChemDraw",
+      "Python"
+    ],
+    "goals": [
+      "Publish MSc thesis research",
+      "Apply for pharma PhD",
+      "Attend RSC national meeting"
+    ],
+    "hobbies": [
+      "Fell running",
+      "Pottery",
+      "Photography"
+    ],
+    "work_experience": [
+      {
+        "company": "AstraZeneca",
+        "role": "Chemistry Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [],
+    "confidence_level": 7,
+    "looking_for": [
+      "PhD",
+      "Networking"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u037",
+    "joined_at": "2025-09-08T11:00:00Z",
+    "discord_handle": "laurabennett#4432"
+  },
+  {
+    "id": "u038",
+    "name": "Marcus Reynolds",
+    "role": "Student",
+    "university": "University of Southampton",
+    "location": "Southampton",
+    "year_of_study": "Masters",
+    "course": "MSc Electrical Power Engineering",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Renewable Energy",
+      "Power Systems",
+      "Smart Grids"
+    ],
+    "skills": [
+      "MATLAB",
+      "Simulink",
+      "Python",
+      "Power Systems Analysis",
+      "AutoCAD Electrical"
+    ],
+    "goals": [
+      "Finish MSc dissertation on offshore wind",
+      "Apply to National Grid graduate scheme",
+      "Network with energy sector engineers"
+    ],
+    "hobbies": [
+      "Sailing",
+      "DIY energy projects",
+      "Surfing"
+    ],
+    "work_experience": [
+      {
+        "company": "National Grid",
+        "role": "Engineering Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Graduate role"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u038",
+    "joined_at": "2025-09-05T10:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u039",
+    "name": "Nora Eriksen",
+    "role": "Student",
+    "university": "University of Cambridge",
+    "location": "Cambridge",
+    "year_of_study": "PhD",
+    "course": "PhD Computational Biology",
+    "subject_group": "Biology",
+    "career_interests": [
+      "Computational Biology",
+      "Genomics",
+      "Biotech Startups"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "Snakemake",
+      "NGS Analysis",
+      "Machine Learning",
+      "Linux"
+    ],
+    "goals": [
+      "Publish first PhD paper",
+      "Attend ISMB conference",
+      "Explore biotech startup ecosystem"
+    ],
+    "hobbies": [
+      "Long-distance running",
+      "Science communication",
+      "Knitting"
+    ],
+    "work_experience": [
+      {
+        "company": "Illumina",
+        "role": "Bioinformatics Intern",
+        "duration": "3 months"
+      },
+      {
+        "company": "Wellcome Trust",
+        "role": "Research Intern",
+        "duration": "2 months"
+      }
+    ],
+    "education": "PhD",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/noraeriksen",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u039",
+    "joined_at": "2025-08-20T09:00:00Z",
+    "discord_handle": "noraeriksen#2278"
+  },
+  {
+    "id": "u040",
+    "name": "Owen Price",
+    "role": "Student",
+    "university": "Imperial College London",
+    "location": "London",
+    "year_of_study": "PhD",
+    "course": "PhD Machine Learning",
+    "subject_group": "CS",
+    "career_interests": [
+      "AI Research",
+      "Deep Learning",
+      "Reinforcement Learning"
+    ],
+    "skills": [
+      "Python",
+      "PyTorch",
+      "JAX",
+      "CUDA",
+      "C++",
+      "Linux"
+    ],
+    "goals": [
+      "Publish at NeurIPS or ICML",
+      "Collaborate with DeepMind",
+      "Spin out an AI startup"
+    ],
+    "hobbies": [
+      "Competitive chess",
+      "Cycling",
+      "Science communication"
+    ],
+    "work_experience": [
+      {
+        "company": "DeepMind",
+        "role": "Research Intern",
+        "duration": "6 months"
+      },
+      {
+        "company": "Meta AI",
+        "role": "Research Engineer Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "PhD",
+    "events_attending": [
+      "Google DeepMind Campus Tour",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Networking",
+      "Research placement"
+    ],
+    "github": "github.com/owenprice",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u040",
+    "joined_at": "2025-08-15T10:00:00Z",
+    "discord_handle": "owenprice#8801"
+  },
+  {
+    "id": "u041",
+    "name": "Priya Sharma",
+    "role": "Student",
+    "university": "University of Nottingham",
+    "location": "Nottingham",
+    "year_of_study": "PhD",
+    "course": "PhD Computational Chemistry",
+    "subject_group": "Chemistry",
+    "career_interests": [
+      "Computational Drug Design",
+      "Cheminformatics",
+      "Research"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "Gaussian",
+      "RDKit",
+      "Molecular Dynamics",
+      "Linux"
+    ],
+    "goals": [
+      "Publish PhD chapter as journal article",
+      "Attend ACS national meeting",
+      "Apply for postdoc positions"
+    ],
+    "hobbies": [
+      "Bhangra dancing",
+      "Cooking",
+      "Running"
+    ],
+    "work_experience": [
+      {
+        "company": "Novartis",
+        "role": "Computational Chemistry Intern",
+        "duration": "6 months"
+      }
+    ],
+    "education": "PhD",
+    "events_attending": [],
+    "confidence_level": 7,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/priyasharma-chem",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u041",
+    "joined_at": "2025-08-25T11:00:00Z",
+    "discord_handle": "priyasharma#1145"
+  },
+  {
+    "id": "u042",
+    "name": "Quinn Murphy",
+    "role": "Student",
+    "university": "University of Edinburgh",
+    "location": "Edinburgh",
+    "year_of_study": "PhD",
+    "course": "PhD Data Science",
+    "subject_group": "Data Science",
+    "career_interests": [
+      "Causal Inference",
+      "Health Data Science",
+      "AI Ethics"
+    ],
+    "skills": [
+      "Python",
+      "R",
+      "Causal Inference",
+      "Statistical Modelling",
+      "SQL",
+      "PyTorch"
+    ],
+    "goals": [
+      "Publish on causal ML methods",
+      "Teach a data science workshop",
+      "Engage with policy organisations"
+    ],
+    "hobbies": [
+      "Hillwalking",
+      "Podcast hosting",
+      "Volunteering"
+    ],
+    "work_experience": [
+      {
+        "company": "NHS Scotland",
+        "role": "Data Science Researcher",
+        "duration": "6 months"
+      }
+    ],
+    "education": "PhD",
+    "events_attending": [
+      "Hack the Burgh 8"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/quinnmurphy",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u042",
+    "joined_at": "2025-08-18T09:30:00Z",
+    "discord_handle": "quinnmurphy#3367"
+  },
+  {
+    "id": "u043",
+    "name": "Rosa Ferretti",
+    "role": "Student",
+    "university": "University of Bristol",
+    "location": "Bristol",
+    "year_of_study": "PhD",
+    "course": "PhD Physics",
+    "subject_group": "Physics",
+    "career_interests": [
+      "Photonics",
+      "Quantum Technology",
+      "Research"
+    ],
+    "skills": [
+      "Python",
+      "MATLAB",
+      "LabVIEW",
+      "Optics",
+      "LaTeX",
+      "Linux"
+    ],
+    "goals": [
+      "Publish two PhD papers",
+      "Present at IOP conference",
+      "Explore quantum tech startups"
+    ],
+    "hobbies": [
+      "Oil painting",
+      "Cycling",
+      "Italian cinema"
+    ],
+    "work_experience": [
+      {
+        "company": "National Physical Laboratory",
+        "role": "Research Placement",
+        "duration": "6 months"
+      }
+    ],
+    "education": "PhD",
+    "events_attending": [
+      "Google DeepMind Campus Tour"
+    ],
+    "confidence_level": 8,
+    "looking_for": [
+      "Networking",
+      "Research placement"
+    ],
+    "github": "github.com/rosaferretti",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u043",
+    "joined_at": "2025-08-22T10:00:00Z",
+    "discord_handle": "rosaferretti#9921"
+  },
+  {
+    "id": "u044",
+    "name": "Stefan Kovacs",
+    "role": "Graduate",
+    "university": "University of Warwick",
+    "location": "Coventry",
+    "year_of_study": "Graduate",
+    "course": "Computer Science BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "Backend Engineering",
+      "Distributed Systems",
+      "FinTech"
+    ],
+    "skills": [
+      "Java",
+      "Kotlin",
+      "Spring Boot",
+      "Kafka",
+      "PostgreSQL",
+      "Docker",
+      "Kubernetes"
+    ],
+    "goals": [
+      "Progress to senior engineer role",
+      "Contribute to open source",
+      "Mentor junior developers"
+    ],
+    "hobbies": [
+      "Chess",
+      "Weightlifting",
+      "Sci-fi novels"
+    ],
+    "work_experience": [
+      {
+        "company": "HSBC Technology",
+        "role": "Graduate Software Engineer",
+        "duration": "1 year 6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/stefankovacs",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u044",
+    "joined_at": "2025-09-30T08:00:00Z",
+    "discord_handle": "stefankovacs#5512"
+  },
+  {
+    "id": "u045",
+    "name": "Talia Cohen",
+    "role": "Graduate",
+    "university": "University of Manchester",
+    "location": "Manchester",
+    "year_of_study": "Graduate",
+    "course": "Biomedical Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Medical Devices",
+      "Regulatory Affairs",
+      "HealthTech"
+    ],
+    "skills": [
+      "SolidWorks",
+      "Python",
+      "MATLAB",
+      "ISO 13485",
+      "Project Management"
+    ],
+    "goals": [
+      "Move into a HealthTech startup",
+      "Get MDR regulatory training",
+      "Mentor undergraduate engineers"
+    ],
+    "hobbies": [
+      "Triathlon",
+      "Cooking",
+      "Volunteering at hospital"
+    ],
+    "work_experience": [
+      {
+        "company": "Smith+Nephew",
+        "role": "Graduate R&D Engineer",
+        "duration": "2 years"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/taliacohen",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u045",
+    "joined_at": "2025-10-01T10:00:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u046",
+    "name": "Uche Okafor",
+    "role": "Graduate",
+    "university": "UCL",
+    "location": "London",
+    "year_of_study": "Graduate",
+    "course": "Mathematics BSc",
+    "subject_group": "Mathematics",
+    "career_interests": [
+      "Quantitative Finance",
+      "Risk Management",
+      "Data Science"
+    ],
+    "skills": [
+      "Python",
+      "C++",
+      "R",
+      "Statistical Modelling",
+      "Bloomberg Terminal",
+      "SQL"
+    ],
+    "goals": [
+      "Transition to a quant role at a hedge fund",
+      "Mentor maths undergraduates",
+      "Get CFA Level 1"
+    ],
+    "hobbies": [
+      "Chess",
+      "Long-distance running",
+      "Investing"
+    ],
+    "work_experience": [
+      {
+        "company": "Goldman Sachs",
+        "role": "Quantitative Analyst",
+        "duration": "2 years"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Barclays Banking Tech Hackathon",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 10,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/ucheokafor",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u046",
+    "joined_at": "2025-09-28T09:00:00Z",
+    "discord_handle": "ucheokafor#6634"
+  },
+  {
+    "id": "u047",
+    "name": "Violet Chen",
+    "role": "Graduate",
+    "university": "University of Cambridge",
+    "location": "Cambridge",
+    "year_of_study": "Graduate",
+    "course": "Physics BA/MSci",
+    "subject_group": "Physics",
+    "career_interests": [
+      "Quantum Computing",
+      "Deep Tech",
+      "Venture Capital"
+    ],
+    "skills": [
+      "Python",
+      "Qiskit",
+      "MATLAB",
+      "LaTeX",
+      "Research Methods",
+      "Fundraising"
+    ],
+    "goals": [
+      "Co-found a quantum computing startup",
+      "Build relationships with deep tech VCs",
+      "Speak at a tech conference"
+    ],
+    "hobbies": [
+      "Sailing",
+      "Piano",
+      "Science writing"
+    ],
+    "work_experience": [
+      {
+        "company": "Cambridge Quantum",
+        "role": "Quantum Software Engineer",
+        "duration": "1 year"
+      },
+      {
+        "company": "Cavendish Laboratory",
+        "role": "Research Associate",
+        "duration": "8 months"
+      }
+    ],
+    "education": "Postgraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour",
+      "Imperial College Careers Fair 2026"
+    ],
+    "confidence_level": 10,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/violetchen",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u047",
+    "joined_at": "2025-09-27T09:30:00Z",
+    "discord_handle": "violetchen#2200"
+  },
+  {
+    "id": "u048",
+    "name": "Wesley Thompson",
+    "role": "Graduate",
+    "university": "University of Leeds",
+    "location": "Leeds",
+    "year_of_study": "Graduate",
+    "course": "Chemical Engineering MEng",
+    "subject_group": "Engineering",
+    "career_interests": [
+      "Sustainability Engineering",
+      "Net Zero",
+      "Process Safety"
+    ],
+    "skills": [
+      "Aspen Plus",
+      "MATLAB",
+      "Python",
+      "HAZOP",
+      "Process Simulation",
+      "Project Management"
+    ],
+    "goals": [
+      "Move into a net-zero focussed role",
+      "Complete IChemE accreditation",
+      "Mentor placement students"
+    ],
+    "hobbies": [
+      "Cycling",
+      "Rock climbing",
+      "Home brewing"
+    ],
+    "work_experience": [
+      {
+        "company": "Tata Chemicals",
+        "role": "Process Engineer",
+        "duration": "2 years 6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Rolls-Royce Engineering Open Day"
+    ],
+    "confidence_level": 9,
+    "looking_for": [
+      "Networking",
+      "Mentorship"
+    ],
+    "github": "github.com/westhompson-eng",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u048",
+    "joined_at": "2025-09-29T08:30:00Z",
+    "discord_handle": null
+  },
+  {
+    "id": "u049",
+    "name": "Xiomara Reyes",
+    "role": "Student",
+    "university": "University of Birmingham",
+    "location": "Birmingham",
+    "year_of_study": 2,
+    "course": "Medicine MBChB",
+    "subject_group": "Medicine",
+    "career_interests": [
+      "Clinical Research",
+      "Global Health",
+      "Medical Technology"
+    ],
+    "skills": [
+      "Clinical Skills",
+      "Data Analysis",
+      "R",
+      "Academic Writing",
+      "Statistics"
+    ],
+    "goals": [
+      "Get involved in a clinical trial",
+      "Attend a global health conference",
+      "Develop research skills"
+    ],
+    "hobbies": [
+      "Volleyball",
+      "Podcast listening",
+      "Travel"
+    ],
+    "work_experience": [
+      {
+        "company": "Birmingham Children's Hospital",
+        "role": "Healthcare Volunteer",
+        "duration": "6 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [],
+    "confidence_level": 5,
+    "looking_for": [
+      "Mentorship",
+      "Networking"
+    ],
+    "github": null,
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u049",
+    "joined_at": "2025-09-20T14:00:00Z",
+    "discord_handle": "xiomara_r#9901"
+  },
+  {
+    "id": "u050",
+    "name": "Yusuf Ibrahim",
+    "role": "Student",
+    "university": "King's College London",
+    "location": "London",
+    "year_of_study": 3,
+    "course": "Computer Science and Artificial Intelligence BSc",
+    "subject_group": "CS",
+    "career_interests": [
+      "AI/ML",
+      "Robotics",
+      "Software Engineering"
+    ],
+    "skills": [
+      "Python",
+      "PyTorch",
+      "ROS",
+      "C++",
+      "Computer Vision",
+      "Git"
+    ],
+    "goals": [
+      "Publish an undergraduate research paper",
+      "Attend a robotics hackathon",
+      "Find an AI research internship"
+    ],
+    "hobbies": [
+      "Robotics club",
+      "Gaming",
+      "Reading"
+    ],
+    "work_experience": [
+      {
+        "company": "Boston Dynamics",
+        "role": "Software Intern",
+        "duration": "3 months"
+      }
+    ],
+    "education": "Undergraduate",
+    "events_attending": [
+      "Google DeepMind Campus Tour",
+      "Hack the Burgh 8"
+    ],
+    "confidence_level": 7,
+    "looking_for": [
+      "Internship",
+      "Networking"
+    ],
+    "github": "github.com/yusufibrahim",
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=u050",
+    "joined_at": "2025-09-16T15:00:00Z",
+    "discord_handle": "yusufibrahim#8844"
+  }
+]
