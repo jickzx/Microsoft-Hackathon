@@ -81,7 +81,7 @@ const questJsonInstruction = `Return JSON only with this shape:
       "difficulty": "easy | medium | hard",
       "estimatedHours": { "min": 2, "max": 6 },
       "reward": { "type": ["experience"], "label": "reward summary", "estimatedValueUsd": 0 },
-      "location": { "mode": "in_person | remote | hybrid", "campus": "North Campus", "building": "" },
+      "location": { "mode": "in_person | remote | hybrid", "campus": "North Campus", "building": "", "address": "optional full address or online link" },
       "deadline": "2026-05-17T23:59:00Z",
       "eventStart": "optional ISO datetime",
       "eventEnd": "optional ISO datetime",
@@ -993,6 +993,7 @@ function buildPrompt(input: ExtractQuestRequest) {
     `Current date: ${now.toISOString()} (${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })} Europe/London).`,
     "Resolve relative dates like Friday, tomorrow, next week, or tonight against the current date above, and never invent past dates for upcoming opportunities.",
     "Use ISO dates. If a field is uncertain, infer a sensible future value and keep it conservative.",
+    "The user may provide a combination of an image, a link, and text. Synthesize all provided information to create the most accurate quest card.",
     questJsonInstruction,
     "",
     `Source type: ${input.sourceType}`,
@@ -1004,8 +1005,19 @@ function buildPrompt(input: ExtractQuestRequest) {
     input.file?.dataUrl?.startsWith("data:image/")
       ? "Attached image: read all visible text, dates, locations, QR/link text, and organizer details from the screenshot or poster."
       : "",
-    "Content:",
-    input.text || input.url || input.file?.name || ""
+    "Additional Text Content:",
+    input.text || "",
+    "",
+    "Instructions for specific fields:",
+    "- Title: Clear, catchy title.",
+    "- Organizer: The club, department, or person hosting.",
+    "- Summary: One sentence overview.",
+    "- Description: Detailed information for students.",
+    "- Date and time: ISO format for deadline and event start/end.",
+    "- Location: Mode (in_person/remote/hybrid), campus, building, and full address or online URL.",
+    "- Reward: Type and label (e.g., 'Paid', 'Pizza', 'Experience').",
+    "- Apply URL: Direct link to apply or register.",
+    "- Contact: Email or contact method."
   ]
     .filter(Boolean)
     .join("\n");

@@ -61,7 +61,7 @@ function buildExtractBody(request: Request) {
 
   return {
     sourceType: request.body.sourceType,
-    text: [request.body.text, fileText].filter(Boolean).join("\n") || undefined,
+    text: request.body.text || fileText || undefined,
     url: request.body.url,
     file: request.file
       ? {

@@ -1044,11 +1044,9 @@ function PostQuestModal({
   onImport: (quests: QuestCard[]) => void;
   onPublish: (quest: QuestCard) => Promise<void>;
 }) {
-  const [sourceType, setSourceType] = useState<QuestSourceType>("text");
+  const [sourceType, setSourceType] = useState<QuestSourceType>("combined");
   const [url, setUrl] = useState("");
-  const [text, setText] = useState(
-    "Design posters for the Spring Robotics Showcase. Robotics Club needs Canva/social graphics by Friday. 3-5 hours, Engineering Hall, $75 plus showcase credit. Party of 2-3 welcome."
-  );
+  const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -1094,12 +1092,10 @@ function PostQuestModal({
 
   function updateUrl(value: string) {
     setUrl(value);
-    if (value.trim() && sourceType === "text") setSourceType("link");
   }
 
   function updateFile(nextFile: File | null) {
     setFile(nextFile);
-    if (nextFile) setSourceType(inferSourceTypeFromFile(nextFile));
   }
 
   async function publishDraft() {
@@ -1148,20 +1144,7 @@ function PostQuestModal({
             </div>
             <div className="field-row">
               <label>
-                Source
-                <select
-                  value={sourceType}
-                  onChange={(event) => setSourceType(event.target.value as QuestSourceType)}
-                >
-                  {sourceTypes.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Link
+                Link (optional)
                 <input
                   value={url}
                   onChange={(event) => updateUrl(event.target.value)}
@@ -1170,18 +1153,25 @@ function PostQuestModal({
               </label>
             </div>
             <label>
-              Source text
-              <textarea value={text} onChange={(event) => setText(event.target.value)} />
+              Text (optional)
+              <textarea
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder="Paste event details, messages, or notes here..."
+              />
             </label>
             <label className="file-drop">
               <Upload size={18} />
-              <span>{file ? file.name : "Attach poster, screenshot, PDF, or note"}</span>
+              <span>{file ? file.name : "Attach image, poster, or PDF (optional)"}</span>
               <input
                 type="file"
                 accept="image/*,.pdf,.txt,.md,.json"
                 onChange={(event) => updateFile(event.target.files?.[0] ?? null)}
               />
             </label>
+            <p className="muted" style={{ fontSize: '0.8rem', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+              Provide at least one: Image, Link, or Text. You can combine them for better results.
+            </p>
             <div className="intake-actions">
               <button
                 className="primary-button wide"
@@ -1452,6 +1442,21 @@ function ReviewQuestForm({
           }
         />
       </label>
+      <div className="review-field-row">
+        <label>
+          Location Address / URL
+          <input
+            value={quest.location.address ?? ""}
+            onChange={(event) =>
+              onChange({
+                ...quest,
+                location: { ...quest.location, address: event.target.value || undefined }
+              })
+            }
+            placeholder="Full address or online meeting link"
+          />
+        </label>
+      </div>
       <div className="review-field-row">
         <label>
           Apply URL
