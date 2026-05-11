@@ -775,6 +775,21 @@ function optionalString(value: unknown, fallback?: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
+function dateStringValue(value: unknown, fallback?: string) {
+  const candidate = optionalString(value);
+  if (!candidate) return fallback;
+
+  const parsed = new Date(candidate);
+  if (Number.isNaN(parsed.getTime())) return fallback;
+
+  const staleCutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const fallbackDate = fallback ? new Date(fallback) : undefined;
+  const fallbackIsCurrent =
+    fallbackDate && !Number.isNaN(fallbackDate.getTime()) && fallbackDate.getTime() >= staleCutoff;
+
+  return parsed.getTime() < staleCutoff && fallbackIsCurrent ? fallback : candidate;
+}
+
 function numberValue(value: unknown, fallback: number) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -872,9 +887,9 @@ function mergeAzureCard(card: Record<string, unknown>, localBase: QuestCard, ind
         address: optionalString(location.address, localBase.location.address),
         onlineUrl: optionalString(location.onlineUrl, localBase.location.onlineUrl)
       },
-      deadline: optionalString(card.deadline, localBase.deadline),
-      eventStart: optionalString(card.eventStart, localBase.eventStart),
-      eventEnd: optionalString(card.eventEnd, localBase.eventEnd),
+      deadline: dateStringValue(card.deadline, localBase.deadline),
+      eventStart: dateStringValue(card.eventStart, localBase.eventStart),
+      eventEnd: dateStringValue(card.eventEnd, localBase.eventEnd),
       bestFor: stringArray(card.bestFor, localBase.bestFor),
       eligibility: stringArray(card.eligibility, localBase.eligibility),
       applyUrl: optionalString(card.applyUrl, localBase.applyUrl),
@@ -967,13 +982,17 @@ function commonAzureHeaders(key: string) {
 }
 
 function buildPrompt(input: ExtractQuestRequest) {
+  const now = new Date();
+
   return [
     "You are QuestBoard's extraction engine.",
     "Extract campus opportunities from messy student-submitted material.",
     "Clean the result into practical, social, student-facing quest cards.",
     "Only create cards for campus events, gigs, projects, challenges, volunteering, club activities, research opportunities, or student competitions.",
     "Ignore navigation, ads, generic website copy, and unrelated pages.",
-    "Use ISO dates. If a field is uncertain, infer a sensible value and keep it conservative.",
+    `Current date: ${now.toISOString()} (${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })} Europe/London).`,
+    "Resolve relative dates like Friday, tomorrow, next week, or tonight against the current date above, and never invent past dates for upcoming opportunities.",
+    "Use ISO dates. If a field is uncertain, infer a sensible future value and keep it conservative.",
     questJsonInstruction,
     "",
     `Source type: ${input.sourceType}`,

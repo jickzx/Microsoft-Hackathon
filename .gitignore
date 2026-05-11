@@ -5,6 +5,7 @@ dist
 .playwright-cli
 .playwright-mcp
 .dev-server.*.log
+.prod-server.*.log
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
