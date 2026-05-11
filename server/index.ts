@@ -2,15 +2,13 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import { z } from "zod";
 import { createServer as createViteServer } from "vite";
 import type { NextFunction, Request, Response } from "express";
-import { eventProfiles } from "../src/data/eventProfiles";
 import { recommendParties } from "../src/lib/matching";
-import { eventUserProfileSchema, questCardSchema, questSourceTypeSchema } from "../src/types";
+import { questCardSchema, questSourceTypeSchema } from "../src/types";
 import type { ExtractQuestRequest, QuestCard } from "../src/types";
 import {
   authenticateStudent,
@@ -46,14 +44,9 @@ import { azureConfig } from "./env";
 import { checkAzureConnection, extractQuestCards } from "./extractor";
 import { recommendQuestMatches } from "./matcher";
 import { importVerifiedSources, verifiedSourceUrls } from "./sources";
-import { recommendEventProfileMatches } from "./profileMatcher";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
-
-dotenv.config({
-  path: [path.join(projectRoot, ".env.local"), path.join(projectRoot, ".env")]
-});
 
 const app = express();
 const upload = multer({
@@ -143,12 +136,6 @@ const eventParamsSchema = z.object({
   eventId: z.string().min(1)
 });
 
-const eventProfileMatchSchema = z.object({
-  profileId: z.string().optional(),
-  profiles: z.array(eventUserProfileSchema).optional(),
-  limit: z.coerce.number().int().min(1).max(20).optional()
-});
-
 const questParamsSchema = z.object({
   questId: z.string().min(1)
 });
@@ -192,7 +179,7 @@ const importSourcesSchema = z.object({
   urls: z.array(z.string().url()).min(1).max(12).optional()
 });
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 
 interface AuthenticatedRequest extends Request {
@@ -210,6 +197,14 @@ function requireAuth(request: AuthenticatedRequest, response: Response, next: Ne
     return;
   }
   next();
+}
+
+function ensureCurrentUser(request: AuthenticatedRequest, response: Response, userId: string) {
+  if (userId !== request.auth!.student.id) {
+    response.status(403).json({ error: "Cannot access another user's data." });
+    return false;
+  }
+  return true;
 }
 
 app.use(attachAuth);
@@ -287,58 +282,30 @@ app.get("/api/events/:eventId/profiles", requireAuth, (request, response) => {
   }
 
   response.json({
-    profiles: eventProfiles.filter((profile) => profile.eventId === params.data.eventId)
+    profiles: []
   });
 });
 
 app.post(
   "/api/events/:eventId/matches",
   requireAuth,
-  async (request: AuthenticatedRequest, response) => {
+  (request: AuthenticatedRequest, response) => {
     const params = eventParamsSchema.safeParse(request.params);
-    const parsed = eventProfileMatchSchema.safeParse(request.body);
-    if (!params.success || !parsed.success) {
-      response.status(400).json({
-        error: "Invalid event matchmaking request",
-        details: [
-          ...(params.success ? [] : params.error.issues.map((issue) => issue.message)),
-          ...(parsed.success ? [] : parsed.error.issues.map((issue) => issue.message))
-        ]
-      });
+    if (!params.success) {
+      response.status(400).json({ error: "Invalid event id" });
       return;
     }
 
-    const profiles = (parsed.data.profiles ?? eventProfiles).filter(
-      (profile) => profile.eventId === params.data.eventId
-    );
-    const profileId = parsed.data.profileId ?? request.auth!.student.id;
-
-    if (!parsed.data.profiles && profileId !== request.auth!.student.id) {
-      response.status(403).json({ error: "Cannot request profile matches for another user." });
-      return;
-    }
-
-    if (!profiles.length) {
-      response.status(404).json({ error: "No profiles found for this event." });
-      return;
-    }
-
-    if (!profiles.some((profile) => profile.id === profileId)) {
-      response.status(404).json({ error: "Profile not found for this event." });
-      return;
-    }
-
-    const result = await recommendEventProfileMatches(
-      profiles,
-      profileId,
-      parsed.data.limit ?? 5
-    );
-    response.json({ ...result, profiles });
+    response.status(501).json({
+      error: "Event profile matching requires real event profiles from the database."
+    });
   }
 );
 
-app.get("/api/users/:userId/state", requireAuth, async (request, response) => {
+app.get("/api/users/:userId/state", requireAuth, async (request: AuthenticatedRequest, response) => {
   const userId = String(request.params.userId);
+  if (!ensureCurrentUser(request, response, userId)) return;
+
   const student = await findStudent(userId);
   if (!student) {
     response.status(404).json({ error: "Student not found" });
@@ -348,8 +315,10 @@ app.get("/api/users/:userId/state", requireAuth, async (request, response) => {
   response.json(await getUserState(userId));
 });
 
-app.get("/api/users/:userId/parties", requireAuth, async (request, response) => {
+app.get("/api/users/:userId/parties", requireAuth, async (request: AuthenticatedRequest, response) => {
   const userId = String(request.params.userId);
+  if (!ensureCurrentUser(request, response, userId)) return;
+
   const student = await findStudent(userId);
   if (!student) {
     response.status(404).json({ error: "Student not found" });
@@ -552,6 +521,8 @@ app.post("/api/matches/recommend", requireAuth, async (request: AuthenticatedReq
 app.post("/api/parties/recommend", requireAuth, async (request: AuthenticatedRequest, response) => {
   const questId = String(request.body.questId ?? "");
   const studentId = String(request.body.studentId ?? request.auth!.student.id);
+  if (!ensureCurrentUser(request, response, studentId)) return;
+
   const [quest, studentList] = await Promise.all([getQuest(questId), listStudents()]);
 
   if (!quest) {

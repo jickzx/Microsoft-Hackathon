@@ -570,7 +570,7 @@ function missingFieldsFor(card: QuestCard) {
   ]);
 }
 
-function finalizeCard(card: QuestCard, fallback?: QuestCard) {
+function finalizeCard(card: QuestCard) {
   const audited = {
     ...card,
     aiExtraction: {
@@ -582,11 +582,10 @@ function finalizeCard(card: QuestCard, fallback?: QuestCard) {
   const parsed = questCardSchema.safeParse(audited);
 
   if (parsed.success) return parsed.data;
-  if (fallback) return questCardSchema.parse(fallback);
   throw new Error("Quest card normalization failed.");
 }
 
-function fallbackImageUrl(input: ExtractQuestRequest) {
+function sourceImageUrl(input: ExtractQuestRequest) {
   if (input.scrapedPage?.imageUrl) return input.scrapedPage.imageUrl;
   if (input.url) {
     try {
@@ -702,7 +701,7 @@ function baseCardFromInput(input: ExtractQuestRequest): QuestCard[] {
         content.length > 80
           ? content
           : `${summary} Add organizer notes, eligibility, and application details before publishing.`,
-      imageUrl: fallbackImageUrl(input),
+      imageUrl: sourceImageUrl(input),
       source: {
         id: `src-${idFrom(content)}`,
         type: input.sourceType,
@@ -777,56 +776,66 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function stringValue(value: unknown, fallback: string) {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+function requiredString(value: unknown, fieldName: string) {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  throw new Error(`Azure extraction did not return ${fieldName}.`);
 }
 
-function optionalString(value: unknown, fallback?: string) {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+function stringValue(value: unknown, defaultValue: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : defaultValue;
 }
 
-function dateStringValue(value: unknown, fallback?: string) {
+function optionalString(value: unknown, defaultValue?: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : defaultValue;
+}
+
+function dateStringValue(value: unknown) {
   const candidate = optionalString(value);
-  if (!candidate) return fallback;
+  if (!candidate) return undefined;
 
   const parsed = new Date(candidate);
-  if (Number.isNaN(parsed.getTime())) return fallback;
+  if (Number.isNaN(parsed.getTime())) return undefined;
 
   const staleCutoff = Date.now() - 24 * 60 * 60 * 1000;
-  const fallbackDate = fallback ? new Date(fallback) : undefined;
-  const fallbackIsCurrent =
-    fallbackDate && !Number.isNaN(fallbackDate.getTime()) && fallbackDate.getTime() >= staleCutoff;
-
-  return parsed.getTime() < staleCutoff && fallbackIsCurrent ? fallback : candidate;
+  return parsed.getTime() < staleCutoff ? undefined : candidate;
 }
 
-function numberValue(value: unknown, fallback: number) {
+function numberValue(value: unknown, defaultValue: number) {
   const number = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(number) ? number : fallback;
+  return Number.isFinite(number) ? number : defaultValue;
 }
 
-function booleanValue(value: unknown, fallback: boolean) {
-  return typeof value === "boolean" ? value : fallback;
+function requiredNumber(value: unknown, fieldName: string) {
+  const number = typeof value === "number" ? value : Number(value);
+  if (Number.isFinite(number)) return number;
+  throw new Error(`Azure extraction did not return ${fieldName}.`);
 }
 
-function stringArray(value: unknown, fallback: string[]) {
+function booleanValue(value: unknown, defaultValue: boolean) {
+  return typeof value === "boolean" ? value : defaultValue;
+}
+
+function stringArray(value: unknown, defaultValue: string[]) {
   if (Array.isArray(value)) {
     const values = value.filter(
       (item): item is string => typeof item === "string" && item.trim().length > 0
     );
-    return values.length ? values.map((item) => item.trim()) : fallback;
+    return values.length ? values.map((item) => item.trim()) : defaultValue;
   }
   if (typeof value === "string" && value.trim()) return [value.trim()];
-  return fallback;
+  return defaultValue;
 }
 
-function enumValue<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number]) {
-  if (typeof value !== "string") return fallback;
+function enumValue<T extends readonly string[]>(value: unknown, allowed: T, fieldName: string) {
+  if (typeof value !== "string") {
+    throw new Error(`Azure extraction did not return ${fieldName}.`);
+  }
   const trimmed = value.trim();
-  return (allowed as readonly string[]).includes(trimmed) ? (trimmed as T[number]) : fallback;
+  if ((allowed as readonly string[]).includes(trimmed)) return trimmed as T[number];
+  throw new Error(`Azure extraction returned unsupported ${fieldName}: ${trimmed}.`);
 }
 
-function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number][]) {
+function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fieldName: string) {
   const candidates = Array.isArray(value)
     ? value
     : typeof value === "string"
@@ -837,14 +846,15 @@ function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fall
     .map((item) => item.trim())
     .filter((item): item is T[number] => (allowed as readonly string[]).includes(item));
 
-  return values.length ? ([...new Set(values)] as T[number][]) : fallback;
+  if (values.length) return [...new Set(values)] as T[number][];
+  throw new Error(`Azure extraction did not return valid ${fieldName}.`);
 }
 
 function recordValue(value: unknown) {
   return isRecord(value) ? value : {};
 }
 
-function mergeAzureCard(card: Record<string, unknown>, localBase: QuestCard, index: number) {
+function azureCardFromRecord(card: Record<string, unknown>, input: ExtractQuestRequest, index: number) {
   const reward = recordValue(card.reward);
   const location = recordValue(card.location);
   const estimatedHours = recordValue(card.estimatedHours);
@@ -853,81 +863,83 @@ function mergeAzureCard(card: Record<string, unknown>, localBase: QuestCard, ind
   const stats = recordValue(card.stats);
   const source = recordValue(card.source);
   const now = new Date().toISOString();
-  const title = stringValue(card.title, localBase.title);
+  const title = requiredString(card.title, "title");
+  const sourceText = input.text ?? input.scrapedPage?.text;
+  const sourceUrl = input.scrapedPage?.finalUrl ?? input.url;
+  const sourceId = stringValue(source.id, `src-${idFrom(`${sourceUrl ?? sourceText ?? title}-${index}`)}`);
+  const rawModel = stringValue(aiExtraction.model, azureConfig().deployment ?? "azure-ai");
+  const model = rawModel.toLowerCase().includes("local")
+    ? azureConfig().deployment ?? "azure-ai"
+    : rawModel;
+  const minHours = Math.max(0, requiredNumber(estimatedHours.min, "estimatedHours.min"));
+  const maxHours = Math.max(minHours, requiredNumber(estimatedHours.max, "estimatedHours.max"));
 
-  return finalizeCard(
-    {
-      ...localBase,
-      id: stringValue(card.id, `quest-azure-${idFrom(`${title}-${index}-${now}`)}`),
-      title,
-      organizer: stringValue(card.organizer, localBase.organizer),
-      summary: stringValue(card.summary, localBase.summary),
-      description: stringValue(card.description, localBase.description),
-      imageUrl: stringValue(card.imageUrl, localBase.imageUrl),
-      source: {
-        ...localBase.source,
-        id: stringValue(source.id, localBase.source.id),
-        rawUrl: optionalString(source.rawUrl, localBase.source.rawUrl),
-        fileName: optionalString(source.fileName, localBase.source.fileName),
-        rawText: optionalString(source.rawText, localBase.source.rawText)
-      },
-      status: "needs_review",
-      interests: enumArray(card.interests, interestTags, localBase.interests),
-      skillsHelpful: enumArray(card.skillsHelpful, skillTags, localBase.skillsHelpful),
-      difficulty: enumValue(card.difficulty, questDifficulties, localBase.difficulty),
-      estimatedHours: {
-        min: Math.max(0, numberValue(estimatedHours.min, localBase.estimatedHours.min)),
-        max: Math.max(0, numberValue(estimatedHours.max, localBase.estimatedHours.max))
-      },
-      reward: {
-        ...localBase.reward,
-        type: enumArray(reward.type, rewardTypes, localBase.reward.type),
-        label: stringValue(reward.label, localBase.reward.label),
-        estimatedValueUsd:
-          reward.estimatedValueUsd === undefined
-            ? localBase.reward.estimatedValueUsd
-            : numberValue(reward.estimatedValueUsd, localBase.reward.estimatedValueUsd ?? 0)
-      },
-      location: {
-        ...localBase.location,
-        mode: enumValue(location.mode, questModes, localBase.location.mode),
-        campus: optionalString(location.campus, localBase.location.campus),
-        building: optionalString(location.building, localBase.location.building),
-        room: optionalString(location.room, localBase.location.room),
-        address: optionalString(location.address, localBase.location.address),
-        onlineUrl: optionalString(location.onlineUrl, localBase.location.onlineUrl)
-      },
-      deadline: dateStringValue(card.deadline, localBase.deadline),
-      eventStart: dateStringValue(card.eventStart, localBase.eventStart),
-      eventEnd: dateStringValue(card.eventEnd, localBase.eventEnd),
-      bestFor: stringArray(card.bestFor, localBase.bestFor),
-      eligibility: stringArray(card.eligibility, localBase.eligibility),
-      applyUrl: optionalString(card.applyUrl, localBase.applyUrl),
-      contactEmail: optionalString(card.contactEmail, localBase.contactEmail),
-      party: {
-        allowed: booleanValue(party.allowed, localBase.party.allowed),
-        idealSize: Math.max(1, Math.round(numberValue(party.idealSize, localBase.party.idealSize))),
-        openSlots: Math.max(0, Math.round(numberValue(party.openSlots, localBase.party.openSlots)))
-      },
-      aiExtraction: {
-        confidence: numberValue(aiExtraction.confidence, 0.86),
-        missingFields: stringArray(aiExtraction.missingFields, []),
-        extractedAt: stringValue(aiExtraction.extractedAt, now),
-        model: stringValue(aiExtraction.model, "azure-ai")
-      },
-      stats: {
-        saves: Math.max(0, Math.round(numberValue(stats.saves, localBase.stats.saves))),
-        views: Math.max(0, Math.round(numberValue(stats.views, localBase.stats.views))),
-        partyRequests: Math.max(
-          0,
-          Math.round(numberValue(stats.partyRequests, localBase.stats.partyRequests))
-        )
-      },
-      createdAt: stringValue(card.createdAt, localBase.createdAt),
-      updatedAt: stringValue(card.updatedAt, now)
+  return finalizeCard({
+    id: stringValue(card.id, `quest-azure-${idFrom(`${sourceUrl ?? ""}-${title}-${index}`)}`),
+    title,
+    organizer: requiredString(card.organizer, "organizer"),
+    summary: requiredString(card.summary, "summary"),
+    description: requiredString(card.description, "description"),
+    imageUrl: optionalString(card.imageUrl, sourceImageUrl(input))!,
+    source: {
+      id: sourceId,
+      type: input.sourceType,
+      submittedByUserId: input.submittedByUserId ?? "system",
+      rawUrl: optionalString(source.rawUrl, sourceUrl),
+      fileName: optionalString(source.fileName, input.file?.name),
+      rawText: optionalString(source.rawText, sourceText),
+      submittedAt: stringValue(source.submittedAt, now)
     },
-    localBase
-  );
+    status: "needs_review",
+    interests: enumArray(card.interests, interestTags, "interests"),
+    skillsHelpful: enumArray(card.skillsHelpful, skillTags, "skillsHelpful"),
+    difficulty: enumValue(card.difficulty, questDifficulties, "difficulty"),
+    estimatedHours: {
+      min: minHours,
+      max: maxHours
+    },
+    reward: {
+      type: enumArray(reward.type, rewardTypes, "reward.type"),
+      label: requiredString(reward.label, "reward.label"),
+      estimatedValueUsd:
+        reward.estimatedValueUsd === undefined
+          ? undefined
+          : Math.max(0, numberValue(reward.estimatedValueUsd, 0))
+    },
+    location: {
+      mode: enumValue(location.mode, questModes, "location.mode"),
+      campus: optionalString(location.campus),
+      building: optionalString(location.building),
+      room: optionalString(location.room),
+      address: optionalString(location.address),
+      onlineUrl: optionalString(location.onlineUrl)
+    },
+    deadline: dateStringValue(card.deadline),
+    eventStart: dateStringValue(card.eventStart),
+    eventEnd: dateStringValue(card.eventEnd),
+    bestFor: stringArray(card.bestFor, []),
+    eligibility: stringArray(card.eligibility, []),
+    applyUrl: optionalString(card.applyUrl, sourceUrl),
+    contactEmail: optionalString(card.contactEmail),
+    party: {
+      allowed: booleanValue(party.allowed, true),
+      idealSize: Math.max(1, Math.round(numberValue(party.idealSize, 3))),
+      openSlots: Math.max(0, Math.round(numberValue(party.openSlots, 3)))
+    },
+    aiExtraction: {
+      confidence: numberValue(aiExtraction.confidence, 0.86),
+      missingFields: stringArray(aiExtraction.missingFields, []),
+      extractedAt: stringValue(aiExtraction.extractedAt, now),
+      model
+    },
+    stats: {
+      saves: Math.max(0, Math.round(numberValue(stats.saves, 0))),
+      views: Math.max(0, Math.round(numberValue(stats.views, 0))),
+      partyRequests: Math.max(0, Math.round(numberValue(stats.partyRequests, 0)))
+    },
+    createdAt: stringValue(card.createdAt, now),
+    updatedAt: stringValue(card.updatedAt, now)
+  });
 }
 
 function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestCard[] {
@@ -946,11 +958,9 @@ function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestC
   else if (Array.isArray(nestedData?.cards)) cards = nestedData.cards;
   else if (Array.isArray(nestedData?.quests)) cards = nestedData.quests;
   else if (Array.isArray(nestedData?.data)) cards = nestedData.data;
-  const localBase = baseCardFromInput(input)[0];
-
   return cards
     .filter(isRecord)
-    .map((card, index) => mergeAzureCard(card, localBase, index));
+    .map((card, index) => azureCardFromRecord(card, input, index));
 }
 
 function joinUrl(base: string, route: string) {

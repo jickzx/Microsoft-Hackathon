@@ -1,5 +1,21 @@
 import fs from "node:fs";
 import path from "node:path";
+import dotenv from "dotenv";
+
+let appEnvLoaded = false;
+
+export function loadAppEnv() {
+  if (appEnvLoaded) return;
+
+  const root = process.cwd();
+  dotenv.config({
+    path: [path.join(root, ".env.local"), path.join(root, ".env")],
+    override: false
+  });
+  appEnvLoaded = true;
+}
+
+loadAppEnv();
 
 function clean(value: string | undefined) {
   const trimmed = value?.trim();
@@ -32,18 +48,14 @@ export function firstEnv(...names: string[]) {
 }
 
 export function azureConfig() {
-  const openAiEndpoint = envValue("AZURE_OPENAI_ENDPOINT");
   const aiEndpoint = envValue("AZURE_AI_ENDPOINT");
-  const endpoint = openAiEndpoint ?? aiEndpoint;
+  const openAiEndpoint = envValue("AZURE_OPENAI_ENDPOINT");
+  const endpoint = aiEndpoint ?? openAiEndpoint;
   const openAiKey =
     envValue("AZURE_OPENAI_API_KEY") ?? readSecretFile(envValue("AZURE_OPENAI_API_KEY_FILE"));
-  const key = openAiEndpoint ? openAiKey : envValue("AZURE_AI_KEY") ?? openAiKey;
-  const deployment = openAiEndpoint
-    ? firstEnv("AZURE_OPENAI_DEPLOYMENT", "AZURE_AI_DEPLOYMENT")
-    : firstEnv("AZURE_AI_DEPLOYMENT", "AZURE_OPENAI_DEPLOYMENT");
-  const apiVersion = openAiEndpoint
-    ? firstEnv("AZURE_OPENAI_API_VERSION", "AZURE_AI_API_VERSION")
-    : firstEnv("AZURE_AI_API_VERSION", "AZURE_OPENAI_API_VERSION");
+  const key = endpoint === openAiEndpoint ? openAiKey : envValue("AZURE_AI_KEY") ?? openAiKey;
+  const deployment = firstEnv("AZURE_AI_DEPLOYMENT", "AZURE_OPENAI_DEPLOYMENT");
+  const apiVersion = firstEnv("AZURE_AI_API_VERSION", "AZURE_OPENAI_API_VERSION");
 
   return {
     enabled: envValue("AZURE_AI_ENABLED") !== "false",
@@ -59,7 +71,10 @@ export function azureConfig() {
   };
 }
 
-export function requireAzureConfig() {
+export function requireAzureConfig(): ReturnType<typeof azureConfig> & {
+  endpoint: string;
+  key: string;
+} {
   const config = azureConfig();
   if (!config.enabled) {
     throw new Error("Azure AI is disabled.");
@@ -67,7 +82,7 @@ export function requireAzureConfig() {
   if (!config.endpoint || !config.key) {
     throw new Error("Azure AI endpoint and key are required.");
   }
-  return config;
+  return { ...config, endpoint: config.endpoint, key: config.key };
 }
 
 export function azureHeaders(key: string) {

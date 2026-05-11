@@ -89,7 +89,7 @@ function questFromRecord(quest: Prisma.QuestGetPayload<{ include: { source: true
       confidence: 0.5,
       missingFields: [],
       extractedAt: quest.createdAt.toISOString(),
-      model: "local"
+      model: "azure"
     }),
     stats: readJson(quest.stats, { saves: 0, views: 0, partyRequests: 0 }),
     createdAt: quest.createdAt.toISOString(),
@@ -138,7 +138,7 @@ function sourceCreateData(quest: QuestCard) {
     fileSize: null,
     rawText: quest.source.rawText ?? null,
     extractionMeta: json({
-      provider: quest.aiExtraction.model.startsWith("azure") ? "azure" : "local",
+      provider: "azure",
       confidence: quest.aiExtraction.confidence,
       missingFields: quest.aiExtraction.missingFields
     }),

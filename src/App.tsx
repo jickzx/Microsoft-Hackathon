@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   Award,
   Bell,
@@ -36,7 +36,7 @@ import {
   Zap,
   X
 } from "lucide-react";
-import { currentStudent, seedQuests, students as seedStudents } from "./data/seed";
+import { currentStudent } from "./data/seed";
 import {
   daysUntil,
   formatDeadline,
@@ -77,11 +77,6 @@ interface SignupProfile {
   hobbies: string;
 }
 
-interface AuthState {
-  signedIn: boolean;
-  profile: SignupProfile | null;
-}
-
 interface UserState {
   savedQuestIds: string[];
   joinedQuestIds: string[];
@@ -103,9 +98,6 @@ interface ExtractMetaWithSource extends ExtractQuestMeta {
   sourceId?: string;
 }
 
-const authProfileStorageKey = "questboard.signupProfile";
-const authModeStorageKey = "questboard.authMode";
-
 const signupInitialProfile: SignupProfile = {
   name: "",
   role: "Student",
@@ -118,6 +110,8 @@ const signupInitialProfile: SignupProfile = {
   hobbies: ""
 };
 
+const authProfileStorageKey = "questboard.signupProfile";
+
 const roleOptions = ["Student", "Graduate", "Career switcher", "Founder", "Job seeker", "Researcher"];
 const workExperienceOptions = [
   "No formal experience yet",
@@ -126,6 +120,7 @@ const workExperienceOptions = [
   "3-5 years",
   "5+ years"
 ];
+
 const educationOptions = [
   "High school",
   "Undergraduate",
@@ -197,44 +192,45 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   const data = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
-    const payload = data as { error?: string; details?: string[] } | null;
-    throw new Error(payload?.details?.join(", ") ?? payload?.error ?? "Request failed");
+    const payload = data as {
+      error?: string;
+      details?: string[];
+      errors?: { url?: string; error?: string }[];
+    } | null;
+    const sourceErrors = payload?.errors
+      ?.map((item) => [item.url, item.error].filter(Boolean).join(": "))
+      .filter(Boolean);
+    throw new Error(
+      payload?.details?.join(", ") ??
+        sourceErrors?.join(", ") ??
+        payload?.error ??
+        "Request failed"
+    );
   }
   return data as T;
-}
-
-function readStoredAuthState(): AuthState {
-  if (typeof window === "undefined") return { signedIn: false, profile: null };
-
-  const rawProfile = window.localStorage.getItem(authProfileStorageKey);
-  if (rawProfile) {
-    try {
-      return { signedIn: true, profile: JSON.parse(rawProfile) as SignupProfile };
-    } catch {
-      window.localStorage.removeItem(authProfileStorageKey);
-    }
-  }
-
-  return {
-    signedIn: window.localStorage.getItem(authModeStorageKey) === "demo",
-    profile: null
-  };
 }
 
 function saveAuthProfile(profile: SignupProfile) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(authProfileStorageKey, JSON.stringify(profile));
-  window.localStorage.setItem(authModeStorageKey, "profile");
 }
 
-function saveDemoLogin() {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(authModeStorageKey, "demo");
+function readAuthProfile() {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(authProfileStorageKey);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SignupProfile;
+  } catch {
+    window.localStorage.removeItem(authProfileStorageKey);
+    return null;
+  }
 }
 
 function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [authUser, setAuthUser] = useState<StudentProfile | null>(null);
+  const [signupProfile, setSignupProfile] = useState<SignupProfile | null>(() => readAuthProfile());
   const [quests, setQuests] = useState<QuestCard[]>([]);
   const [users, setUsers] = useState<StudentProfile[]>([]);
   const [currentUserId, setCurrentUserId] = useState("");
@@ -246,24 +242,12 @@ function App() {
   const [azureHealth, setAzureHealth] = useState<AzureConnectionHealth | null>(null);
   const [remoteMatches, setRemoteMatches] = useState<Record<string, QuestMatchBreakdown>>({});
   const [matchMeta, setMatchMeta] = useState<MatchRecommendationMeta | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [appError, setAppError] = useState("");
   const [importingSources, setImportingSources] = useState(false);
 
   const activeStudent = users.find((student) => student.id === currentUserId) ?? authUser;
-  const localQuestMatches = useMemo(
-    () =>
-      activeStudent
-        ? (Object.fromEntries(
-            quests.map((quest) => [quest.id, scoreQuestForStudent(quest, activeStudent)])
-          ) as Record<string, QuestMatchBreakdown>)
-        : {},
-    [activeStudent, quests]
-  );
-  const questMatches = useMemo(
-    () => ({ ...localQuestMatches, ...remoteMatches }),
-    [localQuestMatches, remoteMatches]
-  );
+  const questMatches = remoteMatches;
 
   async function refreshQuests() {
     const data = await fetchJson<{ quests: QuestCard[] }>("/api/quests");
@@ -303,14 +287,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!authUser) {
-      setLoading(false);
-      return undefined;
-    }
+    if (!authUser) return undefined;
 
     let active = true;
-    setLoading(true);
-    setAppError("");
     Promise.all([
       fetchJson<{ users: StudentProfile[]; currentUserId: string }>("/api/users"),
       fetchJson<{ quests: QuestCard[] }>("/api/quests"),
@@ -325,7 +304,9 @@ function App() {
       })
       .catch((error) => {
         if (!active) return;
-        setAppError(error instanceof Error ? error.message : "Unable to load app data.");
+        setUsers([authUser]);
+        setQuests([]);
+        setAppError(error instanceof Error ? error.message : "Unable to load database-backed app data.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -373,6 +354,9 @@ function App() {
     })
       .then((data) => {
         if (!active) return;
+        if (data.meta.provider !== "azure" || data.meta.fallbackUsed) {
+          throw new Error("Azure matching did not return a verified response.");
+        }
         setRemoteMatches(
           Object.fromEntries(data.matches.map((match) => [match.questId, match])) as Record<
             string,
@@ -385,6 +369,7 @@ function App() {
         if (!active) return;
         setRemoteMatches({});
         setMatchMeta(null);
+        setAppError("Azure matching is unavailable. Recommendations will appear once Azure responds.");
       });
 
     return () => {
@@ -496,11 +481,11 @@ function App() {
     setActivePage("parties");
   }
 
-  async function importLiveSources() {
+  async function importVerifiedSources() {
     setImportingSources(true);
     setAppError("");
     try {
-      await fetchJson<{ cards: QuestCard[]; errors: { url: string; error: string }[] }>(
+      const result = await fetchJson<{ cards: QuestCard[]; errors: { url: string; error: string }[] }>(
         "/api/sources/import",
         {
           method: "POST",
@@ -509,8 +494,13 @@ function App() {
         }
       );
       await refreshQuests();
+      if (result.errors.length) {
+        setAppError(
+          `Imported ${result.cards.length} verified source${result.cards.length === 1 ? "" : "s"}; ${result.errors.length} source${result.errors.length === 1 ? "" : "s"} need review.`
+        );
+      }
     } catch (error) {
-      setAppError(error instanceof Error ? error.message : "Unable to import live sources.");
+      setAppError(error instanceof Error ? error.message : "Unable to import verified sources.");
     } finally {
       setImportingSources(false);
     }
@@ -576,13 +566,13 @@ function App() {
           student={activeStudent}
           questMatches={questMatches}
           savedQuestIds={savedQuestIds}
-          matchProvider={matchMeta?.provider ?? "local"}
+          matchReady={matchMeta?.provider === "azure"}
           loading={loading}
           importingSources={importingSources}
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
           onExplore={() => showPage("explore")}
-          onImportSources={importLiveSources}
+          onImportSources={importVerifiedSources}
         />
       ) : null}
       {activePage === "explore" ? (
@@ -593,7 +583,7 @@ function App() {
           importingSources={importingSources}
           onSave={toggleSaved}
           onSelectQuest={setSelectedQuest}
-          onImportSources={importLiveSources}
+          onImportSources={importVerifiedSources}
         />
       ) : null}
       {activePage === "submit" ? (
@@ -614,7 +604,7 @@ function App() {
         <ProfilePage
           quests={quests}
           student={activeStudent}
-          signupProfile={null}
+          signupProfile={signupProfile}
           savedCount={savedQuestIds.size}
           partyCount={parties.length}
           onSelectQuest={setSelectedQuest}
@@ -658,18 +648,13 @@ function AppBanner({ message }: { message: string }) {
   );
 }
 
-function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile) => void }) {
+function AuthPage({
+  onAuthenticated
+}: {
+  onAuthenticated: (user: StudentProfile, profile?: SignupProfile | null) => void;
+}) {
   const [mode, setMode] = useState<AuthMode>("signup");
-  const [profile, setProfile] = useState<SignupProfile>(() => {
-    if (typeof window === "undefined") return signupInitialProfile;
-    const raw = window.localStorage.getItem(authProfileStorageKey);
-    if (!raw) return signupInitialProfile;
-    try {
-      return JSON.parse(raw) as SignupProfile;
-    } catch {
-      return signupInitialProfile;
-    }
-  });
+  const [profile, setProfile] = useState<SignupProfile>(() => readAuthProfile() ?? signupInitialProfile);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -705,11 +690,10 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
           email: email.trim(),
           password,
           name: cleanProfile.name,
-          major: cleanProfile.courseOrJobTitle || cleanProfile.careerInterest || "Undeclared",
+          major: cleanProfile.courseOrJobTitle || "Undeclared",
           year: deriveYearFromEducation(cleanProfile.education)
         })
       });
-      saveAuthProfile(cleanProfile);
       onAuthenticated(data.user);
     } catch (signupError) {
       setError(signupError instanceof Error ? signupError.message : "Signup failed.");
@@ -751,9 +735,9 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
           <strong>QuestBoard</strong>
         </div>
         <div className="auth-visual-copy">
-          <span>User Profile</span>
-          <h1>Start with the person behind the quest.</h1>
-          <p>Matchmaking works better when your ambitions, skills, and outside interests are in the room from the first click.</p>
+          <span>Database account</span>
+          <h1>Your verified quest board starts here.</h1>
+          <p>Sign in to load your saved quests, parties, and Azure-powered recommendations from the live database.</p>
         </div>
         <div className="auth-profile-preview">
           <div>
@@ -786,10 +770,10 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
 
         <div className="auth-panel-header">
           <span>
-            User Profile
+            Secure account
             <ChevronRight size={15} />
           </span>
-          <h2>{mode === "signup" ? "Create your profile" : "Welcome back"}</h2>
+          <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
         </div>
 
         {mode === "login" ? (
@@ -807,6 +791,8 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
                   setError("");
                 }}
                 placeholder="you@example.com"
+                autoComplete="email"
+                required
               />
             </AuthField>
             <AuthField icon={Settings} label="Password" wide>
@@ -818,6 +804,8 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
                   setError("");
                 }}
                 placeholder="Password"
+                autoComplete="current-password"
+                required
               />
             </AuthField>
             {error ? <p className="form-error">{error}</p> : null}
@@ -838,6 +826,8 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
                     setError("");
                   }}
                   placeholder="you@example.com"
+                  autoComplete="email"
+                  required
                 />
               </AuthField>
               <AuthField icon={Settings} label="Password">
@@ -849,6 +839,9 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
                     setError("");
                   }}
                   placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
                 />
               </AuthField>
               <AuthField icon={UserRound} label="Name">
@@ -856,34 +849,16 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
                   value={profile.name}
                   onChange={(event) => updateField("name", event.target.value)}
                   placeholder="Your name"
+                  autoComplete="name"
+                  required
                 />
               </AuthField>
-              <AuthField icon={UserRound} label="Role">
-                <select value={profile.role} onChange={(event) => updateField("role", event.target.value)}>
-                  {roleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </AuthField>
-              <AuthField icon={FileText} label="Work experience">
-                <select
-                  value={profile.workExperience}
-                  onChange={(event) => updateField("workExperience", event.target.value)}
-                >
-                  <option value="" disabled>
-                    Select experience
-                  </option>
-                  {workExperienceOptions.map((experience) => (
-                    <option key={experience} value={experience}>
-                      {experience}
-                    </option>
-                  ))}
-                </select>
-              </AuthField>
               <AuthField icon={Award} label="Highest level of education">
-                <select value={profile.education} onChange={(event) => updateField("education", event.target.value)}>
+                <select
+                  value={profile.education}
+                  onChange={(event) => updateField("education", event.target.value)}
+                  required
+                >
                   <option value="" disabled>
                     Select education
                   </option>
@@ -899,37 +874,7 @@ function AuthPage({ onAuthenticated }: { onAuthenticated: (user: StudentProfile)
                   value={profile.courseOrJobTitle}
                   onChange={(event) => updateField("courseOrJobTitle", event.target.value)}
                   placeholder="Computer Science, UX intern..."
-                />
-              </AuthField>
-              <AuthField icon={Compass} label="Career interest">
-                <input
-                  value={profile.careerInterest}
-                  onChange={(event) => updateField("careerInterest", event.target.value)}
-                  placeholder="AI product, finance, healthcare..."
-                />
-              </AuthField>
-              <AuthField icon={Zap} label="Skills" wide>
-                <textarea
-                  rows={3}
-                  value={profile.skills}
-                  onChange={(event) => updateField("skills", event.target.value)}
-                  placeholder="React, Python, pitching, research..."
-                />
-              </AuthField>
-              <AuthField icon={Sparkles} label="Goals" wide>
-                <textarea
-                  rows={3}
-                  value={profile.goals}
-                  onChange={(event) => updateField("goals", event.target.value)}
-                  placeholder="Find internships, build a portfolio, join hackathons..."
-                />
-              </AuthField>
-              <AuthField icon={Star} label="Hobbies" wide>
-                <textarea
-                  rows={3}
-                  value={profile.hobbies}
-                  onChange={(event) => updateField("hobbies", event.target.value)}
-                  placeholder="Music, gaming, volunteering, sports..."
+                  required
                 />
               </AuthField>
             </div>
@@ -985,7 +930,7 @@ function TopNav({
   onLogout: () => void;
 }) {
   const azureLabel =
-    azureHealth?.status === "ready" ? "Azure Ready" : azureHealth?.reachable ? "Azure Setup" : "Local AI";
+    azureHealth?.status === "ready" ? "Azure Ready" : azureHealth ? "Azure Unavailable" : "Azure Checking";
 
   return (
     <header className="topbar">
@@ -1031,7 +976,7 @@ function HomePage({
   student,
   questMatches,
   savedQuestIds,
-  matchProvider,
+  matchReady,
   loading,
   importingSources,
   onSave,
@@ -1043,7 +988,7 @@ function HomePage({
   student: StudentProfile;
   questMatches: Record<string, QuestMatchBreakdown>;
   savedQuestIds: Set<string>;
-  matchProvider: "azure" | "local";
+  matchReady: boolean;
   loading: boolean;
   importingSources: boolean;
   onSave: (questId: string) => void;
@@ -1109,7 +1054,7 @@ function HomePage({
       ) : null}
 
       <div className="stat-grid">
-        <StatCard icon={Sparkles} tone="violet" label={matchProvider === "azure" ? "Azure Match" : "Local Match"} value={recommendedCount} detail="personalized quests" />
+        <StatCard icon={Sparkles} tone="violet" label={matchReady ? "Azure Match" : "Local Match"} value={recommendedCount} detail="personalized quests" />
         <StatCard
           icon={Flame}
           tone="coral"
@@ -1666,14 +1611,12 @@ function PartiesPage({
 function ProfilePage({
   quests,
   student,
-  signupProfile,
   savedCount,
   partyCount,
   onSelectQuest
 }: {
   quests: QuestCard[];
   student: StudentProfile;
-  signupProfile: SignupProfile | null;
   savedCount: number;
   partyCount: number;
   onSelectQuest: (quest: QuestCard) => void;
@@ -1727,21 +1670,6 @@ function ProfilePage({
           </div>
         </div>
       </section>
-
-      {signupProfile ? (
-        <ProfileSection title="Profile Details">
-          <div className="profile-detail-grid">
-            <ProfileDetail label="Role" value={signupProfile.role} />
-            <ProfileDetail label="Work experience" value={signupProfile.workExperience} />
-            <ProfileDetail label="Education" value={signupProfile.education} />
-            <ProfileDetail label="Course or job title" value={signupProfile.courseOrJobTitle} />
-            <ProfileDetail label="Career interest" value={signupProfile.careerInterest} wide />
-            <ProfileDetail label="Skills" value={signupProfile.skills} wide />
-            <ProfileDetail label="Goals" value={signupProfile.goals} wide />
-            <ProfileDetail label="Hobbies" value={signupProfile.hobbies} wide />
-          </div>
-        </ProfileSection>
-      ) : null}
 
       <ProfileSection title="Interests">
         <div className="chip-row">
@@ -1801,7 +1729,7 @@ function ProfilePage({
       <section className="profile-menu">
         {profileMenu.map((item) => {
           const Icon = item.icon;
-          const count = item.label === "Saved Quests" ? savedCount : item.label === "My Parties" ? partyCount : item.count;
+          const count = item.label === "Saved Quests" ? savedCount : item.label === "My Parties" ? partyCount : undefined;
           return (
             <button type="button" key={item.label}>
               <Icon size={20} />
@@ -2353,7 +2281,7 @@ function createStudentFromSignup(profile: SignupProfile, fallback: StudentProfil
 
   return {
     ...fallback,
-    id: currentStudent.id,
+    id: fallback.id,
     name: cleanProfile.name || fallback.name,
     year: deriveYearFromEducation(cleanProfile.education),
     major: cleanProfile.courseOrJobTitle || cleanProfile.careerInterest || fallback.major,
