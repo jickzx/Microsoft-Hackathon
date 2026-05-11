@@ -17,6 +17,9 @@ import type {
 const defaultImageUrl =
   "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80";
 
+const scrapeMaxTextChars = Number(process.env.QUEST_SCRAPE_TEXT_CHARS ?? 9000);
+const scrapeTimeoutMs = Number(process.env.QUEST_SCRAPE_TIMEOUT_MS ?? 8000);
+const scrapeMaxContentBytes = Number(process.env.QUEST_SCRAPE_MAX_BYTES ?? 900_000);
 const healthCacheTtlMs = Number(process.env.AZURE_HEALTH_CACHE_MS ?? 5 * 60 * 1000);
 let azureHealthCache:
   | {
@@ -242,8 +245,319 @@ function detectLocation(text: string): QuestCard["location"] {
   };
 }
 
+function detectApplyUrl(text: string, explicitUrl?: string) {
+  if (explicitUrl) return explicitUrl;
+  const match = text.match(/\bhttps?:\/\/[^\s<>"')]+/i);
+  return match?.[0]?.replace(/[.,;!?]+$/, "");
+}
+
+function detectContactEmail(text: string) {
+  return text.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0];
+}
+
 function unique(values: string[]) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function truncateText(value: string, maxLength = scrapeMaxTextChars) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}\n[truncated]` : value;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function decodeHtmlEntities(value: string) {
+  const named: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    lt: "<",
+    nbsp: " ",
+    quot: '"'
+  };
+
+  return value.replace(
+    /&(#(\d+)|#x([\da-f]+)|amp|apos|gt|lt|nbsp|quot);/gi,
+    (match, entity: string, decimal?: string, hex?: string) => {
+      if (decimal) return String.fromCodePoint(Number(decimal));
+      if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
+      return named[entity.toLowerCase()] ?? match;
+    }
+  );
+}
+
+function cleanText(value: string) {
+  return decodeHtmlEntities(value)
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
+function extractHtmlAttribute(tag: string, name: string) {
+  const match = tag.match(
+    new RegExp(`${escapeRegExp(name)}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i")
+  );
+  const value = match?.[1] ?? match?.[2] ?? match?.[3];
+  return value ? decodeHtmlEntities(value.trim()) : undefined;
+}
+
+function metaContent(html: string, names: string[]) {
+  for (const name of names) {
+    const tag = html.match(
+      new RegExp(
+        `<meta\\b(?=[^>]*(?:name|property)\\s*=\\s*["']${escapeRegExp(name)}["'])[^>]*>`,
+        "i"
+      )
+    )?.[0];
+    const content = tag ? extractHtmlAttribute(tag, "content") : undefined;
+    if (content) return cleanText(content);
+  }
+  return undefined;
+}
+
+function absolutizeUrl(value: string | undefined, baseUrl: string) {
+  if (!value) return undefined;
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return value;
+  }
+}
+
+function htmlToPlainText(html: string) {
+  return cleanText(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(article|div|h[1-6]|li|p|section|td|th|tr)>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+  );
+}
+
+function schemaValueToText(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (Array.isArray(value)) return value.map(schemaValueToText).filter(Boolean).join("; ");
+  if (!isRecord(value)) return "";
+
+  return [
+    value.name,
+    value.headline,
+    value.description,
+    value.streetAddress,
+    value.addressLocality,
+    value.addressRegion,
+    value.postalCode,
+    value.url
+  ]
+    .map(schemaValueToText)
+    .filter(Boolean)
+    .join(", ");
+}
+
+function collectSchemaRecords(value: unknown, records: Record<string, unknown>[] = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectSchemaRecords(item, records));
+    return records;
+  }
+  if (!isRecord(value)) return records;
+
+  records.push(value);
+  collectSchemaRecords(value["@graph"], records);
+  collectSchemaRecords(value.mainEntity, records);
+  collectSchemaRecords(value.event, records);
+  return records;
+}
+
+function recordTypes(record: Record<string, unknown>) {
+  const rawType = record["@type"];
+  const values = Array.isArray(rawType) ? rawType : [rawType];
+  return values.filter((item): item is string => typeof item === "string");
+}
+
+function schemaEventLines(record: Record<string, unknown>) {
+  const types = recordTypes(record).map((type) => type.toLowerCase());
+  const looksEventLike =
+    types.some((type) => ["event", "jobposting", "course", "educationevent"].includes(type)) ||
+    Boolean(record.startDate || record.endDate || record.eventStatus);
+
+  if (!looksEventLike) return [];
+
+  return [
+    ["Name", record.name ?? record.headline],
+    ["Description", record.description],
+    ["Start", record.startDate],
+    ["End", record.endDate],
+    ["Location", record.location],
+    ["Organizer", record.organizer],
+    ["Audience", record.audience],
+    ["Offer", record.offers],
+    ["URL", record.url]
+  ]
+    .map(([label, value]) => {
+      const text = schemaValueToText(value);
+      return text ? `${label}: ${text}` : "";
+    })
+    .filter(Boolean);
+}
+
+function structuredEventText(html: string) {
+  const blocks = [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const lines: string[] = [];
+
+  for (const block of blocks) {
+    try {
+      const parsed = JSON.parse(decodeHtmlEntities(block[1]));
+      for (const record of collectSchemaRecords(parsed)) {
+        lines.push(...schemaEventLines(record));
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return unique(lines).join("\n");
+}
+
+function scrapedPageFromHtml(html: string, finalUrl: string) {
+  const title = cleanText(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
+  const description = metaContent(html, ["description", "og:description", "twitter:description"]);
+  const imageUrl = absolutizeUrl(metaContent(html, ["og:image", "twitter:image"]), finalUrl);
+  const structured = structuredEventText(html);
+  const pageText = htmlToPlainText(html);
+  const text = truncateText(
+    [
+      title ? `Page title: ${title}` : "",
+      description ? `Page description: ${description}` : "",
+      structured ? `Structured event data:\n${structured}` : "",
+      pageText ? `Visible page text:\n${pageText}` : ""
+    ]
+      .filter(Boolean)
+      .join("\n\n")
+  );
+
+  return {
+    finalUrl,
+    title: title || undefined,
+    description,
+    imageUrl,
+    text,
+    warnings: [] as string[]
+  };
+}
+
+function isBlockedScrapeHost(hostname: string) {
+  const lower = hostname.toLowerCase();
+  return (
+    lower === "localhost" ||
+    lower === "0.0.0.0" ||
+    lower === "::1" ||
+    lower.endsWith(".local") ||
+    /^127\./.test(lower) ||
+    /^10\./.test(lower) ||
+    /^192\.168\./.test(lower) ||
+    /^169\.254\./.test(lower) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(lower)
+  );
+}
+
+async function scrapeEventPage(url: string) {
+  const warnings: string[] = [];
+  let parsed: URL;
+
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { warnings: ["Link scraping skipped because the URL is invalid."] };
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    return { warnings: ["Link scraping only supports http and https event pages."] };
+  }
+
+  if (isBlockedScrapeHost(parsed.hostname)) {
+    return { warnings: ["Link scraping skipped for private or local network addresses."] };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), scrapeTimeoutMs);
+
+  try {
+    const response = await fetch(parsed.toString(), {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        Accept: "text/html, text/plain;q=0.9, */*;q=0.5",
+        "User-Agent": "QuestBoard event extractor"
+      }
+    });
+
+    const contentLength = Number(response.headers.get("content-length") ?? 0);
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (!response.ok) {
+      return { warnings: [`Link scraping failed with HTTP ${response.status}.`] };
+    }
+
+    if (contentLength > scrapeMaxContentBytes) {
+      return {
+        warnings: [
+          `Link page is larger than the ${scrapeMaxContentBytes} byte scraping limit.`
+        ]
+      };
+    }
+
+    if (!/text\/html|text\/plain|application\/xhtml\+xml/i.test(contentType)) {
+      return {
+        warnings: [`Link content type ${contentType || "unknown"} is not an event page.`]
+      };
+    }
+
+    const raw = await response.text();
+    const finalUrl = response.url || parsed.toString();
+    const page = /text\/plain/i.test(contentType)
+      ? {
+          finalUrl,
+          text: truncateText(cleanText(raw)),
+          warnings: [] as string[]
+        }
+      : scrapedPageFromHtml(raw, finalUrl);
+
+    if (!page.text) {
+      warnings.push("Link page did not contain readable event text.");
+    }
+
+    return {
+      page: {
+        ...page,
+        warnings
+      },
+      warnings
+    };
+  } catch (error) {
+    return {
+      warnings: [
+        error instanceof Error
+          ? `Link scraping failed: ${error.message}`
+          : "Link scraping failed."
+      ]
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function prepareExtractionInput(input: ExtractQuestRequest) {
+  if (!input.url) return { input, warnings: [] as string[] };
+
+  const scraped = await scrapeEventPage(input.url);
+  return {
+    input: scraped.page ? { ...input, scrapedPage: scraped.page } : input,
+    warnings: scraped.warnings
+  };
 }
 
 function missingFieldsFor(card: QuestCard) {
@@ -301,7 +615,7 @@ function extractionMeta(
     sourceType: input.sourceType,
     confidence: Number(confidence.toFixed(2)),
     missingFields: unique(cards.flatMap((card) => card.aiExtraction.missingFields)),
-    warnings: unique([...fileWarnings(input), ...warnings]),
+    warnings: unique([...fileWarnings(input), ...(input.scrapedPage?.warnings ?? []), ...warnings]),
     cardCount: cards.length
   };
 }
@@ -343,10 +657,22 @@ function summaryFrom(text: string, title: string) {
   return sentence.length > 180 ? `${sentence.slice(0, 177)}...` : sentence;
 }
 
-export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
-  const content = [input.text, input.url, input.file?.text, input.file?.name]
+function contentFromInput(input: ExtractQuestRequest) {
+  return [
+    input.text,
+    input.scrapedPage?.title ? `Page title: ${input.scrapedPage.title}` : "",
+    input.scrapedPage?.description ? `Page description: ${input.scrapedPage.description}` : "",
+    input.scrapedPage?.text,
+    input.url,
+    input.file?.text,
+    input.file?.name
+  ]
     .filter(Boolean)
     .join("\n");
+}
+
+export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
+  const content = contentFromInput(input);
   const title = titleFrom(content, input.url);
   const summary = summaryFrom(content, title);
   const hours = detectHours(content);
@@ -354,6 +680,7 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
   const skills = detectSkills(content);
   const now = new Date().toISOString();
   const id = `quest-${idFrom(`${title}-${content}`)}`;
+  const applyUrl = detectApplyUrl(content, input.scrapedPage?.finalUrl ?? input.url);
 
   return [
     finalizeCard({
@@ -365,14 +692,14 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
         content.length > 80
           ? content
           : `${summary} Add organizer notes, eligibility, and application details before publishing.`,
-      imageUrl: defaultImageUrl,
+      imageUrl: input.scrapedPage?.imageUrl ?? defaultImageUrl,
       source: {
         id: `src-${idFrom(content)}`,
         type: input.sourceType,
         submittedByUserId: "student-you",
         rawUrl: input.url,
         fileName: input.file?.name,
-        rawText: input.text,
+        rawText: input.text ?? input.scrapedPage?.text,
         submittedAt: now
       },
       status: "needs_review",
@@ -388,6 +715,8 @@ export function extractLocally(input: ExtractQuestRequest): QuestCard[] {
         "people who prefer small teams"
       ],
       eligibility: ["Check organizer details before applying"],
+      applyUrl,
+      contactEmail: detectContactEmail(content),
       party: { allowed: true, idealSize: 3, openSlots: 4 },
       aiExtraction: {
         confidence: 0.67,
@@ -417,17 +746,20 @@ function tryParseJsonFromText(text: string) {
 }
 
 function normalizeAzurePayload(value: unknown) {
+  if (typeof value === "string") return tryParseJsonFromText(value) ?? value;
   if (!value || typeof value !== "object") return value;
   const payload = value as {
     choices?: Array<{ message?: { content?: string }; text?: string }>;
     output?: unknown;
+    output_text?: unknown;
     result?: unknown;
   };
 
   const content = payload.choices?.[0]?.message?.content ?? payload.choices?.[0]?.text;
-  if (content) return tryParseJsonFromText(content) ?? value;
-  if (payload.output) return payload.output;
-  if (payload.result) return payload.result;
+  if (content) return normalizeAzurePayload(content);
+  if (payload.output_text) return normalizeAzurePayload(payload.output_text);
+  if (payload.output) return normalizeAzurePayload(payload.output);
+  if (payload.result) return normalizeAzurePayload(payload.result);
   return value;
 }
 
@@ -454,7 +786,9 @@ function booleanValue(value: unknown, fallback: boolean) {
 
 function stringArray(value: unknown, fallback: string[]) {
   if (Array.isArray(value)) {
-    const values = value.filter((item): item is string => typeof item === "string" && item.trim());
+    const values = value.filter(
+      (item): item is string => typeof item === "string" && item.trim().length > 0
+    );
     return values.length ? values.map((item) => item.trim()) : fallback;
   }
   if (typeof value === "string" && value.trim()) return [value.trim()];
@@ -462,9 +796,9 @@ function stringArray(value: unknown, fallback: string[]) {
 }
 
 function enumValue<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number]) {
-  return typeof value === "string" && (allowed as readonly string[]).includes(value)
-    ? (value as T[number])
-    : fallback;
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return (allowed as readonly string[]).includes(trimmed) ? (trimmed as T[number]) : fallback;
 }
 
 function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fallback: T[number][]) {
@@ -473,12 +807,12 @@ function enumArray<T extends readonly string[]>(value: unknown, allowed: T, fall
     : typeof value === "string"
       ? value.split(/[,|]/)
       : [];
-  const values = candidates.filter(
-    (item): item is T[number] =>
-      typeof item === "string" && (allowed as readonly string[]).includes(item.trim())
-  );
+  const values = candidates
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item): item is T[number] => (allowed as readonly string[]).includes(item));
 
-  return values.length ? unique(values) : fallback;
+  return values.length ? ([...new Set(values)] as T[number][]) : fallback;
 }
 
 function recordValue(value: unknown) {
@@ -572,17 +906,22 @@ function mergeAzureCard(card: Record<string, unknown>, localBase: QuestCard, ind
 }
 
 function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestCard[] {
-  if (!value || typeof value !== "object") return [];
+  if (!value) return [];
   const normalized = normalizeAzurePayload(value);
   if (!normalized || typeof normalized !== "object") return [];
   const possible = normalized as { cards?: unknown; quests?: unknown; data?: unknown };
-  const cards = Array.isArray(possible.cards)
-    ? possible.cards
-    : Array.isArray(possible.quests)
-      ? possible.quests
-      : Array.isArray(possible.data)
-        ? possible.data
-        : [];
+  const data = normalizeAzurePayload(possible.data);
+  const nestedData = isRecord(data) ? data : undefined;
+  let cards: unknown[] = [];
+
+  if (Array.isArray(normalized)) cards = normalized;
+  else if (Array.isArray(possible.cards)) cards = possible.cards;
+  else if (Array.isArray(possible.quests)) cards = possible.quests;
+  else if (Array.isArray(possible.data)) cards = possible.data;
+  else if (Array.isArray(nestedData?.cards)) cards = nestedData.cards;
+  else if (Array.isArray(nestedData?.quests)) cards = nestedData.quests;
+  else if (Array.isArray(nestedData?.data)) cards = nestedData.data;
+
   const localBase = extractLocally(input)[0];
 
   return cards
@@ -633,12 +972,20 @@ function buildPrompt(input: ExtractQuestRequest) {
     "You are QuestBoard's extraction engine.",
     "Extract campus opportunities from messy student-submitted material.",
     "Clean the result into practical, social, student-facing quest cards.",
+    "Only create cards for campus events, gigs, projects, challenges, volunteering, club activities, research opportunities, or student competitions.",
+    "Ignore navigation, ads, generic website copy, and unrelated pages.",
     "Use ISO dates. If a field is uncertain, infer a sensible value and keep it conservative.",
     questJsonInstruction,
     "",
     `Source type: ${input.sourceType}`,
     input.url ? `URL: ${input.url}` : "",
+    input.scrapedPage
+      ? `Scraped event page (${input.scrapedPage.finalUrl}):\n${input.scrapedPage.text}`
+      : "",
     input.file ? `File: ${input.file.name} (${input.file.type}, ${input.file.size} bytes)` : "",
+    input.file?.dataUrl?.startsWith("data:image/")
+      ? "Attached image: read all visible text, dates, locations, QR/link text, and organizer details from the screenshot or poster."
+      : "",
     "Content:",
     input.text || input.url || input.file?.name || ""
   ]
@@ -778,13 +1125,14 @@ export async function extractQuestCards(
   input: ExtractQuestRequest
 ): Promise<ExtractQuestResponse> {
   let azureWarning = "";
+  const prepared = await prepareExtractionInput(input);
 
   try {
-    const azureCards = await extractWithAzure(input);
+    const azureCards = await extractWithAzure(prepared.input);
     if (azureCards?.length) {
       return {
         cards: azureCards,
-        meta: extractionMeta("azure", false, input, azureCards, [])
+        meta: extractionMeta("azure", false, prepared.input, azureCards, prepared.warnings)
       };
     }
   } catch (error) {
@@ -792,11 +1140,12 @@ export async function extractQuestCards(
     console.warn(azureWarning);
   }
 
-  const localCards = extractLocally(input);
+  const localCards = extractLocally(prepared.input);
 
   return {
     cards: localCards,
-    meta: extractionMeta("local", true, input, localCards, [
+    meta: extractionMeta("local", true, prepared.input, localCards, [
+      ...prepared.warnings,
       azureWarning
         ? `Azure extraction unavailable (${azureWarning}); used local parser.`
         : "Azure extraction unavailable; used local parser."
