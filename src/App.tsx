@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   ArrowUpDown,
   Bell,
@@ -761,7 +762,10 @@ function RightRail({
           <h3>Match Pulse</h3>
           <Flame size={18} />
         </div>
-        <div className="pulse-meter" style={{ "--score": `${matchScore ?? 72}%` }}>
+        <div
+          className="pulse-meter"
+          style={{ "--score": `${matchScore ?? 72}%` } as CSSProperties}
+        >
           <span />
         </div>
         <p className="muted">
