@@ -257,6 +257,10 @@ function unique(values: string[]) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function compactWhitespace(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
 function truncateText(value: string, maxLength = scrapeMaxTextChars) {
   return value.length > maxLength ? `${value.slice(0, maxLength)}\n[truncated]` : value;
 }
@@ -548,12 +552,161 @@ async function scrapeEventPage(url: string) {
   }
 }
 
+function isInlineImageInput(input: ExtractQuestRequest) {
+  return Boolean(input.file?.dataUrl?.startsWith("data:image/"));
+}
+
+function normalizeUrlCandidate(value: string) {
+  const trimmed = value.trim().replace(/[)\].,;!?]+$/, "");
+  if (!trimmed) return undefined;
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+    if (!["http:", "https:"].includes(parsed.protocol)) return undefined;
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function extractUrlsFromText(text: string) {
+  const matches = text.match(
+    /\b(?:https?:\/\/|www\.)[^\s<>"']+|\b(?:luma\.com|lu\.ma|eventbrite\.[a-z.]+|meetup\.com|forms\.office\.com|forms\.gle|bit\.ly|tinyurl\.com|linktr\.ee)\/[^\s<>"']+/gi
+  );
+
+  return unique((matches ?? []).map((match) => normalizeUrlCandidate(match) ?? ""));
+}
+
+function imageContextPrompt(input: ExtractQuestRequest) {
+  return [
+    "Inspect this uploaded campus event image, poster, or screenshot before QuestBoard extracts the final marketplace card.",
+    "Return JSON only with this shape:",
+    '{ "visibleText": "all readable poster text", "urls": ["https://..."], "emails": ["name@example.edu"], "eventHints": { "title": "", "organizer": "", "date": "", "time": "", "location": "", "applyUrl": "", "contact": "" } }',
+    "Capture every readable title, organizer, date, time, location, price/reward, eligibility note, sponsor, registration instruction, URL, email, QR label, and social handle.",
+    "Only include URLs that are printed or visibly readable in the image. Do not invent a QR destination if the destination is not readable.",
+    input.file ? `File: ${input.file.name} (${input.file.type}, ${input.file.size} bytes)` : "",
+    input.url ? `User supplied URL: ${input.url}` : "",
+    input.text ? `User supplied context: ${input.text}` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function imageContextText(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number") return compactWhitespace(String(value));
+  if (Array.isArray(value)) return value.map(imageContextText).filter(Boolean).join("; ");
+  if (!isRecord(value)) return "";
+
+  return Object.entries(value)
+    .map(([key, item]) => {
+      const text: string = imageContextText(item);
+      return text ? `${key}: ${text}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function normalizeImageInspection(value: unknown) {
+  const normalized = normalizeAzurePayload(value);
+  if (!isRecord(normalized)) return null;
+
+  const visibleText = imageContextText(normalized.visibleText ?? normalized.text ?? normalized.ocr);
+  const eventHints = imageContextText(normalized.eventHints ?? normalized.details ?? normalized.event);
+  const emails = stringArray(normalized.emails, []);
+  const urlValues = [
+    ...stringArray(normalized.urls, []),
+    ...stringArray(normalized.links, []),
+    ...stringArray(normalized.possibleUrls, []),
+    imageContextText(recordValue(normalized.eventHints).applyUrl),
+    ...extractUrlsFromText(visibleText),
+    ...extractUrlsFromText(eventHints)
+  ];
+  const urls = unique(urlValues.map((url) => normalizeUrlCandidate(url) ?? ""));
+  const text = truncateText(
+    [
+      visibleText ? `Visible image text:\n${visibleText}` : "",
+      eventHints ? `Azure image event hints:\n${eventHints}` : "",
+      urls.length ? `Links found in image:\n${urls.join("\n")}` : "",
+      emails.length ? `Emails found in image:\n${emails.join("\n")}` : ""
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+    5000
+  );
+
+  return { text, urls };
+}
+
+async function inspectImageWithAzure(input: ExtractQuestRequest) {
+  if (!isInlineImageInput(input)) return null;
+
+  const config = requireAzureConfig();
+  if (!config.deployment) return null;
+
+  const url = joinUrl(
+    config.endpoint,
+    `/openai/deployments/${config.deployment}/chat/completions?api-version=${config.apiVersion}`
+  );
+  const payload = await fetchJsonWithTimeout(url, {
+    method: "POST",
+    headers: azureHeaders(config.key),
+    body: JSON.stringify({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an Azure vision extraction pass for QuestBoard. Respond with valid JSON only."
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: imageContextPrompt(input) },
+            { type: "image_url", image_url: { url: input.file!.dataUrl! } }
+          ]
+        }
+      ],
+      temperature: 0,
+      max_tokens: 1200,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  return normalizeImageInspection(payload);
+}
+
 async function prepareExtractionInput(input: ExtractQuestRequest) {
-  if (!input.url) return { input, warnings: [] as string[] };
-  const scraped = await scrapeEventPage(input.url);
+  let prepared = input;
+  const warnings: string[] = [];
+
+  if (isInlineImageInput(input)) {
+    try {
+      const imageInspection = await inspectImageWithAzure(input);
+      if (imageInspection?.text) {
+        prepared = {
+          ...prepared,
+          text: [prepared.text, imageInspection.text].filter(Boolean).join("\n\n")
+        };
+      }
+      if (!prepared.url && imageInspection?.urls[0]) {
+        prepared = { ...prepared, url: imageInspection.urls[0] };
+        warnings.push(`Azure image scan found an event link and queued it for scraping.`);
+      }
+    } catch (error) {
+      warnings.push(
+        error instanceof Error
+          ? `Azure image scan could not run before scraping: ${error.message}`
+          : "Azure image scan could not run before scraping."
+      );
+    }
+  }
+
+  if (!prepared.url) return { input: prepared, warnings };
+
+  const scraped = await scrapeEventPage(prepared.url);
   return {
-    input: scraped.page ? { ...input, scrapedPage: scraped.page } : input,
-    warnings: scraped.warnings
+    input: scraped.page ? { ...prepared, scrapedPage: scraped.page } : prepared,
+    warnings: [...warnings, ...scraped.warnings]
   };
 }
 
@@ -981,6 +1134,8 @@ function buildPrompt(input: ExtractQuestRequest) {
     "Resolve relative dates like Friday, tomorrow, next week, or tonight against the current date above, and never invent past dates for upcoming opportunities.",
     "Use ISO dates. If a field is uncertain, infer a sensible future value and keep it conservative.",
     "The user may provide a combination of an image, a link, and text. Synthesize all provided information to create the most accurate quest card.",
+    "If Azure image inspection found a link and the scraped page is present, prefer the scraped event page for dates, location, registration URL, and organizer details.",
+    "If the scraped page and image conflict, keep the image text as supporting context but use the official page as the source of truth.",
     questJsonInstruction,
     "",
     `Source type: ${input.sourceType}`,

@@ -12,6 +12,7 @@ dist
 .prod-server.*.log
 .codex-status-server.*.log
 .vite-client.*.log
+.azure-*.png
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
@@ -20,3 +21,4 @@ token_local.js
 __pycache__/
 prisma/*.db
 prisma/*.db-journal
+.azure-*.png

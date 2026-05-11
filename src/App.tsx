@@ -377,8 +377,9 @@ function App() {
     };
   }, [currentUserId, quests]);
 
-  function handleAuth(user: StudentProfile) {
+  function handleAuth(user: StudentProfile, profile: SignupProfile | null = null) {
     setAuthUser(user);
+    setSignupProfile(profile);
     setCurrentUserId(user.id);
     setUsers((current) => [user, ...current.filter((student) => student.id !== user.id)]);
     setActivePage("home");
@@ -393,6 +394,7 @@ function App() {
     setQuests([]);
     setRemoteMatches({});
     setMatchMeta(null);
+    setSignupProfile(null);
     setSavedQuestIds(new Set());
     setJoinedQuestIds(new Set());
     setParties([]);
@@ -1219,10 +1221,11 @@ function SubmitQuestPage({
   const [processing, setProcessing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [extracted, setExtracted] = useState<QuestCard | null>(null);
+  const [publishedCards, setPublishedCards] = useState<QuestCard[]>([]);
   const [extractionMeta, setExtractionMeta] = useState<ExtractMetaWithSource | null>(null);
   const [error, setError] = useState("");
 
-  const canProcess = Boolean(method && ((method === "link" || method === "text") ? input.trim() : file));
+  const canProcess = Boolean(method && (method === "link" || method === "text" ? input.trim() : file));
   const azureReady = azureHealth?.status === "ready";
 
   async function handleExtract() {
@@ -1235,16 +1238,19 @@ function SubmitQuestPage({
     body.append("sourceType", sourceType);
     if (method === "link") body.append("url", input.trim());
     if (method === "text") body.append("text", input.trim());
+    if (method !== "link" && method !== "text" && input.trim()) body.append("url", input.trim());
     if (file) body.append("file", file);
 
     try {
       const data = await fetchJson<ExtractQuestResponse & { meta: ExtractMetaWithSource }>(
-        "/api/extract",
+        "/api/quests/import",
         { method: "POST", body }
       );
       if (!data.cards?.[0]) throw new Error("Extraction returned no quest cards");
+      setPublishedCards(data.cards);
       setExtracted(data.cards[0]);
       setExtractionMeta(data.meta);
+      data.cards.forEach(onPublish);
       setStep(3);
     } catch (extractError) {
       setError(extractError instanceof Error ? extractError.message : "Extraction failed");
@@ -1265,6 +1271,8 @@ function SubmitQuestPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(draft)
       });
+      setExtracted(data.quest);
+      setPublishedCards((current) => current.map((quest) => (quest.id === data.quest.id ? data.quest : quest)));
       onPublish(data.quest);
     } catch (publishError) {
       setError(publishError instanceof Error ? publishError.message : "Publish failed");
@@ -1278,15 +1286,15 @@ function SubmitQuestPage({
       <div className="section-header submit-heading">
         <div>
           <h1>Submit a Quest</h1>
-          <p>Upload messy material, review the AI card, then publish to the live board.</p>
+          <p>Azure reads the source, scrapes event links, and adds the result to the marketplace.</p>
         </div>
       </div>
 
       <section className={azureReady ? "ai-status-card ready" : "ai-status-card"}>
         <Sparkles size={18} />
         <span>
-          <strong>{azureReady ? "Azure extraction ready" : "Local fallback protected"}</strong>
-          {azureHealth?.detail ?? "QuestBoard will store the source and use local extraction if Azure is unavailable."}
+          <strong>{azureReady ? "Azure extraction ready" : "Azure extraction unavailable"}</strong>
+          {azureHealth?.detail ?? "Configure Azure before importing quests from submitted sources."}
         </span>
       </section>
 
@@ -1313,6 +1321,9 @@ function SubmitQuestPage({
                     setStep(2);
                     setInput("");
                     setFile(null);
+                    setExtracted(null);
+                    setPublishedCards([]);
+                    setExtractionMeta(null);
                     setError("");
                   }}
                 >
@@ -1337,7 +1348,7 @@ function SubmitQuestPage({
                 <Link2 size={18} />
                 <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="https://..." />
               </label>
-              <p className="helper-text">Links are stored as source metadata for this MVP; paste visible event text too if the page needs rich extraction.</p>
+              <p className="helper-text">Azure will scrape the page and publish the extracted event.</p>
             </>
           ) : null}
           {method === "text" ? (
@@ -1350,12 +1361,23 @@ function SubmitQuestPage({
             />
           ) : null}
           {method !== "link" && method !== "text" ? (
-            <label className="upload-drop">
-              <Upload size={34} />
-              <strong>{file ? file.name : "Drop your file here"}</strong>
-              <span>{file ? `${Math.round(file.size / 1024)} KB selected` : "or click to browse"}</span>
-              <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-            </label>
+            <>
+              <label className="upload-drop">
+                <Upload size={34} />
+                <strong>{file ? file.name : "Drop your file here"}</strong>
+                <span>{file ? `${Math.round(file.size / 1024)} KB selected` : "or click to browse"}</span>
+                <input
+                  type="file"
+                  accept={method === "file" ? ".pdf,.txt,.doc,.docx,image/*" : "image/*"}
+                  capture={method === "photo" ? "environment" : undefined}
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              <label className="large-input">
+                <Link2 size={18} />
+                <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Optional source URL" />
+              </label>
+            </>
           ) : null}
           {error ? <p className="form-error">{error}</p> : null}
           <div className="form-actions">
@@ -1364,7 +1386,7 @@ function SubmitQuestPage({
             </button>
             <button className="primary-button" type="button" onClick={handleExtract} disabled={!canProcess || processing}>
               {processing ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-              {processing ? "AI is extracting..." : "Extract with AI"}
+              {processing ? "Adding to marketplace..." : "Add to Marketplace"}
             </button>
           </div>
         </section>
@@ -1376,8 +1398,9 @@ function SubmitQuestPage({
             <span>
               <Check size={18} />
             </span>
-            <h2>AI extracted this Quest Card</h2>
+            <h2>Added to Marketplace</h2>
           </div>
+          {publishedCards.length > 1 ? <p className="helper-text">{publishedCards.length} quests were published from this source.</p> : null}
           {extractionMeta ? <ExtractionDiagnostics meta={extractionMeta} /> : null}
           <ReviewQuestForm quest={extracted} onChange={setExtracted} />
           {error ? <p className="form-error">{error}</p> : null}
@@ -1387,7 +1410,7 @@ function SubmitQuestPage({
             </button>
             <button className="primary-button publish-button" type="button" onClick={handlePublish} disabled={publishing}>
               {publishing ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-              Publish Quest
+              Save Marketplace Changes
             </button>
           </div>
         </section>
@@ -1611,12 +1634,14 @@ function PartiesPage({
 function ProfilePage({
   quests,
   student,
+  signupProfile,
   savedCount,
   partyCount,
   onSelectQuest
 }: {
   quests: QuestCard[];
   student: StudentProfile;
+  signupProfile: SignupProfile | null;
   savedCount: number;
   partyCount: number;
   onSelectQuest: (quest: QuestCard) => void;
@@ -1670,6 +1695,21 @@ function ProfilePage({
           </div>
         </div>
       </section>
+
+      {signupProfile ? (
+        <ProfileSection title="Profile Details">
+          <div className="profile-detail-grid">
+            <ProfileDetail label="Role" value={signupProfile.role} />
+            <ProfileDetail label="Work experience" value={signupProfile.workExperience} />
+            <ProfileDetail label="Education" value={signupProfile.education} />
+            <ProfileDetail label="Course or job title" value={signupProfile.courseOrJobTitle} />
+            <ProfileDetail label="Career interest" value={signupProfile.careerInterest} wide />
+            <ProfileDetail label="Skills" value={signupProfile.skills} wide />
+            <ProfileDetail label="Goals" value={signupProfile.goals} wide />
+            <ProfileDetail label="Hobbies" value={signupProfile.hobbies} wide />
+          </div>
+        </ProfileSection>
+      ) : null}
 
       <ProfileSection title="Interests">
         <div className="chip-row">
