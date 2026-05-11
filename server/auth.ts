@@ -47,7 +47,7 @@ const interestAliases: Partial<Record<InterestTag, string[]>> = {
   career: ["job", "internship", "graduate scheme", "employability"],
   climate: ["sustainability", "environment"],
   competitions: ["hackathon", "challenge"],
-  social-impact: ["social impact", "community"],
+  "social-impact": ["social impact", "community"],
   startups: ["entrepreneurship", "founder"],
   volunteering: ["volunteer"],
   writing: ["content", "copywriting"]
@@ -60,7 +60,7 @@ const skillAliases: Partial<Record<SkillTag, string[]>> = {
   frontend: ["react", "web"],
   ml: ["machine learning", "ai", "artificial intelligence"],
   pitching: ["presentation", "presenting"],
-  public-speaking: ["public speaking", "speaking"],
+  "public-speaking": ["public speaking", "speaking"],
   video: ["editing", "filming"]
 };
 

@@ -5,6 +5,7 @@ import type {
   QuestMatchBreakdown,
   StudentProfile
 } from "../src/types";
+import { scoreQuestForStudent } from "../src/lib/matching";
 import { azureConfig, azureHeaders, requireAzureConfig } from "./env";
 
 const matchJsonInstruction = `Return JSON only with this shape:
@@ -335,26 +336,62 @@ function confidenceFor(matches: QuestMatchBreakdown[]) {
   return round2(matches.reduce((sum, match) => sum + match.total / 100, 0) / matches.length);
 }
 
+function localResponse(
+  quests: QuestCard[],
+  student: StudentProfile,
+  warning?: string
+): MatchRecommendationResponse {
+  const matches = quests
+    .map((quest) => scoreQuestForStudent(quest, student))
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    matches,
+    meta: {
+      provider: "local",
+      fallbackUsed: true,
+      studentId: student.id,
+      questCount: matches.length,
+      confidence: confidenceFor(matches),
+      warnings: [
+        warning
+          ? `Azure matching unavailable (${warning}); used local scoring.`
+          : "Azure matching unavailable; used local scoring."
+      ],
+      model: "local-side-quest-matcher",
+      matchedAt: new Date().toISOString()
+    }
+  };
+}
+
 export async function recommendQuestMatches(
   quests: QuestCard[],
   student: StudentProfile
 ): Promise<MatchRecommendationResponse> {
-  const azureMatches = await matchWithAzure(quests, student);
-  if (!azureMatches?.length) {
-    throw new Error("Azure matching returned no recommendations.");
+  try {
+    const azureMatches = await matchWithAzure(quests, student);
+    if (azureMatches?.length) {
+      return {
+        matches: azureMatches,
+        meta: {
+          provider: "azure",
+          fallbackUsed: false,
+          studentId: student.id,
+          questCount: azureMatches.length,
+          confidence: confidenceFor(azureMatches),
+          warnings: [],
+          model: azureConfig().deployment ?? "azure-side-quest-matcher",
+          matchedAt: new Date().toISOString()
+        }
+      };
+    }
+  } catch (error) {
+    return localResponse(
+      quests,
+      student,
+      error instanceof Error ? error.message : "Azure matching failed"
+    );
   }
 
-  return {
-    matches: azureMatches,
-    meta: {
-      provider: "azure",
-      fallbackUsed: false,
-      studentId: student.id,
-      questCount: azureMatches.length,
-      confidence: confidenceFor(azureMatches),
-      warnings: [],
-      model: azureConfig().deployment ?? "azure-side-quest-matcher",
-      matchedAt: new Date().toISOString()
-    }
-  };
+  return localResponse(quests, student, "Azure matching returned no recommendations.");
 }

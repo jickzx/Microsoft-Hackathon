@@ -147,7 +147,7 @@ const navItems: { page: Page; label: string; icon: typeof HomeIcon }[] = [
   { page: "home", label: "Discover", icon: Compass },
   { page: "map", label: "Map", icon: MapPin },
   { page: "submit", label: "Submit", icon: PlusCircle },
-  { page: "parties", label: "Side Side Quest Parties", icon: Users },
+  { page: "parties", label: "Side Quest Parties", icon: Users },
   { page: "quests", label: "My Side Quests", icon: Award },
   { page: "saved", label: "Saved", icon: Bookmark },
   { page: "profile", label: "Profile", icon: UserRound }
@@ -1543,7 +1543,9 @@ function SubmitQuestPage({
                     <Icon size={21} />
                   </span>
                   <strong>{item.label}</strong>
-                  <small>{item.requiresDiscord ? (discordReady ? item.detail : "Connect Discord first") : item.detail}</small>
+                  {item.detail || item.requiresDiscord ? (
+                    <small>{item.requiresDiscord ? (discordReady ? item.detail : "Connect Discord first") : item.detail}</small>
+                  ) : null}
                 </button>
               );
             })}
@@ -1575,7 +1577,7 @@ function SubmitQuestPage({
               rows={7}
             />
           ) : null}
-          {method !== "link" && method !== "text" ? (
+          {method !== "link" && method !== "text" && method !== "discord" ? (
             <>
               <label className="upload-drop">
                 <Upload size={34} />

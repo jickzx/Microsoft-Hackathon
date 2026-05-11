@@ -2542,6 +2542,7 @@ p {
   .method-grid,
   .extract-pipeline,
   .diagnostics-grid,
+  .integration-health-grid,
   .review-field-row,
   .detail-info-grid,
   .badge-grid {
@@ -2662,6 +2663,7 @@ button {
 .review-grid textarea,
 .review-grid input,
 .profile-detail,
+.integration-card,
 .info-tile,
 .review-card,
 .party-card-large,
@@ -2736,6 +2738,7 @@ button {
 .xp-card,
 .profile-menu,
 .profile-detail,
+.integration-card,
 .info-tile,
 .advanced-filters,
 .auth-panel {
@@ -3272,11 +3275,13 @@ button {
   .review-card,
   .party-card-large,
   .xp-card,
-  .profile-menu {
+  .profile-menu,
+  .integration-card {
     border-radius: 16px;
   }
 
   .diagnostics-grid,
+  .integration-health-grid,
   .ai-detail-card {
     grid-template-columns: 1fr;
   }
