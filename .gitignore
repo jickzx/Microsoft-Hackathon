@@ -6,3 +6,4 @@ dist
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
+token_local.js
