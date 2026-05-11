@@ -986,14 +986,25 @@ function buildPrompt(input: ExtractQuestRequest) {
 
   return [
     "You are QuestBoard's extraction engine.",
-    "Extract campus opportunities from messy student-submitted material.",
+    "Extract campus opportunities from messy student-submitted material (images, links, or text).",
     "Clean the result into practical, social, student-facing quest cards.",
     "Only create cards for campus events, gigs, projects, challenges, volunteering, club activities, research opportunities, or student competitions.",
     "Ignore navigation, ads, generic website copy, and unrelated pages.",
     `Current date: ${now.toISOString()} (${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" })} Europe/London).`,
     "Resolve relative dates like Friday, tomorrow, next week, or tonight against the current date above, and never invent past dates for upcoming opportunities.",
     "Use ISO dates. If a field is uncertain, infer a sensible future value and keep it conservative.",
-    "The user may provide a combination of an image, a link, and text. Synthesize all provided information to create the most accurate quest card.",
+    "The user may provide a combination of an image, a link, and text. Synthesize all provided information into the structured output.",
+    "Ensure the following fields are extracted accurately:",
+    "- Title",
+    "- Organiser",
+    "- Summary (one sentence)",
+    "- Description (detailed)",
+    "- Date and time (ISO format)",
+    "- Location (building, campus, or online URL)",
+    "- Reward (label and type)",
+    "- Apply URL",
+    "- Contact (email or social)",
+    "",
     questJsonInstruction,
     "",
     `Source type: ${input.sourceType}`,
@@ -1006,18 +1017,7 @@ function buildPrompt(input: ExtractQuestRequest) {
       ? "Attached image: read all visible text, dates, locations, QR/link text, and organizer details from the screenshot or poster."
       : "",
     "Additional Text Content:",
-    input.text || "",
-    "",
-    "Instructions for specific fields:",
-    "- Title: Clear, catchy title.",
-    "- Organizer: The club, department, or person hosting.",
-    "- Summary: One sentence overview.",
-    "- Description: Detailed information for students.",
-    "- Date and time: ISO format for deadline and event start/end.",
-    "- Location: Mode (in_person/remote/hybrid), campus, building, and full address or online URL.",
-    "- Reward: Type and label (e.g., 'Paid', 'Pizza', 'Experience').",
-    "- Apply URL: Direct link to apply or register.",
-    "- Contact: Email or contact method."
+    input.text || ""
   ]
     .filter(Boolean)
     .join("\n");

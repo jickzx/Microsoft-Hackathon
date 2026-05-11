@@ -61,7 +61,7 @@ function buildExtractBody(request: Request) {
 
   return {
     sourceType: request.body.sourceType,
-    text: request.body.text || fileText || undefined,
+    text: [request.body.text, fileText].filter(Boolean).join("\n") || undefined,
     url: request.body.url,
     file: request.file
       ? {
@@ -91,10 +91,12 @@ function parseExtractInput(request: Request, response: Response) {
   }
 
   const input = parsed.data as ExtractQuestRequest;
-  if (!input.text && !input.url && !input.file) {
+  // The requirement is that at least one of image (file), link (url), or text is required.
+  // A combination is also accepted.
+  if (!input.text?.trim() && !input.url?.trim() && !input.file) {
     response.status(400).json({
       error: "Invalid request",
-      details: ["Provide text, url, or a file."]
+      details: ["Provide at least one of: text, a link, or an image/file."]
     });
     return null;
   }

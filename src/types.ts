@@ -9,7 +9,7 @@ export const questSourceTypes = [
   "pdf",
   "photo",
   "text",
-  "combined"
+  "multi"
 ] as const;
 
 export const questDifficulties = ["easy", "medium", "hard"] as const;
