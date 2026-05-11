@@ -128,9 +128,12 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_request, response) => {
+  const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT ?? process.env.AZURE_AI_ENDPOINT;
+  const azureKey = process.env.AZURE_OPENAI_API_KEY ?? process.env.AZURE_AI_KEY;
+
   response.json({
     ok: true,
-    azureConfigured: Boolean(process.env.AZURE_AI_ENDPOINT && process.env.AZURE_AI_KEY)
+    azureConfigured: Boolean(azureEndpoint && azureKey)
   });
 });
 
