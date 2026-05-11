@@ -217,6 +217,22 @@ export interface PartyCandidateScore {
   prepPlan: PrepPlanItem[];
 }
 
+export interface MatchRecommendationMeta {
+  provider: "azure" | "local";
+  fallbackUsed: boolean;
+  studentId: string;
+  questCount: number;
+  confidence: number;
+  warnings: string[];
+  model: string;
+  matchedAt: string;
+}
+
+export interface MatchRecommendationResponse {
+  matches: QuestMatchBreakdown[];
+  meta: MatchRecommendationMeta;
+}
+
 export interface ExtractQuestRequest {
   sourceType: QuestSourceType;
   text?: string;
@@ -229,6 +245,14 @@ export interface ExtractQuestRequest {
     base64?: string;
     dataUrl?: string;
     truncated?: boolean;
+  };
+  scrapedPage?: {
+    finalUrl: string;
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+    text: string;
+    warnings: string[];
   };
 }
 
