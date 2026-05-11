@@ -921,7 +921,6 @@ function normalizeAzureCards(value: unknown, input: ExtractQuestRequest): QuestC
   else if (Array.isArray(nestedData?.cards)) cards = nestedData.cards;
   else if (Array.isArray(nestedData?.quests)) cards = nestedData.quests;
   else if (Array.isArray(nestedData?.data)) cards = nestedData.data;
-
   const localBase = extractLocally(input)[0];
 
   return cards
